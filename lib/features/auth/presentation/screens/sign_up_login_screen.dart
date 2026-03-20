@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../app/routes/app_routes.dart';
 
 class SignUpLoginScreen extends StatefulWidget {
   const SignUpLoginScreen({super.key});
@@ -104,9 +105,7 @@ class _SignUpLoginScreenState extends State<SignUpLoginScreen>
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Login demo correcto')));
+        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
       } else {
         setState(() {
           _isLoading = false;
@@ -119,9 +118,7 @@ class _SignUpLoginScreenState extends State<SignUpLoginScreen>
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Registro demo correcto')));
+      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
     }
   }
 
@@ -136,7 +133,7 @@ class _SignUpLoginScreenState extends State<SignUpLoginScreen>
         children: [
           AnimatedBuilder(
             animation: _particleController,
-            builder: (_, __) => CustomPaint(
+            builder: (_, _) => CustomPaint(
               painter: _ParticlePainter(_particleController.value),
               size: size,
             ),
