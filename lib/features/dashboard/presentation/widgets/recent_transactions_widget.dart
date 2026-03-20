@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../app/routes/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class RecentTransactionsWidget extends StatelessWidget {
@@ -68,12 +69,17 @@ class RecentTransactionsWidget extends StatelessWidget {
                         color: AppTheme.onSurface,
                       ),
                     ),
-                    Text(
-                      'Ver todo',
-                      style: GoogleFonts.manrope(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.primary,
+                    InkWell(
+                      onTap: () {
+                        Navigator.pushNamed(context, AppRoutes.transactions);
+                      },
+                      child: Text(
+                        'Ver todo',
+                        style: GoogleFonts.manrope(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.primary,
+                        ),
                       ),
                     ),
                   ],
