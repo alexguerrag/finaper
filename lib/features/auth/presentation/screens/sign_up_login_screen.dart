@@ -5,7 +5,7 @@ class SignUpLoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: Center(
         child: Text('Login Screen 🚀', style: TextStyle(fontSize: 20)),
       ),
