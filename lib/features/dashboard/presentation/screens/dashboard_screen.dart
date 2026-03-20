@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../widgets/balance_hero_widget.dart';
+import '../widgets/kpi_cards_widget.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -10,25 +12,35 @@ class DashboardScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: Text(
-          'Finaper',
-          style: GoogleFonts.manrope(
-            fontWeight: FontWeight.w700,
-            color: AppTheme.onSurface,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Finaper',
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.w700,
+                color: AppTheme.onSurface,
+              ),
+            ),
+            Text(
+              'Hola, Sofía 👋',
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                color: AppTheme.onSurfaceMuted,
+              ),
+            ),
+          ],
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: Center(
-        child: Text(
-          'Dashboard 🚀',
-          style: GoogleFonts.manrope(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.onSurface,
-          ),
-        ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [
+          BalanceHeroWidget(),
+          SizedBox(height: 12),
+          KpiCardsWidget(),
+        ],
       ),
     );
   }
