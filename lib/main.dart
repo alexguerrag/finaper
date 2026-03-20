@@ -14,7 +14,7 @@ class FinaperApp extends StatelessWidget {
       title: 'Finaper',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: Scaffold(body: Center(child: Text('Finaper App 🚀'))),
+      home: const Scaffold(body: Center(child: Text('Finaper App 🚀'))),
     );
   }
 }
