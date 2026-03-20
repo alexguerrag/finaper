@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../../../core/theme/app_theme.dart';
 import '../widgets/balance_hero_widget.dart';
+import '../widgets/budget_alert_banner_widget.dart';
 import '../widgets/kpi_cards_widget.dart';
+import '../widgets/trend_chart_widget.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -37,9 +40,13 @@ class DashboardScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: const [
+          BudgetAlertBannerWidget(),
+          SizedBox(height: 12),
           BalanceHeroWidget(),
           SizedBox(height: 12),
           KpiCardsWidget(),
+          SizedBox(height: 16),
+          TrendChartWidget(),
         ],
       ),
     );
