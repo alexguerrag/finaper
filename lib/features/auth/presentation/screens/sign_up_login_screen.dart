@@ -56,10 +56,10 @@ class _SignUpLoginScreenState extends State<SignUpLoginScreen>
       end: 1,
     ).animate(CurvedAnimation(parent: _formController, curve: Curves.easeOut));
 
-    _formSlide = Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero)
-        .animate(
-          CurvedAnimation(parent: _formController, curve: Curves.easeOutCubic),
-        );
+    _formSlide =
+        Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero).animate(
+      CurvedAnimation(parent: _formController, curve: Curves.easeOutCubic),
+    );
 
     _formController.forward();
   }
@@ -133,7 +133,7 @@ class _SignUpLoginScreenState extends State<SignUpLoginScreen>
         children: [
           AnimatedBuilder(
             animation: _particleController,
-            builder: (_, _) => CustomPaint(
+            builder: (context, child) => CustomPaint(
               painter: _ParticlePainter(_particleController.value),
               size: size,
             ),

@@ -1,3 +1,5 @@
+// C:\dev\projects\finaper\lib\features\dashboard\presentation\widgets\trend_chart_widget.dart
+
 import 'dart:ui';
 
 import 'package:fl_chart/fl_chart.dart';
@@ -88,8 +90,8 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
                       ),
                     ],
                   ),
-                  Row(
-                    children: const [
+                  const Row(
+                    children: [
                       _Legend(color: AppTheme.income, label: 'Ingresos'),
                       SizedBox(width: 12),
                       _Legend(color: AppTheme.expense, label: 'Gastos'),
@@ -102,7 +104,7 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
                 height: 180,
                 child: AnimatedBuilder(
                   animation: _anim,
-                  builder: (_, _) => LineChart(
+                  builder: (context, child) => LineChart(
                     _buildChartData(_anim.value),
                     duration: Duration.zero,
                   ),
@@ -133,7 +135,7 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
             showTitles: true,
             reservedSize: 40,
             interval: 2000,
-            getTitlesWidget: (val, _) => Text(
+            getTitlesWidget: (val, __) => Text(
               '\$${(val / 1000).toStringAsFixed(0)}k',
               style: GoogleFonts.manrope(
                 fontSize: 10,
@@ -150,7 +152,7 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: 24,
-            getTitlesWidget: (val, _) {
+            getTitlesWidget: (val, __) {
               final i = val.toInt();
               if (i < 0 || i >= _months.length) {
                 return const SizedBox.shrink();
@@ -187,7 +189,7 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
           isStrokeCapRound: true,
           dotData: FlDotData(
             show: true,
-            getDotPainter: (spot, _, _, index) => FlDotCirclePainter(
+            getDotPainter: (spot, _, __, index) => FlDotCirclePainter(
               radius: index == _income.length - 1 ? 4 : 0,
               color: AppTheme.income,
               strokeWidth: 2,
@@ -218,7 +220,7 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
           isStrokeCapRound: true,
           dotData: FlDotData(
             show: true,
-            getDotPainter: (spot, _, _, index) => FlDotCirclePainter(
+            getDotPainter: (spot, _, __, index) => FlDotCirclePainter(
               radius: index == _expenses.length - 1 ? 4 : 0,
               color: AppTheme.expense,
               strokeWidth: 2,
@@ -240,12 +242,6 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
       ],
       lineTouchData: LineTouchData(
         touchTooltipData: LineTouchTooltipData(
-          tooltipPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 8,
-          ),
-          tooltipRoundedRadius: 10,
-          tooltipBgColor: AppTheme.surfaceElevated,
           getTooltipItems: (spots) => spots.map((s) {
             final isIncome = s.barIndex == 0;
             return LineTooltipItem(

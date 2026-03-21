@@ -51,7 +51,7 @@ class _KpiCardsWidgetState extends State<KpiCardsWidget>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _controller,
-      builder: (_, _) => Row(
+      builder: (context, child) => Row(
         children: [
           Expanded(
             child: _KpiCard(

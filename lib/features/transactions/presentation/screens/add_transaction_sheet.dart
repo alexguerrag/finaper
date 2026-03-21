@@ -1,3 +1,5 @@
+// C:\dev\projects\finaper\lib\features\transactions\presentation\screens\add_transaction_sheet.dart
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -5,7 +7,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../domain/models/transaction_model.dart';
 
 class AddTransactionSheet extends StatefulWidget {
-  final void Function(TransactionModel transaction) onAdd;
+  final Future<void> Function(TransactionModel transaction) onAdd;
 
   const AddTransactionSheet({super.key, required this.onAdd});
 
@@ -21,6 +23,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   final _noteController = TextEditingController();
 
   bool _isIncome = false;
+  bool _isSaving = false;
 
   @override
   void dispose() {
@@ -31,11 +34,15 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     final amount = double.tryParse(_amountController.text.trim());
     if (amount == null) return;
+
+    setState(() {
+      _isSaving = true;
+    });
 
     final tx = TransactionModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -47,8 +54,24 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       note: _noteController.text.trim(),
     );
 
-    widget.onAdd(tx);
-    Navigator.pop(context);
+    try {
+      await widget.onAdd(tx);
+
+      if (!mounted) return;
+      Navigator.pop(context);
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSaving = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo guardar la transacción'),
+        ),
+      );
+    }
   }
 
   @override
@@ -139,9 +162,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                     controller: _amountController,
                     label: 'Monto',
                     hint: 'Ej: 125.50',
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Ingresa un monto';
@@ -164,7 +186,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: _submit,
+                      onPressed: _isSaving ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primary,
                         foregroundColor: Colors.white,
@@ -172,10 +194,21 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      child: Text(
-                        'Guardar transacción',
-                        style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
-                      ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.4,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              'Guardar transacción',
+                              style: GoogleFonts.manrope(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                     ),
                   ),
                 ],
@@ -237,7 +270,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           keyboardType: keyboardType,
           validator: requiredField ? validator : null,
           style: GoogleFonts.manrope(color: AppTheme.onSurface),
-          decoration: InputDecoration(hintText: hint),
+          decoration: InputDecoration(
+            hintText: hint,
+          ),
         ),
       ],
     );

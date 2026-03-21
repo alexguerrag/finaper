@@ -88,15 +88,14 @@ class _BudgetBarsWidgetState extends State<BudgetBarsWidget>
               const SizedBox(height: 16),
               AnimatedBuilder(
                 animation: _anim,
-                builder: (_, _) => Column(
+                builder: (context, child) => Column(
                   children: _budgetMaps.map((b) {
                     final spent = b['spent'] as double;
                     final limit = b['limit'] as double;
                     final ratio = (spent / limit).clamp(0.0, 1.0);
                     final isWarning = ratio >= 0.8;
-                    final color = isWarning
-                        ? AppTheme.warning
-                        : b['color'] as Color;
+                    final color =
+                        isWarning ? AppTheme.warning : b['color'] as Color;
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 14),

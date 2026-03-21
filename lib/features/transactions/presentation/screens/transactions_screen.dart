@@ -1,8 +1,11 @@
+//C:\dev\projects\finaper\lib\features\transactions\presentation\screens\transactions_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/enums/transaction_type.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../data/local/transaction_local_datasource.dart';
 import '../../domain/models/transaction_model.dart';
 import 'add_transaction_sheet.dart';
 
@@ -14,48 +17,54 @@ class TransactionsScreen extends StatefulWidget {
 }
 
 class _TransactionsScreenState extends State<TransactionsScreen> {
-  final List<Map<String, dynamic>> _mockData = [
-    {
-      'id': '1',
-      'description': 'Salario mensual',
-      'category': 'Salario',
-      'amount': 4820.0,
-      'isIncome': true,
-      'date': '2026-03-20',
-      'note': '',
-    },
-    {
-      'id': '2',
-      'description': 'Supermercado',
-      'category': 'Alimentación',
-      'amount': 156.8,
-      'isIncome': false,
-      'date': '2026-03-19',
-      'note': '',
-    },
-    {
-      'id': '3',
-      'description': 'Netflix',
-      'category': 'Entretenimiento',
-      'amount': 28.5,
-      'isIncome': false,
-      'date': '2026-03-18',
-      'note': '',
-    },
-  ];
-
   final TextEditingController _searchController = TextEditingController();
+  final TransactionLocalDataSource _localDataSource =
+      TransactionLocalDataSource();
+
   TransactionTypeFilter _selectedFilter = TransactionTypeFilter.all;
 
   late List<TransactionModel> _transactions;
   late List<TransactionModel> _filteredTransactions;
 
+  bool _isLoading = true;
+
+  final List<TransactionModel> _seedData = [
+    TransactionModel(
+      id: '1',
+      description: 'Salario mensual',
+      category: 'Salario',
+      amount: 4820.0,
+      isIncome: true,
+      date: DateTime(2026, 3, 20),
+      note: '',
+    ),
+    TransactionModel(
+      id: '2',
+      description: 'Supermercado',
+      category: 'Alimentación',
+      amount: 156.8,
+      isIncome: false,
+      date: DateTime(2026, 3, 19),
+      note: '',
+    ),
+    TransactionModel(
+      id: '3',
+      description: 'Netflix',
+      category: 'Entretenimiento',
+      amount: 28.5,
+      isIncome: false,
+      date: DateTime(2026, 3, 18),
+      note: '',
+    ),
+  ];
+
   @override
   void initState() {
     super.initState();
-    _transactions = _mockData.map(TransactionModel.fromMap).toList();
-    _filteredTransactions = List.from(_transactions);
+    _transactions = [];
+    _filteredTransactions = [];
     _searchController.addListener(_applyFilters);
+    _loadTransactions();
   }
 
   @override
@@ -64,18 +73,45 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     super.dispose();
   }
 
+  Future<void> _loadTransactions() async {
+    try {
+      await _localDataSource.seedIfEmpty(_seedData);
+      final data = await _localDataSource.getTransactions();
+
+      if (!mounted) return;
+
+      setState(() {
+        _transactions = data;
+        _filteredTransactions = List.from(data);
+        _isLoading = false;
+      });
+
+      _applyFilters();
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _transactions = List.from(_seedData);
+        _filteredTransactions = List.from(_seedData);
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _addTransaction(TransactionModel transaction) async {
+    debugPrint('Intentando guardar: ${transaction.description}');
+    await _localDataSource.insertTransaction(transaction);
+    debugPrint('¡Guardado con éxito!');
+    await _loadTransactions();
+  }
+
   void _openAddTransactionSheet() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => AddTransactionSheet(
-        onAdd: (transaction) {
-          setState(() {
-            _transactions.insert(0, transaction);
-          });
-          _applyFilters();
-        },
+        onAdd: _addTransaction,
       ),
     );
   }
@@ -85,12 +121,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     setState(() {
       _filteredTransactions = _transactions.where((tx) {
-        final matchesSearch =
-            tx.description.toLowerCase().contains(query) ||
+        final matchesSearch = tx.description.toLowerCase().contains(query) ||
             tx.category.toLowerCase().contains(query);
 
-        final matchesType =
-            _selectedFilter == TransactionTypeFilter.all ||
+        final matchesType = _selectedFilter == TransactionTypeFilter.all ||
             (_selectedFilter == TransactionTypeFilter.income && tx.isIncome) ||
             (_selectedFilter == TransactionTypeFilter.expense && !tx.isIncome);
 
@@ -151,13 +185,15 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: Column(
-        children: [
-          _buildSearchAndFilters(),
-          _buildSummary(),
-          Expanded(child: _buildList()),
-        ],
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                _buildSearchAndFilters(),
+                _buildSummary(),
+                Expanded(child: _buildList()),
+              ],
+            ),
     );
   }
 

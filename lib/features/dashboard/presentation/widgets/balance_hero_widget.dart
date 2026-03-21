@@ -132,7 +132,7 @@ class _BalanceHeroWidgetState extends State<BalanceHeroWidget>
                     ? AnimatedBuilder(
                         key: const ValueKey('visible'),
                         animation: _countAnim,
-                        builder: (_, _) => Text(
+                        builder: (context, child) => Text(
                           '\$${_countAnim.value.toStringAsFixed(2)}',
                           style: GoogleFonts.manrope(
                             fontSize: 36,
