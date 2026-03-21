@@ -99,6 +99,33 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     });
   }
 
+  Map<String, List<TransactionModel>> _groupedTransactions() {
+    final Map<String, List<TransactionModel>> grouped = {};
+
+    for (final tx in _filteredTransactions) {
+      final date = tx.date;
+      final now = DateTime.now();
+
+      final today = DateTime(now.year, now.month, now.day);
+      final txDate = DateTime(date.year, date.month, date.day);
+      final difference = today.difference(txDate).inDays;
+
+      String key;
+      if (difference == 0) {
+        key = 'Hoy';
+      } else if (difference == 1) {
+        key = 'Ayer';
+      } else {
+        key = '${date.day}/${date.month}/${date.year}';
+      }
+
+      grouped.putIfAbsent(key, () => []);
+      grouped[key]!.add(tx);
+    }
+
+    return grouped;
+  }
+
   double get totalIncome => _filteredTransactions
       .where((t) => t.isIncome)
       .fold(0, (sum, t) => sum + t.amount);
@@ -252,60 +279,84 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       );
     }
 
+    final grouped = _groupedTransactions();
+    final keys = grouped.keys.toList();
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _filteredTransactions.length,
+      itemCount: keys.length,
       itemBuilder: (_, i) {
-        final tx = _filteredTransactions[i];
+        final section = keys[i];
+        final items = grouped[section]!;
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppTheme.surface,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: tx.isIncome
-                    ? AppTheme.income.withValues(alpha: 0.2)
-                    : AppTheme.expense.withValues(alpha: 0.2),
-                child: Icon(
-                  tx.isIncome ? Icons.arrow_downward : Icons.arrow_upward,
-                  color: tx.isIncome ? AppTheme.income : AppTheme.expense,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                section,
+                style: GoogleFonts.manrope(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.onSurfaceMuted,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+            ...items.map((tx) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
                   children: [
-                    Text(
-                      tx.description,
-                      style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
+                    CircleAvatar(
+                      backgroundColor: tx.isIncome
+                          ? AppTheme.income.withValues(alpha: 0.2)
+                          : AppTheme.expense.withValues(alpha: 0.2),
+                      child: Icon(
+                        tx.isIncome ? Icons.arrow_downward : Icons.arrow_upward,
+                        color: tx.isIncome ? AppTheme.income : AppTheme.expense,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            tx.description,
+                            style: GoogleFonts.manrope(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            tx.category,
+                            style: GoogleFonts.manrope(
+                              fontSize: 12,
+                              color: AppTheme.onSurfaceMuted,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     Text(
-                      tx.category,
+                      tx.isIncome
+                          ? '+\$${tx.amount.toStringAsFixed(2)}'
+                          : '-\$${tx.amount.toStringAsFixed(2)}',
                       style: GoogleFonts.manrope(
-                        fontSize: 12,
-                        color: AppTheme.onSurfaceMuted,
+                        fontWeight: FontWeight.w700,
+                        color: tx.isIncome ? AppTheme.income : AppTheme.expense,
                       ),
                     ),
                   ],
                 ),
-              ),
-              Text(
-                tx.isIncome
-                    ? '+\$${tx.amount.toStringAsFixed(2)}'
-                    : '-\$${tx.amount.toStringAsFixed(2)}',
-                style: GoogleFonts.manrope(
-                  fontWeight: FontWeight.w700,
-                  color: tx.isIncome ? AppTheme.income : AppTheme.expense,
-                ),
-              ),
-            ],
-          ),
+              );
+            }),
+          ],
         );
       },
     );
