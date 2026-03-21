@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/enums/transaction_type.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/models/transaction_model.dart';
+import 'add_transaction_sheet.dart';
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
@@ -63,6 +64,22 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     super.dispose();
   }
 
+  void _openAddTransactionSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => AddTransactionSheet(
+        onAdd: (transaction) {
+          setState(() {
+            _transactions.insert(0, transaction);
+          });
+          _applyFilters();
+        },
+      ),
+    );
+  }
+
   void _applyFilters() {
     final query = _searchController.text.trim().toLowerCase();
 
@@ -94,6 +111,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openAddTransactionSheet,
+        backgroundColor: AppTheme.primary,
+        child: const Icon(Icons.add_rounded, color: Colors.white),
+      ),
       appBar: AppBar(
         title: Text(
           'Transacciones',
