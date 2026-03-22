@@ -1,10 +1,19 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../../../core/theme/app_theme.dart';
 
 class KpiCardsWidget extends StatefulWidget {
-  const KpiCardsWidget({super.key});
+  final double? incomeOverride;
+  final double? expenseOverride;
+
+  const KpiCardsWidget({
+    super.key,
+    this.incomeOverride,
+    this.expenseOverride,
+  });
 
   @override
   State<KpiCardsWidget> createState() => _KpiCardsWidgetState();
@@ -16,12 +25,25 @@ class _KpiCardsWidgetState extends State<KpiCardsWidget>
   late Animation<double> _incomeAnim;
   late Animation<double> _expenseAnim;
 
-  static const double _totalIncome = 4820.00;
-  static const double _totalExpense = 1972.50;
+  double get _totalIncome => widget.incomeOverride ?? 4820.00;
+  double get _totalExpense => widget.expenseOverride ?? 1972.50;
 
   @override
   void initState() {
     super.initState();
+    _initAnimations();
+  }
+
+  @override
+  void didUpdateWidget(covariant KpiCardsWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.incomeOverride != widget.incomeOverride ||
+        oldWidget.expenseOverride != widget.expenseOverride) {
+      _initAnimations();
+    }
+  }
+
+  void _initAnimations() {
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
@@ -59,8 +81,6 @@ class _KpiCardsWidgetState extends State<KpiCardsWidget>
               value: _incomeAnim.value,
               icon: Icons.arrow_downward_rounded,
               color: AppTheme.income,
-              change: '+8.2%',
-              isPositive: true,
             ),
           ),
           const SizedBox(width: 12),
@@ -70,8 +90,6 @@ class _KpiCardsWidgetState extends State<KpiCardsWidget>
               value: _expenseAnim.value,
               icon: Icons.arrow_upward_rounded,
               color: AppTheme.expense,
-              change: '+3.7%',
-              isPositive: false,
             ),
           ),
         ],
@@ -85,16 +103,12 @@ class _KpiCard extends StatelessWidget {
   final double value;
   final IconData icon;
   final Color color;
-  final String change;
-  final bool isPositive;
 
   const _KpiCard({
     required this.label,
     required this.value,
     required this.icon,
     required this.color,
-    required this.change,
-    required this.isPositive,
   });
 
   @override
@@ -113,38 +127,14 @@ class _KpiCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    child: Icon(icon, size: 16, color: color),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: (isPositive ? AppTheme.income : AppTheme.expense)
-                          .withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    child: Text(
-                      change,
-                      style: GoogleFonts.manrope(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: isPositive ? AppTheme.income : AppTheme.expense,
-                      ),
-                    ),
-                  ),
-                ],
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(icon, size: 16, color: color),
               ),
               const SizedBox(height: 10),
               Text(

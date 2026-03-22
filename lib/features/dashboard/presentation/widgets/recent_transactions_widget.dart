@@ -3,44 +3,23 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../app/routes/app_routes.dart';
+import '../../../transactions/domain/models/transaction_model.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class RecentTransactionsWidget extends StatelessWidget {
-  const RecentTransactionsWidget({super.key});
+  final List<TransactionModel>? transactionsOverride;
+  final VoidCallback? onSeeAll;
 
-  static final List<Map<String, dynamic>> _txMaps = [
-    {
-      'description': 'Salario mensual',
-      'category': 'Salario',
-      'amount': 4820.00,
-      'isIncome': true,
-      'date': '20 mar',
-      'icon': Icons.work_rounded,
-      'color': const Color(0xFF2ECC71),
-    },
-    {
-      'description': 'Supermercado La Comer',
-      'category': 'Alimentación',
-      'amount': -156.80,
-      'isIncome': false,
-      'date': '19 mar',
-      'icon': Icons.restaurant_rounded,
-      'color': const Color(0xFFE67E22),
-    },
-    {
-      'description': 'Netflix + Spotify',
-      'category': 'Entretenimiento',
-      'amount': -28.50,
-      'isIncome': false,
-      'date': '18 mar',
-      'icon': Icons.movie_rounded,
-      'color': const Color(0xFF9B59B6),
-    },
-  ];
+  const RecentTransactionsWidget({
+    super.key,
+    this.transactionsOverride,
+    this.onSeeAll,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final txs = transactionsOverride ?? [];
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
@@ -70,9 +49,7 @@ class RecentTransactionsWidget extends StatelessWidget {
                       ),
                     ),
                     InkWell(
-                      onTap: () {
-                        Navigator.pushNamed(context, AppRoutes.transactions);
-                      },
+                      onTap: onSeeAll,
                       child: Text(
                         'Ver todo',
                         style: GoogleFonts.manrope(
@@ -85,88 +62,97 @@ class RecentTransactionsWidget extends StatelessWidget {
                   ],
                 ),
               ),
-              ...List.generate(_txMaps.length, (i) {
-                final tx = _txMaps[i];
-                final isLast = i == _txMaps.length - 1;
-
-                return Column(
-                  children: [
-                    if (i > 0)
-                      Divider(
-                        height: 1,
-                        color: Colors.white.withValues(alpha: 0.08),
-                        indent: 20,
-                        endIndent: 20,
-                      ),
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        20,
-                        12,
-                        20,
-                        isLast ? 20 : 12,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: (tx['color'] as Color).withValues(
-                                alpha: 0.15,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              tx['icon'] as IconData,
-                              size: 18,
-                              color: tx['color'] as Color,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  tx['description'] as String,
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppTheme.onSurface,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  '${tx['category']} · ${tx['date']}',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 11,
-                                    color: AppTheme.onSurfaceMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            tx['isIncome'] as bool
-                                ? '+\$${(tx['amount'] as double).toStringAsFixed(2)}'
-                                : '-\$${(tx['amount'] as double).abs().toStringAsFixed(2)}',
-                            style: GoogleFonts.manrope(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: tx['isIncome'] as bool
-                                  ? AppTheme.income
-                                  : AppTheme.expense,
-                            ),
-                          ),
-                        ],
-                      ),
+              if (txs.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                  child: Text(
+                    'Aún no tienes transacciones recientes',
+                    style: GoogleFonts.manrope(
+                      fontSize: 12,
+                      color: AppTheme.onSurfaceMuted,
                     ),
-                  ],
-                );
-              }),
+                  ),
+                )
+              else
+                ...List.generate(txs.length, (i) {
+                  final tx = txs[i];
+                  final isLast = i == txs.length - 1;
+
+                  return Column(
+                    children: [
+                      if (i > 0)
+                        Divider(
+                          height: 1,
+                          color: Colors.white.withValues(alpha: 0.08),
+                          indent: 20,
+                          endIndent: 20,
+                        ),
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          20,
+                          12,
+                          20,
+                          isLast ? 20 : 12,
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: tx.isIncome
+                                  ? AppTheme.income.withValues(alpha: 0.2)
+                                  : AppTheme.expense.withValues(alpha: 0.2),
+                              child: Icon(
+                                tx.isIncome
+                                    ? Icons.arrow_downward
+                                    : Icons.arrow_upward,
+                                color: tx.isIncome
+                                    ? AppTheme.income
+                                    : AppTheme.expense,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    tx.description,
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppTheme.onSurface,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    tx.category,
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 11,
+                                      color: AppTheme.onSurfaceMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              tx.isIncome
+                                  ? '+\$${tx.amount.toStringAsFixed(2)}'
+                                  : '-\$${tx.amount.toStringAsFixed(2)}',
+                              style: GoogleFonts.manrope(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: tx.isIncome
+                                    ? AppTheme.income
+                                    : AppTheme.expense,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }),
             ],
           ),
         ),
