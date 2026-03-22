@@ -1,12 +1,19 @@
-//C:\dev\projects\finaper\lib\features\transactions\presentation\screens\transactions_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/enums/transaction_type.dart';
 import '../../../../core/theme/app_theme.dart';
+
+// DOMAIN
+import '../../domain/usecases/get_all_transactions.dart';
+import '../../domain/usecases/add_transaction.dart';
+
+// DATA
+import '../../data/repositories/transactions_repository_impl.dart';
 import '../../data/local/transaction_local_datasource.dart';
-import '../../domain/models/transaction_model.dart';
+import '../../data/models/transaction_model.dart';
+
+// UI
 import 'add_transaction_sheet.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -18,19 +25,20 @@ class TransactionsScreen extends StatefulWidget {
 
 class _TransactionsScreenState extends State<TransactionsScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final TransactionLocalDataSource _localDataSource =
-      TransactionLocalDataSource();
 
   TransactionTypeFilter _selectedFilter = TransactionTypeFilter.all;
 
   late List<TransactionModel> _transactions;
   late List<TransactionModel> _filteredTransactions;
 
+  late GetAllTransactions getAllTransactions;
+  late AddTransaction addTransaction;
+
   bool _isLoading = true;
 
   final List<TransactionModel> _seedData = [
     TransactionModel(
-      id: '1',
+      id: 1,
       description: 'Salario mensual',
       category: 'Salario',
       amount: 4820.0,
@@ -39,7 +47,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       note: '',
     ),
     TransactionModel(
-      id: '2',
+      id: 2,
       description: 'Supermercado',
       category: 'Alimentación',
       amount: 156.8,
@@ -48,7 +56,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       note: '',
     ),
     TransactionModel(
-      id: '3',
+      id: 3,
       description: 'Netflix',
       category: 'Entretenimiento',
       amount: 28.5,
@@ -61,9 +69,19 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   @override
   void initState() {
     super.initState();
+
     _transactions = [];
     _filteredTransactions = [];
+
     _searchController.addListener(_applyFilters);
+
+    // 🔥 INYECCIÓN LIMPIA
+    final dataSource = TransactionLocalDataSource();
+    final repository = TransactionsRepositoryImpl(dataSource);
+
+    getAllTransactions = GetAllTransactions(repository);
+    addTransaction = AddTransaction(repository);
+
     _loadTransactions();
   }
 
@@ -75,19 +93,20 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   Future<void> _loadTransactions() async {
     try {
-      await _localDataSource.seedIfEmpty(_seedData);
-      final data = await _localDataSource.getTransactions();
+      final data = await getAllTransactions();
 
       if (!mounted) return;
 
       setState(() {
-        _transactions = data;
-        _filteredTransactions = List.from(data);
+        _transactions = data.cast<TransactionModel>();
+        _filteredTransactions = List.from(_transactions);
         _isLoading = false;
       });
 
       _applyFilters();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Error loading transactions: $e');
+
       if (!mounted) return;
 
       setState(() {
@@ -99,10 +118,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Future<void> _addTransaction(TransactionModel transaction) async {
-    debugPrint('Intentando guardar: ${transaction.description}');
-    await _localDataSource.insertTransaction(transaction);
-    debugPrint('¡Guardado con éxito!');
-    await _loadTransactions();
+    try {
+      await addTransaction(transaction);
+      await _loadTransactions();
+    } catch (e) {
+      debugPrint('Error adding transaction: $e');
+    }
   }
 
   void _openAddTransactionSheet() {
@@ -162,11 +183,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   double get totalIncome => _filteredTransactions
       .where((t) => t.isIncome)
-      .fold(0, (sum, t) => sum + t.amount);
+      .fold(0.0, (sum, t) => sum + t.amount);
 
   double get totalExpense => _filteredTransactions
       .where((t) => !t.isIncome)
-      .fold(0, (sum, t) => sum + t.amount);
+      .fold(0.0, (sum, t) => sum + t.amount);
 
   @override
   Widget build(BuildContext context) {

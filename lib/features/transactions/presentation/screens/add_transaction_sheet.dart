@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_theme.dart';
-import '../../domain/models/transaction_model.dart';
+import '../../data/models/transaction_model.dart';
 
 class AddTransactionSheet extends StatefulWidget {
   final Future<void> Function(TransactionModel transaction) onAdd;
@@ -45,7 +45,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     });
 
     final tx = TransactionModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: null,
       description: _descriptionController.text.trim(),
       category: _categoryController.text.trim(),
       amount: amount,

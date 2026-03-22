@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../transactions/presentation/screens/transactions_screen.dart';
 import '../../data/local/dashboard_local_datasource.dart';
 import '../widgets/balance_hero_widget.dart';
 import '../widgets/budget_alert_banner_widget.dart';

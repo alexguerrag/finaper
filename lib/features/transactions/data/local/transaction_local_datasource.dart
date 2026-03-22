@@ -1,76 +1,106 @@
-//C:\dev\projects\finaper\lib\features\transactions\data\local\transaction_local_datasource.dart
-
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-import '../../domain/models/transaction_model.dart';
+import '../models/transaction_model.dart';
 
 class TransactionLocalDataSource {
-  static const _dbName = 'finaper.db';
+  static Database? _database;
+  static const _databaseName = 'finaper.db';
+  static const _databaseVersion = 2;
   static const _tableName = 'transactions';
-
-  Database? _database;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
+    _database = await _initDB();
+    return _database!;
+  }
 
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, _dbName);
+  Future<Database> _initDB() async {
+    final path = join(await getDatabasesPath(), _databaseName);
 
-    _database = await openDatabase(
+    return openDatabase(
       path,
-      version: 1,
+      version: _databaseVersion,
       onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE $_tableName(
-            id TEXT PRIMARY KEY,
-            description TEXT NOT NULL,
-            category TEXT NOT NULL,
-            amount REAL NOT NULL,
-            isIncome INTEGER NOT NULL,
-            date TEXT NOT NULL,
-            note TEXT NOT NULL
-          )
-        ''');
+        await _createTables(db);
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute(
+            'ALTER TABLE $_tableName ADD COLUMN is_income INTEGER NOT NULL DEFAULT 0',
+          );
+
+          await db.execute(
+            'ALTER TABLE $_tableName ADD COLUMN note TEXT NOT NULL DEFAULT ""',
+          );
+        }
       },
     );
+  }
 
-    return _database!;
+  Future<void> _createTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE $_tableName (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        description TEXT NOT NULL,
+        category TEXT NOT NULL,
+        amount REAL NOT NULL,
+        is_income INTEGER NOT NULL,
+        date TEXT NOT NULL,
+        note TEXT NOT NULL DEFAULT ""
+      )
+    ''');
   }
 
   Future<List<TransactionModel>> getTransactions() async {
     final db = await database;
-    final maps = await db.query(_tableName, orderBy: 'date DESC');
-
-    return maps.map(TransactionModel.fromMap).toList();
-  }
-
-  Future<void> insertTransaction(TransactionModel transaction) async {
-    final db = await database;
-    await db.insert(
+    final result = await db.query(
       _tableName,
-      transaction.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
+      orderBy: 'date DESC',
+    );
+
+    return result.map(TransactionModel.fromMap).toList();
+  }
+
+  Future<TransactionModel> insertTransaction(TransactionModel model) async {
+    final db = await database;
+
+    final id = await db.insert(
+      _tableName,
+      model.toMap()..remove('id'),
+    );
+
+    return TransactionModel(
+      id: id,
+      description: model.description,
+      category: model.category,
+      amount: model.amount,
+      isIncome: model.isIncome,
+      date: model.date,
+      note: model.note,
     );
   }
 
-  Future<void> seedIfEmpty(List<TransactionModel> seedData) async {
+  Future<TransactionModel> updateTransaction(TransactionModel model) async {
     final db = await database;
-    final countResult = await db.rawQuery(
-      'SELECT COUNT(*) as count FROM $_tableName',
+
+    await db.update(
+      _tableName,
+      model.toMap()..remove('id'),
+      where: 'id = ?',
+      whereArgs: [model.id],
     );
-    final count = Sqflite.firstIntValue(countResult) ?? 0;
 
-    if (count > 0) return;
+    return model;
+  }
 
-    final batch = db.batch();
-    for (final tx in seedData) {
-      batch.insert(
-        _tableName,
-        tx.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    }
-    await batch.commit(noResult: true);
+  Future<void> deleteTransaction(int id) async {
+    final db = await database;
+
+    await db.delete(
+      _tableName,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 }

@@ -1,9 +1,10 @@
+// C:\dev\projects\finaper\lib\features\dashboard\presentation\widgets\recent_transactions_widget.dart
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../transactions/domain/models/transaction_model.dart';
+import '../../../transactions/data/models/transaction_model.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class RecentTransactionsWidget extends StatelessWidget {
