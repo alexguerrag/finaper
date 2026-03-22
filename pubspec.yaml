@@ -1,0 +1,34 @@
+name: finaper
+description: "A new Flutter project."
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  #sdk: ^3.10.8
+  sdk: ^3.2.0 # Ajustado para mejor compatibilidad con lints modernos
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.3.3
+  #google_fonts: ^6.2.1
+  fl_chart: ^0.66.0 # Versión ligeramente más reciente y estable
+  #fl_chart: ^0.65.0
+  sqflite: ^2.3.0
+  #sqflite: ^2.4.2
+  path: ^1.9.0
+  #path: ^1.9.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0 # Versión más estándar para máxima compatibilidad
+
+flutter:
+  uses-material-design: true
+  # No olvides declarar tu carpeta de assets si vas a usar iconos o imágenes
+  # assets:
+  #   - assets/
