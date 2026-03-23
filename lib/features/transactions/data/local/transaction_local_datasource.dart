@@ -1,104 +1,59 @@
-import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
-
+import '../../../../core/database/database_helper.dart';
 import '../models/transaction_model.dart';
+import 'package:sqflite/sqflite.dart'; // <--- Falta este
 
-class TransactionLocalDataSource {
-  static Database? _database;
-  static const _databaseName = 'finaper.db';
-  static const _databaseVersion = 2;
-  static const _tableName = 'transactions';
+abstract class TransactionLocalDataSource {
+  Future<List<TransactionModel>> getTransactions();
+  Future<TransactionModel> insertTransaction(TransactionModel transaction);
+  Future<TransactionModel> updateTransaction(TransactionModel transaction);
+  Future<void> deleteTransaction(String id);
+}
 
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDB();
-    return _database!;
-  }
+class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
+  final DatabaseHelper dbHelper;
 
-  Future<Database> _initDB() async {
-    final path = join(await getDatabasesPath(), _databaseName);
+  TransactionLocalDataSourceImpl(this.dbHelper);
 
-    return openDatabase(
-      path,
-      version: _databaseVersion,
-      onCreate: (db, version) async {
-        await _createTables(db);
-      },
-      onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
-          await db.execute(
-            'ALTER TABLE $_tableName ADD COLUMN is_income INTEGER NOT NULL DEFAULT 0',
-          );
-
-          await db.execute(
-            'ALTER TABLE $_tableName ADD COLUMN note TEXT NOT NULL DEFAULT ""',
-          );
-        }
-      },
-    );
-  }
-
-  Future<void> _createTables(Database db) async {
-    await db.execute('''
-      CREATE TABLE $_tableName (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        description TEXT NOT NULL,
-        category TEXT NOT NULL,
-        amount REAL NOT NULL,
-        is_income INTEGER NOT NULL,
-        date TEXT NOT NULL,
-        note TEXT NOT NULL DEFAULT ""
-      )
-    ''');
-  }
-
+  @override
   Future<List<TransactionModel>> getTransactions() async {
-    final db = await database;
-    final result = await db.query(
-      _tableName,
-      orderBy: 'date DESC',
-    );
+    final db = await dbHelper.database;
+    final List<Map<String, dynamic>> maps =
+        await db.query('transactions', orderBy: 'date DESC');
 
-    return result.map(TransactionModel.fromMap).toList();
+    // Optimización: Generación de lista inmutable y tipada
+    return List.generate(maps.length, (i) => TransactionModel.fromMap(maps[i]));
   }
 
-  Future<TransactionModel> insertTransaction(TransactionModel model) async {
-    final db = await database;
-
-    final id = await db.insert(
-      _tableName,
-      model.toMap()..remove('id'),
+  @override
+  Future<TransactionModel> insertTransaction(
+      TransactionModel transaction) async {
+    final db = await dbHelper.database;
+    await db.insert(
+      'transactions',
+      transaction.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace, // Evita duplicados por ID
     );
-
-    return TransactionModel(
-      id: id,
-      description: model.description,
-      category: model.category,
-      amount: model.amount,
-      isIncome: model.isIncome,
-      date: model.date,
-      note: model.note,
-    );
+    return transaction;
   }
 
-  Future<TransactionModel> updateTransaction(TransactionModel model) async {
-    final db = await database;
-
+  @override
+  Future<TransactionModel> updateTransaction(
+      TransactionModel transaction) async {
+    final db = await dbHelper.database;
     await db.update(
-      _tableName,
-      model.toMap()..remove('id'),
+      'transactions',
+      transaction.toMap(),
       where: 'id = ?',
-      whereArgs: [model.id],
+      whereArgs: [transaction.id],
     );
-
-    return model;
+    return transaction;
   }
 
-  Future<void> deleteTransaction(int id) async {
-    final db = await database;
-
+  @override
+  Future<void> deleteTransaction(String id) async {
+    final db = await dbHelper.database;
     await db.delete(
-      _tableName,
+      'transactions',
       where: 'id = ?',
       whereArgs: [id],
     );
