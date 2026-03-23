@@ -1,8 +1,10 @@
+//C:\dev\projects\finaper\lib\features\transactions\presentation\screens\transactions_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/enums/transaction_type.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/database/database_helper.dart';
 
 // DOMAIN
 import '../../domain/usecases/get_all_transactions.dart';
@@ -38,7 +40,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   final List<TransactionModel> _seedData = [
     TransactionModel(
-      id: 1,
+      id: 1.toString(),
       description: 'Salario mensual',
       category: 'Salario',
       amount: 4820.0,
@@ -47,7 +49,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       note: '',
     ),
     TransactionModel(
-      id: 2,
+      id: 2.toString(),
       description: 'Supermercado',
       category: 'Alimentación',
       amount: 156.8,
@@ -56,7 +58,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       note: '',
     ),
     TransactionModel(
-      id: 3,
+      id: 3.toString(),
       description: 'Netflix',
       category: 'Entretenimiento',
       amount: 28.5,
@@ -75,8 +77,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     _searchController.addListener(_applyFilters);
 
-    // 🔥 INYECCIÓN LIMPIA
-    final dataSource = TransactionLocalDataSource();
+    final dataSource = TransactionLocalDataSourceImpl(DatabaseHelper.instance);
     final repository = TransactionsRepositoryImpl(dataSource);
 
     getAllTransactions = GetAllTransactions(repository);
@@ -98,7 +99,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       if (!mounted) return;
 
       setState(() {
-        _transactions = data.cast<TransactionModel>();
+        _transactions =
+            data.map((e) => TransactionModel.fromEntity(e)).toList();
         _filteredTransactions = List.from(_transactions);
         _isLoading = false;
       });

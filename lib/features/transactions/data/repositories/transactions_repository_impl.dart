@@ -1,4 +1,3 @@
-// C:\dev\projects\finaper\lib\features\transactions\data\repositories\transactions_repository_impl.dart
 import '../../domain/entities/transaction_entity.dart';
 import '../../domain/repositories/transactions_repository.dart';
 import '../models/transaction_model.dart';
@@ -11,8 +10,9 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
 
   @override
   Future<List<TransactionEntity>> getAll() async {
-    final result = await localDataSource.getTransactions();
-    return List<TransactionEntity>.from(result);
+    final models = await localDataSource.getTransactions();
+    // Mapeo explícito de Model (Data) a Entity (Domain)
+    return models.map((model) => model as TransactionEntity).toList();
   }
 
   @override
@@ -28,7 +28,8 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
   }
 
   @override
-  Future<void> delete(int id) async {
+  // Cambiado de int a String para coincidir con nuestro modelo de datos
+  Future<void> delete(String id) async {
     await localDataSource.deleteTransaction(id);
   }
 }

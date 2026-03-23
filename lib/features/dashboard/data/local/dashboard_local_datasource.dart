@@ -1,4 +1,5 @@
 // C:\dev\projects\finaper\lib\features\dashboard\data\local\dashboard_local_datasource.dart
+
 import '../../../transactions/data/local/transaction_local_datasource.dart';
 import '../../../transactions/data/models/transaction_model.dart';
 
@@ -17,34 +18,38 @@ class DashboardSummaryData {
 }
 
 class DashboardLocalDataSource {
-  final TransactionLocalDataSource _transactionLocalDataSource =
-      TransactionLocalDataSource();
+  // Cambiamos la instanciación directa por una referencia recibida por constructor
+  final TransactionLocalDataSource _transactionLocalDataSource;
+
+  DashboardLocalDataSource(this._transactionLocalDataSource);
 
   Future<DashboardSummaryData> getSummary() async {
+    // Obtenemos las transacciones desde la fuente local compartida
     final transactions = await _transactionLocalDataSource.getTransactions();
 
-    // ✅ Manejo seguro null-safety
-    final totalIncome = transactions
-        .where((t) => t.isIncome == true)
-        .fold<double>(0, (sum, t) => sum + t.amount);
+    // ✅ Cálculo eficiente en una sola pasada (O(n))
+    double income = 0;
+    double expense = 0;
 
-    final totalExpense = transactions
-        .where((t) => t.isIncome == false)
-        .fold<double>(0, (sum, t) => sum + t.amount);
+    for (final t in transactions) {
+      if (t.isIncome) {
+        income += t.amount;
+      } else {
+        expense += t.amount;
+      }
+    }
 
-    final balance = totalIncome - totalExpense;
-
-    // ✅ Orden correcto por fecha (más recientes primero)
+    // ✅ Lógica de ordenamiento y selección de recientes
+    // Nota: Si getTransactions ya viene ordenado por fecha DESC de la DB,
+    // podrías ahorrarte el .sort() aquí para mejorar el rendimiento.
     final sorted = List<TransactionModel>.from(transactions)
       ..sort((a, b) => b.date.compareTo(a.date));
 
-    final recentTransactions = sorted.take(5).toList();
-
     return DashboardSummaryData(
-      balance: balance,
-      totalIncome: totalIncome,
-      totalExpense: totalExpense,
-      recentTransactions: recentTransactions,
+      balance: income - expense,
+      totalIncome: income,
+      totalExpense: expense,
+      recentTransactions: sorted.take(5).toList(),
     );
   }
 }
