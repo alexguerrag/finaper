@@ -1,25 +1,21 @@
-// C:\dev\projects\finaper\lib\main.dart
 import 'package:flutter/material.dart';
-import 'package:finaper/features/shell/presentation/pages/main_shell_page.dart';
 
-void main() {
+import 'app/app.dart';
+import 'app/di/app_services.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const FinaperApp());
-}
 
-class FinaperApp extends StatelessWidget {
-  const FinaperApp({super.key});
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.dumpErrorToConsole(details);
+  };
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Finaper',
-      debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.system,
-      theme: ThemeData(
-        useMaterial3: true,
-      ),
-      home: const MainShellPage(),
-    );
+  try {
+    await AppServices.instance.initialize();
+  } catch (e, s) {
+    debugPrint('Bootstrap error: $e');
+    debugPrintStack(stackTrace: s);
   }
+
+  runApp(const FinaperApp());
 }

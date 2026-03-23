@@ -1,7 +1,8 @@
-//lib/features/shell/presentation/pages/main_shell_page.dart
 import 'package:flutter/material.dart';
-import 'package:finaper/features/dashboard/presentation/screens/dashboard_screen.dart';
-import 'package:finaper/features/transactions/presentation/screens/transactions_screen.dart';
+
+import '../../../../core/theme/app_theme.dart';
+import '../../../dashboard/presentation/screens/dashboard_screen.dart';
+import '../../../transactions/presentation/screens/transactions_screen.dart';
 
 class MainShellPage extends StatefulWidget {
   const MainShellPage({super.key});
@@ -13,46 +14,66 @@ class MainShellPage extends StatefulWidget {
 class _MainShellPageState extends State<MainShellPage> {
   int _currentIndex = 0;
 
+  final GlobalKey<DashboardScreenState> _dashboardKey =
+      GlobalKey<DashboardScreenState>();
+
   late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
-    _pages = const [
-      DashboardScreen(),
-      TransactionsScreen(),
+    _pages = [
+      DashboardScreen(key: _dashboardKey),
+      const TransactionsScreen(),
     ];
   }
 
-  void _onTap(int index) {
-    if (_currentIndex == index) return;
+  Future<void> _onTap(int index) async {
+    if (_currentIndex == index) {
+      if (index == 0) {
+        await _dashboardKey.currentState?.refreshSummary();
+      }
+      return;
+    }
 
     setState(() {
       _currentIndex = index;
     });
+
+    if (index == 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await _dashboardKey.currentState?.refreshSummary();
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.background,
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: _onTap,
+        onDestinationSelected: (index) {
+          _onTap(index);
+        },
+        backgroundColor: AppTheme.surface,
+        indicatorColor: AppTheme.primary.withValues(alpha: 0.16),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
+            selectedIcon: Icon(Icons.dashboard_rounded),
             label: 'Dashboard',
-            tooltip: 'Ver resumen financiero',
+            tooltip: 'Resumen financiero',
           ),
           NavigationDestination(
             icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
-            label: 'Transactions',
+            selectedIcon: Icon(Icons.receipt_long_rounded),
+            label: 'Movimientos',
+            tooltip: 'Transacciones',
           ),
         ],
       ),

@@ -6,9 +6,12 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class BalanceHeroWidget extends StatefulWidget {
-  final double? balanceOverride;
+  const BalanceHeroWidget({
+    super.key,
+    this.balanceOverride,
+  });
 
-  const BalanceHeroWidget({super.key, this.balanceOverride});
+  final double? balanceOverride;
 
   @override
   State<BalanceHeroWidget> createState() => _BalanceHeroWidgetState();
@@ -16,8 +19,9 @@ class BalanceHeroWidget extends StatefulWidget {
 
 class _BalanceHeroWidgetState extends State<BalanceHeroWidget>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+  late final AnimationController _controller;
   late Animation<double> _countAnim;
+
   bool _balanceVisible = true;
 
   double get _balance => widget.balanceOverride ?? 2847.50;
@@ -25,29 +29,36 @@ class _BalanceHeroWidgetState extends State<BalanceHeroWidget>
   @override
   void initState() {
     super.initState();
-    _initAnimation();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+
+    _configureAnimation();
+    _controller.forward();
   }
 
   @override
   void didUpdateWidget(covariant BalanceHeroWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+
     if (oldWidget.balanceOverride != widget.balanceOverride) {
-      _initAnimation();
+      _configureAnimation();
+      _controller.forward(from: 0);
     }
   }
 
-  void _initAnimation() {
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
+  void _configureAnimation() {
     _countAnim = Tween<double>(
       begin: 0,
       end: _balance,
     ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutCubic,
+      ),
     );
-    _controller.forward();
   }
 
   @override
@@ -116,15 +127,17 @@ class _BalanceHeroWidgetState extends State<BalanceHeroWidget>
                 child: _balanceVisible
                     ? AnimatedBuilder(
                         key: const ValueKey('visible'),
-                        animation: _countAnim,
-                        builder: (context, child) => Text(
-                          '\$${_countAnim.value.toStringAsFixed(2)}',
-                          style: GoogleFonts.manrope(
-                            fontSize: 36,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
+                        animation: _controller,
+                        builder: (context, child) {
+                          return Text(
+                            '\$${_countAnim.value.toStringAsFixed(2)}',
+                            style: GoogleFonts.manrope(
+                              fontSize: 36,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          );
+                        },
                       )
                     : Text(
                         '••••••',

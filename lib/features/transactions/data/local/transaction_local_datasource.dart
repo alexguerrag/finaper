@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
+import 'package:sqflite/sqflite.dart';
+
 import '../../../../core/database/database_helper.dart';
 import '../models/transaction_model.dart';
-import 'package:sqflite/sqflite.dart'; // <--- Falta este
 
 abstract class TransactionLocalDataSource {
   Future<List<TransactionModel>> getTransactions();
@@ -10,52 +12,87 @@ abstract class TransactionLocalDataSource {
 }
 
 class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
-  final DatabaseHelper dbHelper;
+  const TransactionLocalDataSourceImpl(this.dbHelper);
 
-  TransactionLocalDataSourceImpl(this.dbHelper);
+  final DatabaseHelper dbHelper;
 
   @override
   Future<List<TransactionModel>> getTransactions() async {
-    final db = await dbHelper.database;
-    final List<Map<String, dynamic>> maps =
-        await db.query('transactions', orderBy: 'date DESC');
+    try {
+      final db = await dbHelper.database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'transactions',
+        orderBy: 'date DESC',
+      );
 
-    // Optimización: Generación de lista inmutable y tipada
-    return List.generate(maps.length, (i) => TransactionModel.fromMap(maps[i]));
+      return List<TransactionModel>.generate(
+        maps.length,
+        (index) => TransactionModel.fromMap(maps[index]),
+      );
+    } catch (e, s) {
+      debugPrint('getTransactions error: $e');
+      debugPrintStack(stackTrace: s);
+      rethrow;
+    }
   }
 
   @override
   Future<TransactionModel> insertTransaction(
-      TransactionModel transaction) async {
-    final db = await dbHelper.database;
-    await db.insert(
-      'transactions',
-      transaction.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace, // Evita duplicados por ID
-    );
-    return transaction;
+    TransactionModel transaction,
+  ) async {
+    try {
+      final db = await dbHelper.database;
+
+      await db.insert(
+        'transactions',
+        transaction.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      return transaction;
+    } catch (e, s) {
+      debugPrint('insertTransaction datasource error: $e');
+      debugPrintStack(stackTrace: s);
+      rethrow;
+    }
   }
 
   @override
   Future<TransactionModel> updateTransaction(
-      TransactionModel transaction) async {
-    final db = await dbHelper.database;
-    await db.update(
-      'transactions',
-      transaction.toMap(),
-      where: 'id = ?',
-      whereArgs: [transaction.id],
-    );
-    return transaction;
+    TransactionModel transaction,
+  ) async {
+    try {
+      final db = await dbHelper.database;
+
+      await db.update(
+        'transactions',
+        transaction.toMap(),
+        where: 'id = ?',
+        whereArgs: [transaction.id],
+      );
+
+      return transaction;
+    } catch (e, s) {
+      debugPrint('updateTransaction datasource error: $e');
+      debugPrintStack(stackTrace: s);
+      rethrow;
+    }
   }
 
   @override
   Future<void> deleteTransaction(String id) async {
-    final db = await dbHelper.database;
-    await db.delete(
-      'transactions',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    try {
+      final db = await dbHelper.database;
+
+      await db.delete(
+        'transactions',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    } catch (e, s) {
+      debugPrint('deleteTransaction datasource error: $e');
+      debugPrintStack(stackTrace: s);
+      rethrow;
+    }
   }
 }
