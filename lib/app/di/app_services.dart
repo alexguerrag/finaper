@@ -6,6 +6,11 @@ import '../../features/accounts/data/repositories/accounts_repository_impl.dart'
 import '../../features/accounts/domain/repositories/accounts_repository.dart';
 import '../../features/accounts/domain/usecases/create_account.dart';
 import '../../features/accounts/domain/usecases/get_accounts.dart';
+import '../../features/budgets/data/local/budgets_local_datasource.dart';
+import '../../features/budgets/data/repositories/budgets_repository_impl.dart';
+import '../../features/budgets/domain/repositories/budgets_repository.dart';
+import '../../features/budgets/domain/usecases/get_budgets_by_month.dart';
+import '../../features/budgets/domain/usecases/upsert_budget.dart';
 import '../../features/categories/data/local/categories_local_datasource.dart';
 import '../../features/categories/data/repositories/categories_repository_impl.dart';
 import '../../features/categories/domain/repositories/categories_repository.dart';
@@ -61,6 +66,17 @@ class AppServices {
 
   late final CreateCategory createCategory =
       CreateCategory(categoriesRepository);
+
+  late final BudgetsLocalDataSource budgetsLocalDataSource =
+      BudgetsLocalDataSourceImpl(databaseHelper);
+
+  late final BudgetsRepository budgetsRepository =
+      BudgetsRepositoryImpl(budgetsLocalDataSource);
+
+  late final GetBudgetsByMonth getBudgetsByMonth =
+      GetBudgetsByMonth(budgetsRepository);
+
+  late final UpsertBudget upsertBudget = UpsertBudget(budgetsRepository);
 
   Future<void> initialize() async {
     try {
