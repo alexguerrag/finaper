@@ -1,6 +1,14 @@
 import 'package:flutter/foundation.dart';
 
 import '../../core/database/database_helper.dart';
+import '../../features/accounts/data/local/accounts_local_datasource.dart';
+import '../../features/accounts/data/repositories/accounts_repository_impl.dart';
+import '../../features/accounts/domain/repositories/accounts_repository.dart';
+import '../../features/accounts/domain/usecases/get_accounts.dart';
+import '../../features/categories/data/local/categories_local_datasource.dart';
+import '../../features/categories/data/repositories/categories_repository_impl.dart';
+import '../../features/categories/domain/repositories/categories_repository.dart';
+import '../../features/categories/domain/usecases/get_categories_by_kind.dart';
 import '../../features/dashboard/data/local/dashboard_local_datasource.dart';
 import '../../features/transactions/data/local/transaction_local_datasource.dart';
 import '../../features/transactions/data/repositories/transactions_repository_impl.dart';
@@ -29,6 +37,23 @@ class AppServices {
 
   late final DashboardLocalDataSource dashboardLocalDataSource =
       DashboardLocalDataSource(transactionLocalDataSource);
+
+  late final AccountsLocalDataSource accountsLocalDataSource =
+      AccountsLocalDataSourceImpl(databaseHelper);
+
+  late final AccountsRepository accountsRepository =
+      AccountsRepositoryImpl(accountsLocalDataSource);
+
+  late final GetAccounts getAccounts = GetAccounts(accountsRepository);
+
+  late final CategoriesLocalDataSource categoriesLocalDataSource =
+      CategoriesLocalDataSourceImpl(databaseHelper);
+
+  late final CategoriesRepository categoriesRepository =
+      CategoriesRepositoryImpl(categoriesLocalDataSource);
+
+  late final GetCategoriesByKind getCategoriesByKind =
+      GetCategoriesByKind(categoriesRepository);
 
   Future<void> initialize() async {
     try {

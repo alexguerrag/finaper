@@ -20,7 +20,7 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
   Future<List<TransactionModel>> getTransactions() async {
     try {
       final db = await dbHelper.database;
-      final List<Map<String, dynamic>> maps = await db.query(
+      final maps = await db.query(
         'transactions',
         orderBy: 'date DESC',
       );
