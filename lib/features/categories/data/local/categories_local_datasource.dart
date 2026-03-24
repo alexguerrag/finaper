@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import 'package:sqflite/sqflite.dart';
+
 import '../../../../core/database/database_helper.dart';
 import '../../../../core/enums/category_kind.dart';
 import '../models/category_model.dart';
@@ -6,6 +9,8 @@ abstract class CategoriesLocalDataSource {
   Future<List<CategoryModel>> getCategoriesByKind({
     required CategoryKind kind,
   });
+
+  Future<CategoryModel> createCategory(CategoryModel category);
 }
 
 class CategoriesLocalDataSourceImpl implements CategoriesLocalDataSource {
@@ -17,15 +22,40 @@ class CategoriesLocalDataSourceImpl implements CategoriesLocalDataSource {
   Future<List<CategoryModel>> getCategoriesByKind({
     required CategoryKind kind,
   }) async {
-    final db = await _databaseHelper.database;
+    try {
+      final db = await _databaseHelper.database;
 
-    final result = await db.query(
-      'categories',
-      where: 'kind = ?',
-      whereArgs: [kind.value],
-      orderBy: 'name ASC',
-    );
+      final result = await db.query(
+        'categories',
+        where: 'kind = ?',
+        whereArgs: [kind.value],
+        orderBy: 'name ASC',
+      );
 
-    return result.map(CategoryModel.fromMap).toList();
+      return result.map(CategoryModel.fromMap).toList();
+    } catch (e, s) {
+      debugPrint('getCategoriesByKind error: $e');
+      debugPrintStack(stackTrace: s);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CategoryModel> createCategory(CategoryModel category) async {
+    try {
+      final db = await _databaseHelper.database;
+
+      await db.insert(
+        'categories',
+        category.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      return category;
+    } catch (e, s) {
+      debugPrint('createCategory error: $e');
+      debugPrintStack(stackTrace: s);
+      rethrow;
+    }
   }
 }
