@@ -1,0 +1,485 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../../../../app/di/app_services.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../data/models/goal_model.dart';
+import '../../domain/entities/goal_entity.dart';
+import '../../domain/usecases/create_goal.dart';
+import '../../domain/usecases/get_goals.dart';
+import '../../domain/usecases/update_goal.dart';
+import '../widgets/add_goal_sheet.dart';
+import '../widgets/update_goal_progress_sheet.dart';
+
+class GoalsScreen extends StatefulWidget {
+  const GoalsScreen({super.key});
+
+  @override
+  State<GoalsScreen> createState() => _GoalsScreenState();
+}
+
+class _GoalsScreenState extends State<GoalsScreen> {
+  late final GetGoals _getGoals;
+  late final CreateGoal _createGoal;
+  late final UpdateGoal _updateGoal;
+
+  bool _isLoading = true;
+  _GoalFilter _filter = _GoalFilter.active;
+  List<GoalEntity> _goals = <GoalEntity>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _getGoals = AppServices.instance.getGoals;
+    _createGoal = AppServices.instance.createGoal;
+    _updateGoal = AppServices.instance.updateGoal;
+    _loadGoals();
+  }
+
+  Future<void> _loadGoals() async {
+    try {
+      final goals = await _getGoals(includeCompleted: true);
+
+      if (!mounted) return;
+
+      setState(() {
+        _goals = goals;
+        _isLoading = false;
+      });
+    } catch (e, s) {
+      debugPrint('GoalsScreen load error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudieron cargar las metas.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _openAddGoalSheet() async {
+    final result = await showModalBottomSheet<GoalModel>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const AddGoalSheet(),
+    );
+
+    if (result == null) return;
+
+    try {
+      await _createGoal(result);
+      await _loadGoals();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Meta creada correctamente.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    } catch (e, s) {
+      debugPrint('Create goal error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo crear la meta.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _openUpdateProgressSheet(GoalEntity goal) async {
+    final result = await showModalBottomSheet<GoalModel>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => UpdateGoalProgressSheet(goal: goal),
+    );
+
+    if (result == null) return;
+
+    try {
+      await _updateGoal(result);
+      await _loadGoals();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Progreso actualizado correctamente.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    } catch (e, s) {
+      debugPrint('Update goal error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo actualizar la meta.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    }
+  }
+
+  List<GoalEntity> get _filteredGoals {
+    switch (_filter) {
+      case _GoalFilter.active:
+        return _goals.where((goal) => !goal.isCompleted).toList();
+      case _GoalFilter.completed:
+        return _goals.where((goal) => goal.isCompleted).toList();
+      case _GoalFilter.all:
+        return _goals;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
+  }
+
+  String _dateSubtitle(GoalEntity goal) {
+    if (goal.targetDate == null) {
+      return 'Sin fecha objetivo';
+    }
+    return 'Meta para ${_formatDate(goal.targetDate!)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final goals = _filteredGoals;
+
+    return Scaffold(
+      backgroundColor: AppTheme.background,
+      appBar: AppBar(
+        title: Text(
+          'Metas',
+          style: GoogleFonts.manrope(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openAddGoalSheet,
+        backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Nueva'),
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadGoals,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text(
+              'Gestiona tus objetivos de ahorro y monitorea su progreso.',
+              style: GoogleFonts.manrope(
+                fontSize: 13,
+                color: AppTheme.onSurfaceMuted,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _GoalFilterChip(
+                  label: 'Activas',
+                  selected: _filter == _GoalFilter.active,
+                  onTap: () {
+                    setState(() {
+                      _filter = _GoalFilter.active;
+                    });
+                  },
+                ),
+                const SizedBox(width: 8),
+                _GoalFilterChip(
+                  label: 'Completadas',
+                  selected: _filter == _GoalFilter.completed,
+                  onTap: () {
+                    setState(() {
+                      _filter = _GoalFilter.completed;
+                    });
+                  },
+                ),
+                const SizedBox(width: 8),
+                _GoalFilterChip(
+                  label: 'Todas',
+                  selected: _filter == _GoalFilter.all,
+                  onTap: () {
+                    setState(() {
+                      _filter = _GoalFilter.all;
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 48),
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (goals.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.flag_outlined,
+                      size: 36,
+                      color: AppTheme.onSurfaceMuted,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Todavía no hay metas en este filtro.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.manrope(
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Crea una meta para comenzar a seguir tus objetivos.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        color: AppTheme.onSurfaceMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ...goals.map(
+                (goal) {
+                  final progress = goal.progress;
+                  final accentColor =
+                      goal.isCompleted ? AppTheme.income : goal.color;
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surface,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.06),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 46,
+                              height: 46,
+                              decoration: BoxDecoration(
+                                color: accentColor.withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Icon(
+                                IconData(
+                                  goal.iconCode,
+                                  fontFamily: 'MaterialIcons',
+                                ),
+                                color: accentColor,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          goal.name,
+                                          style: GoogleFonts.manrope(
+                                            fontWeight: FontWeight.w700,
+                                            color: AppTheme.onSurface,
+                                          ),
+                                        ),
+                                      ),
+                                      if (goal.isCompleted)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.income
+                                                .withValues(alpha: 0.14),
+                                            borderRadius:
+                                                BorderRadius.circular(999),
+                                          ),
+                                          child: Text(
+                                            'Completada',
+                                            style: GoogleFonts.manrope(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppTheme.income,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _dateSubtitle(goal),
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 12,
+                                      color: AppTheme.onSurfaceMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(999),
+                          child: LinearProgressIndicator(
+                            minHeight: 8,
+                            value: progress,
+                            backgroundColor:
+                                Colors.white.withValues(alpha: 0.08),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(accentColor),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '\$${goal.currentAmount.toStringAsFixed(0)} / \$${goal.targetAmount.toStringAsFixed(0)}',
+                              style: GoogleFonts.manrope(
+                                fontSize: 12,
+                                color: AppTheme.onSurfaceMuted,
+                              ),
+                            ),
+                            Text(
+                              '${(progress * 100).toStringAsFixed(0)}%',
+                              style: GoogleFonts.manrope(
+                                fontWeight: FontWeight.w700,
+                                color: accentColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              _openUpdateProgressSheet(goal);
+                            },
+                            icon: Icon(
+                              goal.isCompleted
+                                  ? Icons.check_circle_rounded
+                                  : Icons.trending_up_rounded,
+                            ),
+                            label: Text(
+                              goal.isCompleted
+                                  ? 'Actualizar avance'
+                                  : 'Registrar avance',
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.onSurface,
+                              side: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.12),
+                              ),
+                              minimumSize: const Size.fromHeight(46),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+enum _GoalFilter {
+  active,
+  completed,
+  all,
+}
+
+class _GoalFilterChip extends StatelessWidget {
+  const _GoalFilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppTheme.primary : AppTheme.surface,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.manrope(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: selected ? Colors.white : AppTheme.onSurface,
+          ),
+        ),
+      ),
+    );
+  }
+}

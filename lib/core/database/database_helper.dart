@@ -10,7 +10,7 @@ class DatabaseHelper {
   static Database? _database;
 
   static const String _databaseName = 'finaper.db';
-  static const int _databaseVersion = 4;
+  static const int _databaseVersion = 5;
 
   static const String defaultAccountId = 'acc-cash-main';
   static const String defaultAccountName = 'Cuenta principal';
@@ -53,6 +53,7 @@ class DatabaseHelper {
       await _createCategoriesTable(db);
       await _createTransactionsTable(db);
       await _createBudgetsTable(db);
+      await _createGoalsTable(db);
       await _seedAccounts(db);
       await _seedCategories(db);
       await _createIndexes(db);
@@ -85,6 +86,10 @@ class DatabaseHelper {
 
       if (oldVersion < 4) {
         await _createBudgetsTable(db);
+      }
+
+      if (oldVersion < 5) {
+        await _createGoalsTable(db);
       }
 
       await _createIndexes(db);
@@ -160,6 +165,23 @@ class DatabaseHelper {
     ''');
   }
 
+  Future<void> _createGoalsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS goals (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        target_amount REAL NOT NULL,
+        current_amount REAL NOT NULL DEFAULT 0,
+        target_date TEXT,
+        color_value INTEGER NOT NULL,
+        icon_code INTEGER NOT NULL,
+        is_completed INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+  }
+
   Future<void> _createIndexes(Database db) async {
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date DESC)',
@@ -184,6 +206,12 @@ class DatabaseHelper {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_budgets_category_month ON budgets(category_id, month_key)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_goals_completed ON goals(is_completed)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_goals_target_date ON goals(target_date)',
     );
   }
 
