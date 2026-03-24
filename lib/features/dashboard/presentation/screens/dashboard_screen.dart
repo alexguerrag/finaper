@@ -90,6 +90,14 @@ class DashboardScreenState extends State<DashboardScreen> {
     await refreshSummary();
   }
 
+  Future<void> _goToGoals() async {
+    await Navigator.pushNamed(context, AppRoutes.goals);
+
+    if (!mounted) return;
+
+    await refreshSummary();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -115,19 +123,37 @@ class DashboardScreenState extends State<DashboardScreen> {
         ),
         actions: [
           IconButton(
+            onPressed: _goToGoals,
+            icon: const Icon(Icons.flag_rounded),
+            tooltip: 'Metas',
+          ),
+          IconButton(
             onPressed: _goToBudgets,
             icon: const Icon(Icons.savings_rounded),
             tooltip: 'Presupuestos',
           ),
-          IconButton(
-            onPressed: _goToCatalogs,
-            icon: const Icon(Icons.tune_rounded),
-            tooltip: 'Catálogos',
-          ),
-          IconButton(
-            onPressed: _goToTransactions,
-            icon: const Icon(Icons.receipt_long_rounded),
-            tooltip: 'Transacciones',
+          PopupMenuButton<_DashboardMenuAction>(
+            icon: const Icon(Icons.more_vert_rounded),
+            onSelected: (value) {
+              switch (value) {
+                case _DashboardMenuAction.catalogs:
+                  _goToCatalogs();
+                  break;
+                case _DashboardMenuAction.transactions:
+                  _goToTransactions();
+                  break;
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: _DashboardMenuAction.catalogs,
+                child: Text('Catálogos'),
+              ),
+              PopupMenuItem(
+                value: _DashboardMenuAction.transactions,
+                child: Text('Movimientos'),
+              ),
+            ],
           ),
         ],
       ),
@@ -165,4 +191,9 @@ class DashboardScreenState extends State<DashboardScreen> {
             ),
     );
   }
+}
+
+enum _DashboardMenuAction {
+  catalogs,
+  transactions,
 }

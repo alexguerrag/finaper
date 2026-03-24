@@ -4,6 +4,7 @@ import '../../features/auth/presentation/screens/sign_up_login_screen.dart';
 import '../../features/budgets/presentation/screens/budgets_screen.dart';
 import '../../features/catalogs/presentation/screens/catalogs_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../../features/goals/presentation/screens/goals_screen.dart';
 import '../../features/shell/presentation/pages/main_shell_page.dart';
 import '../../features/transactions/presentation/screens/transactions_screen.dart';
 
@@ -14,6 +15,7 @@ class AppRoutes {
   static const String transactions = '/transactions';
   static const String catalogs = '/catalogs';
   static const String budgets = '/budgets';
+  static const String goals = '/goals';
 
   static Map<String, WidgetBuilder> get routes => {
         initial: (_) => const SignUpLoginScreen(),
@@ -22,5 +24,6 @@ class AppRoutes {
         transactions: (_) => const TransactionsScreen(),
         catalogs: (_) => const CatalogsScreen(),
         budgets: (_) => const BudgetsScreen(),
+        goals: (_) => const GoalsScreen(),
       };
 }

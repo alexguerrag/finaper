@@ -17,6 +17,12 @@ import '../../features/categories/domain/repositories/categories_repository.dart
 import '../../features/categories/domain/usecases/create_category.dart';
 import '../../features/categories/domain/usecases/get_categories_by_kind.dart';
 import '../../features/dashboard/data/local/dashboard_local_datasource.dart';
+import '../../features/goals/data/local/goals_local_datasource.dart';
+import '../../features/goals/data/repositories/goals_repository_impl.dart';
+import '../../features/goals/domain/repositories/goals_repository.dart';
+import '../../features/goals/domain/usecases/create_goal.dart';
+import '../../features/goals/domain/usecases/get_goals.dart';
+import '../../features/goals/domain/usecases/update_goal.dart';
 import '../../features/transactions/data/local/transaction_local_datasource.dart';
 import '../../features/transactions/data/repositories/transactions_repository_impl.dart';
 import '../../features/transactions/domain/repositories/transactions_repository.dart';
@@ -77,6 +83,18 @@ class AppServices {
       GetBudgetsByMonth(budgetsRepository);
 
   late final UpsertBudget upsertBudget = UpsertBudget(budgetsRepository);
+
+  late final GoalsLocalDataSource goalsLocalDataSource =
+      GoalsLocalDataSourceImpl(databaseHelper);
+
+  late final GoalsRepository goalsRepository =
+      GoalsRepositoryImpl(goalsLocalDataSource);
+
+  late final GetGoals getGoals = GetGoals(goalsRepository);
+
+  late final CreateGoal createGoal = CreateGoal(goalsRepository);
+
+  late final UpdateGoal updateGoal = UpdateGoal(goalsRepository);
 
   Future<void> initialize() async {
     try {
