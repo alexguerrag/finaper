@@ -4,4 +4,6 @@ abstract class AccountsRepository {
   Future<List<AccountEntity>> getAccounts({
     bool includeArchived = false,
   });
+
+  Future<AccountEntity> createAccount(AccountEntity account);
 }

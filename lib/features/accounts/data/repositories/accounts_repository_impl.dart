@@ -1,6 +1,7 @@
 import '../../domain/entities/account_entity.dart';
 import '../../domain/repositories/accounts_repository.dart';
 import '../local/accounts_local_datasource.dart';
+import '../models/account_model.dart';
 
 class AccountsRepositoryImpl implements AccountsRepository {
   const AccountsRepositoryImpl(this._localDataSource);
@@ -13,6 +14,13 @@ class AccountsRepositoryImpl implements AccountsRepository {
   }) {
     return _localDataSource.getAccounts(
       includeArchived: includeArchived,
+    );
+  }
+
+  @override
+  Future<AccountEntity> createAccount(AccountEntity account) {
+    return _localDataSource.createAccount(
+      AccountModel.fromEntity(account),
     );
   }
 }

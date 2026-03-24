@@ -72,6 +72,14 @@ class DashboardScreenState extends State<DashboardScreen> {
     await refreshSummary();
   }
 
+  Future<void> _goToCatalogs() async {
+    await Navigator.pushNamed(context, AppRoutes.catalogs);
+
+    if (!mounted) return;
+
+    await refreshSummary();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,8 +105,14 @@ class DashboardScreenState extends State<DashboardScreen> {
         ),
         actions: [
           IconButton(
+            onPressed: _goToCatalogs,
+            icon: const Icon(Icons.tune_rounded),
+            tooltip: 'Catálogos',
+          ),
+          IconButton(
             onPressed: _goToTransactions,
             icon: const Icon(Icons.receipt_long_rounded),
+            tooltip: 'Transacciones',
           ),
         ],
       ),

@@ -5,4 +5,6 @@ abstract class CategoriesRepository {
   Future<List<CategoryEntity>> getCategoriesByKind({
     required CategoryKind kind,
   });
+
+  Future<CategoryEntity> createCategory(CategoryEntity category);
 }
