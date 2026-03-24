@@ -10,7 +10,7 @@ class DatabaseHelper {
   static Database? _database;
 
   static const String _databaseName = 'finaper.db';
-  static const int _databaseVersion = 3;
+  static const int _databaseVersion = 4;
 
   static const String defaultAccountId = 'acc-cash-main';
   static const String defaultAccountName = 'Cuenta principal';
@@ -52,6 +52,7 @@ class DatabaseHelper {
       await _createAccountsTable(db);
       await _createCategoriesTable(db);
       await _createTransactionsTable(db);
+      await _createBudgetsTable(db);
       await _seedAccounts(db);
       await _seedCategories(db);
       await _createIndexes(db);
@@ -80,9 +81,13 @@ class DatabaseHelper {
         } else {
           await _createTransactionsTable(db);
         }
-
-        await _createIndexes(db);
       }
+
+      if (oldVersion < 4) {
+        await _createBudgetsTable(db);
+      }
+
+      await _createIndexes(db);
     } catch (e, s) {
       debugPrint('Database migration error: $e');
       debugPrintStack(stackTrace: s);
@@ -138,6 +143,23 @@ class DatabaseHelper {
     ''');
   }
 
+  Future<void> _createBudgetsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS budgets (
+        id TEXT PRIMARY KEY,
+        category_id TEXT NOT NULL,
+        category_name TEXT NOT NULL,
+        month_key TEXT NOT NULL,
+        amount_limit REAL NOT NULL,
+        color_value INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE RESTRICT,
+        UNIQUE(category_id, month_key)
+      )
+    ''');
+  }
+
   Future<void> _createIndexes(Database db) async {
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date DESC)',
@@ -156,6 +178,12 @@ class DatabaseHelper {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_accounts_name ON accounts(name)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_budgets_month_key ON budgets(month_key)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_budgets_category_month ON budgets(category_id, month_key)',
     );
   }
 

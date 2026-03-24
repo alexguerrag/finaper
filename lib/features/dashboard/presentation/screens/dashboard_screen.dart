@@ -23,6 +23,7 @@ class DashboardScreenState extends State<DashboardScreen> {
   late final DashboardLocalDataSource _dashboardLocalDataSource;
 
   bool _isLoading = true;
+  int _refreshVersion = 0;
   DashboardSummaryData? _summary;
 
   @override
@@ -37,6 +38,7 @@ class DashboardScreenState extends State<DashboardScreen> {
 
     setState(() {
       _isLoading = true;
+      _refreshVersion++;
     });
 
     await _loadSummary();
@@ -80,6 +82,14 @@ class DashboardScreenState extends State<DashboardScreen> {
     await refreshSummary();
   }
 
+  Future<void> _goToBudgets() async {
+    await Navigator.pushNamed(context, AppRoutes.budgets);
+
+    if (!mounted) return;
+
+    await refreshSummary();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -105,6 +115,11 @@ class DashboardScreenState extends State<DashboardScreen> {
         ),
         actions: [
           IconButton(
+            onPressed: _goToBudgets,
+            icon: const Icon(Icons.savings_rounded),
+            tooltip: 'Presupuestos',
+          ),
+          IconButton(
             onPressed: _goToCatalogs,
             icon: const Icon(Icons.tune_rounded),
             tooltip: 'Catálogos',
@@ -123,7 +138,10 @@ class DashboardScreenState extends State<DashboardScreen> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                const BudgetAlertBannerWidget(),
+                BudgetAlertBannerWidget(
+                  refreshToken: _refreshVersion,
+                  onManagePressed: _goToBudgets,
+                ),
                 const SizedBox(height: 12),
                 BalanceHeroWidget(balanceOverride: _summary?.balance),
                 const SizedBox(height: 12),
@@ -134,7 +152,10 @@ class DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 16),
                 const TrendChartWidget(),
                 const SizedBox(height: 16),
-                const BudgetBarsWidget(),
+                BudgetBarsWidget(
+                  refreshToken: _refreshVersion,
+                  onManagePressed: _goToBudgets,
+                ),
                 const SizedBox(height: 16),
                 RecentTransactionsWidget(
                   transactionsOverride: _summary?.recentTransactions,
