@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/di/app_services.dart';
+import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/transaction_model.dart';
 import '../../domain/usecases/add_transaction.dart';
@@ -125,7 +126,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       } else if (key == yesterdayKey) {
         label = 'Ayer';
       } else {
-        label = _formatDate(transaction.date);
+        label = AppFormatters.formatShortDate(transaction.date);
       }
 
       grouped.putIfAbsent(label, () => <TransactionModel>[]).add(transaction);
@@ -141,12 +142,6 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     return '$y-$m-$d';
   }
 
-  String _formatDate(DateTime date) {
-    final d = date.day.toString().padLeft(2, '0');
-    final m = date.month.toString().padLeft(2, '0');
-    return '$d/$m/${date.year}';
-  }
-
   double get _totalIncome => _transactions
       .where((e) => e.isIncome)
       .fold<double>(0, (sum, e) => sum + e.amount);
@@ -155,12 +150,21 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       .where((e) => !e.isIncome)
       .fold<double>(0, (sum, e) => sum + e.amount);
 
+  String _formatSignedAmount({
+    required double value,
+    required bool isIncome,
+  }) {
+    final formatted = AppFormatters.formatCurrency(value.abs());
+    return '${isIncome ? '+' : '-'}$formatted';
+  }
+
   @override
   Widget build(BuildContext context) {
     final totalIncome = _totalIncome;
     final totalExpense = _totalExpense;
     final net = totalIncome - totalExpense;
     final grouped = _groupedTransactions;
+    final canPop = Navigator.of(context).canPop();
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -180,13 +184,34 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    Text(
-                      'Transacciones',
-                      style: GoogleFonts.manrope(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w800,
-                        color: AppTheme.onSurface,
-                      ),
+                    Row(
+                      children: [
+                        if (canPop) ...[
+                          IconButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            icon: const Icon(Icons.arrow_back_rounded),
+                            tooltip: 'Volver',
+                            style: IconButton.styleFrom(
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.04),
+                              foregroundColor: AppTheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        Expanded(
+                          child: Text(
+                            'Transacciones',
+                            style: GoogleFonts.manrope(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     TextField(
@@ -361,7 +386,10 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                                       ),
                                     ),
                                     Text(
-                                      '${item.isIncome ? '+' : '-'}\$${item.amount.toStringAsFixed(2)}',
+                                      _formatSignedAmount(
+                                        value: item.amount,
+                                        isIncome: item.isIncome,
+                                      ),
                                       style: GoogleFonts.manrope(
                                         fontWeight: FontWeight.w800,
                                         color: item.isIncome
@@ -437,6 +465,9 @@ class _SummaryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final formatted = AppFormatters.formatCurrency(value.abs());
+    final prefix = value < 0 ? '-' : '';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -449,7 +480,7 @@ class _SummaryItem extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          '${value >= 0 ? '' : '-'}\$${value.abs().toStringAsFixed(0)}',
+          '$prefix$formatted',
           style: GoogleFonts.manrope(
             fontWeight: FontWeight.w800,
             color: color,

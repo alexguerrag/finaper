@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class KpiCardsWidget extends StatefulWidget {
@@ -160,7 +161,7 @@ class _KpiCard extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                '\$${value.toStringAsFixed(0)}',
+                AppFormatters.formatCurrency(value),
                 style: GoogleFonts.manrope(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,

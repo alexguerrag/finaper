@@ -23,7 +23,10 @@ class _MainShellPageState extends State<MainShellPage> {
   void initState() {
     super.initState();
     _pages = [
-      DashboardScreen(key: _dashboardKey),
+      DashboardScreen(
+        key: _dashboardKey,
+        onOpenTransactionsTab: () => _onTap(1),
+      ),
       const TransactionsScreen(),
     ];
   }

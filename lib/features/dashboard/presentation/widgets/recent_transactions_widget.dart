@@ -1,21 +1,26 @@
-// C:\dev\projects\finaper\lib\features\dashboard\presentation\widgets\recent_transactions_widget.dart
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../transactions/data/models/transaction_model.dart';
+import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../transactions/data/models/transaction_model.dart';
 
 class RecentTransactionsWidget extends StatelessWidget {
-  final List<TransactionModel>? transactionsOverride;
-  final VoidCallback? onSeeAll;
-
   const RecentTransactionsWidget({
     super.key,
     this.transactionsOverride,
     this.onSeeAll,
   });
+
+  final List<TransactionModel>? transactionsOverride;
+  final VoidCallback? onSeeAll;
+
+  String _formatAmount(TransactionModel tx) {
+    final formatted = AppFormatters.formatCurrency(tx.amount.abs());
+    return tx.isIncome ? '+$formatted' : '-$formatted';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -137,9 +142,7 @@ class RecentTransactionsWidget extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              tx.isIncome
-                                  ? '+\$${tx.amount.toStringAsFixed(2)}'
-                                  : '-\$${tx.amount.toStringAsFixed(2)}',
+                              _formatAmount(tx),
                               style: GoogleFonts.manrope(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
