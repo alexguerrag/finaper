@@ -13,7 +13,12 @@ import '../widgets/recent_transactions_widget.dart';
 import '../widgets/trend_chart_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  const DashboardScreen({
+    super.key,
+    this.onOpenTransactionsTab,
+  });
+
+  final Future<void> Function()? onOpenTransactionsTab;
 
   @override
   DashboardScreenState createState() => DashboardScreenState();
@@ -67,6 +72,11 @@ class DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _goToTransactions() async {
+    if (widget.onOpenTransactionsTab != null) {
+      await widget.onOpenTransactionsTab!.call();
+      return;
+    }
+
     await Navigator.pushNamed(context, AppRoutes.transactions);
     if (!mounted) return;
     await refreshSummary();
@@ -94,6 +104,15 @@ class DashboardScreenState extends State<DashboardScreen> {
     await Navigator.pushNamed(context, AppRoutes.recurringTransactions);
     if (!mounted) return;
     await refreshSummary();
+  }
+
+  Future<void> _goToSettings() async {
+    await Navigator.pushNamed(context, AppRoutes.settings);
+    if (!mounted) return;
+
+    setState(() {
+      _refreshVersion++;
+    });
   }
 
   @override
@@ -143,6 +162,9 @@ class DashboardScreenState extends State<DashboardScreen> {
                 case _DashboardMenuAction.recurring:
                   _goToRecurringTransactions();
                   break;
+                case _DashboardMenuAction.settings:
+                  _goToSettings();
+                  break;
               }
             },
             itemBuilder: (context) => const [
@@ -157,6 +179,10 @@ class DashboardScreenState extends State<DashboardScreen> {
               PopupMenuItem(
                 value: _DashboardMenuAction.recurring,
                 child: Text('Recurrentes'),
+              ),
+              PopupMenuItem(
+                value: _DashboardMenuAction.settings,
+                child: Text('Ajustes'),
               ),
             ],
           ),
@@ -202,4 +228,5 @@ enum _DashboardMenuAction {
   catalogs,
   transactions,
   recurring,
+  settings,
 }

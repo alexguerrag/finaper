@@ -30,6 +30,12 @@ import '../../features/recurring_transactions/domain/usecases/create_recurring_t
 import '../../features/recurring_transactions/domain/usecases/get_recurring_transactions.dart';
 import '../../features/recurring_transactions/domain/usecases/sync_due_recurring_transactions.dart';
 import '../../features/recurring_transactions/domain/usecases/update_recurring_transaction.dart';
+import '../../features/settings/data/local/app_settings_local_datasource.dart';
+import '../../features/settings/data/repositories/app_settings_repository_impl.dart';
+import '../../features/settings/domain/repositories/app_settings_repository.dart';
+import '../../features/settings/domain/usecases/get_app_settings.dart';
+import '../../features/settings/domain/usecases/save_app_settings.dart';
+import '../../features/settings/presentation/controllers/settings_controller.dart';
 import '../../features/transactions/data/local/transaction_local_datasource.dart';
 import '../../features/transactions/data/repositories/transactions_repository_impl.dart';
 import '../../features/transactions/domain/repositories/transactions_repository.dart';
@@ -124,9 +130,27 @@ class AppServices {
   late final SyncDueRecurringTransactions syncDueRecurringTransactions =
       SyncDueRecurringTransactions(recurringTransactionsRepository);
 
+  late final AppSettingsLocalDataSource appSettingsLocalDataSource =
+      AppSettingsLocalDataSourceImpl(databaseHelper);
+
+  late final AppSettingsRepository appSettingsRepository =
+      AppSettingsRepositoryImpl(appSettingsLocalDataSource);
+
+  late final GetAppSettings getAppSettings =
+      GetAppSettings(appSettingsRepository);
+
+  late final SaveAppSettings saveAppSettings =
+      SaveAppSettings(appSettingsRepository);
+
+  late final SettingsController settingsController = SettingsController(
+    getAppSettings: getAppSettings,
+    saveAppSettings: saveAppSettings,
+  );
+
   Future<void> initialize() async {
     try {
       await databaseHelper.database;
+      await settingsController.load();
       await syncDueRecurringTransactions();
     } catch (e, s) {
       debugPrint('AppServices.initialize error: $e');

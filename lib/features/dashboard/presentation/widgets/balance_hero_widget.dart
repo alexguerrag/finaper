@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class BalanceHeroWidget extends StatefulWidget {
@@ -130,7 +131,7 @@ class _BalanceHeroWidgetState extends State<BalanceHeroWidget>
                         animation: _controller,
                         builder: (context, child) {
                           return Text(
-                            '\$${_countAnim.value.toStringAsFixed(2)}',
+                            AppFormatters.formatCurrency(_countAnim.value),
                             style: GoogleFonts.manrope(
                               fontSize: 36,
                               fontWeight: FontWeight.w700,

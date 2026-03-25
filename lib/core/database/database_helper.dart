@@ -10,7 +10,7 @@ class DatabaseHelper {
   static Database? _database;
 
   static const String _databaseName = 'finaper.db';
-  static const int _databaseVersion = 6;
+  static const int _databaseVersion = 7;
 
   static const String defaultAccountId = 'acc-cash-main';
   static const String defaultAccountName = 'Cuenta principal';
@@ -55,8 +55,10 @@ class DatabaseHelper {
       await _createBudgetsTable(db);
       await _createGoalsTable(db);
       await _createRecurringTransactionsTable(db);
+      await _createAppSettingsTable(db);
       await _seedAccounts(db);
       await _seedCategories(db);
+      await _seedAppSettings(db);
       await _createIndexes(db);
     } catch (e, s) {
       debugPrint('Database create error: $e');
@@ -116,6 +118,11 @@ class DatabaseHelper {
           'generated_from_recurring_id',
           'TEXT',
         );
+      }
+
+      if (oldVersion < 7) {
+        await _createAppSettingsTable(db);
+        await _seedAppSettings(db);
       }
 
       await _createIndexes(db);
@@ -233,6 +240,18 @@ class DatabaseHelper {
         updated_at TEXT NOT NULL,
         FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE RESTRICT,
         FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE RESTRICT
+      )
+    ''');
+  }
+
+  Future<void> _createAppSettingsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS app_settings (
+        id INTEGER PRIMARY KEY CHECK(id = 1),
+        currency_code TEXT NOT NULL,
+        locale_code TEXT NOT NULL,
+        use_system_locale INTEGER NOT NULL DEFAULT 1,
+        updated_at TEXT NOT NULL
       )
     ''');
   }
@@ -473,6 +492,22 @@ class DatabaseHelper {
       );
     }
     await batch.commit(noResult: true);
+  }
+
+  Future<void> _seedAppSettings(Database db) async {
+    final now = DateTime.now().toIso8601String();
+
+    await db.insert(
+      'app_settings',
+      {
+        'id': 1,
+        'currency_code': 'CLP',
+        'locale_code': 'es_CL',
+        'use_system_locale': 1,
+        'updated_at': now,
+      },
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
   }
 
   Future<void> _backfillLegacyTransactions(Database db) async {
