@@ -68,33 +68,31 @@ class DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _goToTransactions() async {
     await Navigator.pushNamed(context, AppRoutes.transactions);
-
     if (!mounted) return;
-
     await refreshSummary();
   }
 
   Future<void> _goToCatalogs() async {
     await Navigator.pushNamed(context, AppRoutes.catalogs);
-
     if (!mounted) return;
-
     await refreshSummary();
   }
 
   Future<void> _goToBudgets() async {
     await Navigator.pushNamed(context, AppRoutes.budgets);
-
     if (!mounted) return;
-
     await refreshSummary();
   }
 
   Future<void> _goToGoals() async {
     await Navigator.pushNamed(context, AppRoutes.goals);
-
     if (!mounted) return;
+    await refreshSummary();
+  }
 
+  Future<void> _goToRecurringTransactions() async {
+    await Navigator.pushNamed(context, AppRoutes.recurringTransactions);
+    if (!mounted) return;
     await refreshSummary();
   }
 
@@ -142,6 +140,9 @@ class DashboardScreenState extends State<DashboardScreen> {
                 case _DashboardMenuAction.transactions:
                   _goToTransactions();
                   break;
+                case _DashboardMenuAction.recurring:
+                  _goToRecurringTransactions();
+                  break;
               }
             },
             itemBuilder: (context) => const [
@@ -152,6 +153,10 @@ class DashboardScreenState extends State<DashboardScreen> {
               PopupMenuItem(
                 value: _DashboardMenuAction.transactions,
                 child: Text('Movimientos'),
+              ),
+              PopupMenuItem(
+                value: _DashboardMenuAction.recurring,
+                child: Text('Recurrentes'),
               ),
             ],
           ),
@@ -196,4 +201,5 @@ class DashboardScreenState extends State<DashboardScreen> {
 enum _DashboardMenuAction {
   catalogs,
   transactions,
+  recurring,
 }
