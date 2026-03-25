@@ -23,6 +23,13 @@ import '../../features/goals/domain/repositories/goals_repository.dart';
 import '../../features/goals/domain/usecases/create_goal.dart';
 import '../../features/goals/domain/usecases/get_goals.dart';
 import '../../features/goals/domain/usecases/update_goal.dart';
+import '../../features/recurring_transactions/data/local/recurring_transactions_local_datasource.dart';
+import '../../features/recurring_transactions/data/repositories/recurring_transactions_repository_impl.dart';
+import '../../features/recurring_transactions/domain/repositories/recurring_transactions_repository.dart';
+import '../../features/recurring_transactions/domain/usecases/create_recurring_transaction.dart';
+import '../../features/recurring_transactions/domain/usecases/get_recurring_transactions.dart';
+import '../../features/recurring_transactions/domain/usecases/sync_due_recurring_transactions.dart';
+import '../../features/recurring_transactions/domain/usecases/update_recurring_transaction.dart';
 import '../../features/transactions/data/local/transaction_local_datasource.dart';
 import '../../features/transactions/data/repositories/transactions_repository_impl.dart';
 import '../../features/transactions/domain/repositories/transactions_repository.dart';
@@ -96,9 +103,31 @@ class AppServices {
 
   late final UpdateGoal updateGoal = UpdateGoal(goalsRepository);
 
+  late final RecurringTransactionsLocalDataSource
+      recurringTransactionsLocalDataSource =
+      RecurringTransactionsLocalDataSourceImpl(databaseHelper);
+
+  late final RecurringTransactionsRepository recurringTransactionsRepository =
+      RecurringTransactionsRepositoryImpl(
+    recurringTransactionsLocalDataSource,
+  );
+
+  late final GetRecurringTransactions getRecurringTransactions =
+      GetRecurringTransactions(recurringTransactionsRepository);
+
+  late final CreateRecurringTransaction createRecurringTransaction =
+      CreateRecurringTransaction(recurringTransactionsRepository);
+
+  late final UpdateRecurringTransaction updateRecurringTransaction =
+      UpdateRecurringTransaction(recurringTransactionsRepository);
+
+  late final SyncDueRecurringTransactions syncDueRecurringTransactions =
+      SyncDueRecurringTransactions(recurringTransactionsRepository);
+
   Future<void> initialize() async {
     try {
       await databaseHelper.database;
+      await syncDueRecurringTransactions();
     } catch (e, s) {
       debugPrint('AppServices.initialize error: $e');
       debugPrintStack(stackTrace: s);

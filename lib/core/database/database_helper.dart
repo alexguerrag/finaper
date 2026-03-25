@@ -10,7 +10,7 @@ class DatabaseHelper {
   static Database? _database;
 
   static const String _databaseName = 'finaper.db';
-  static const int _databaseVersion = 5;
+  static const int _databaseVersion = 6;
 
   static const String defaultAccountId = 'acc-cash-main';
   static const String defaultAccountName = 'Cuenta principal';
@@ -54,6 +54,7 @@ class DatabaseHelper {
       await _createTransactionsTable(db);
       await _createBudgetsTable(db);
       await _createGoalsTable(db);
+      await _createRecurringTransactionsTable(db);
       await _seedAccounts(db);
       await _seedCategories(db);
       await _createIndexes(db);
@@ -74,9 +75,24 @@ class DatabaseHelper {
 
         final hasTransactions = await _tableExists(db, 'transactions');
         if (hasTransactions) {
-          await _addColumnIfMissing(db, 'transactions', 'account_id', 'TEXT');
-          await _addColumnIfMissing(db, 'transactions', 'account_name', 'TEXT');
-          await _addColumnIfMissing(db, 'transactions', 'category_id', 'TEXT');
+          await _addColumnIfMissing(
+            db,
+            'transactions',
+            'account_id',
+            'TEXT',
+          );
+          await _addColumnIfMissing(
+            db,
+            'transactions',
+            'account_name',
+            'TEXT',
+          );
+          await _addColumnIfMissing(
+            db,
+            'transactions',
+            'category_id',
+            'TEXT',
+          );
 
           await _backfillLegacyTransactions(db);
         } else {
@@ -90,6 +106,16 @@ class DatabaseHelper {
 
       if (oldVersion < 5) {
         await _createGoalsTable(db);
+      }
+
+      if (oldVersion < 6) {
+        await _createRecurringTransactionsTable(db);
+        await _addColumnIfMissing(
+          db,
+          'transactions',
+          'generated_from_recurring_id',
+          'TEXT',
+        );
       }
 
       await _createIndexes(db);
@@ -142,6 +168,7 @@ class DatabaseHelper {
         date TEXT NOT NULL,
         note TEXT,
         color_value INTEGER NOT NULL,
+        generated_from_recurring_id TEXT,
         FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE RESTRICT,
         FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE RESTRICT
       )
@@ -182,6 +209,34 @@ class DatabaseHelper {
     ''');
   }
 
+  Future<void> _createRecurringTransactionsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS recurring_transactions (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL,
+        account_name TEXT NOT NULL,
+        description TEXT NOT NULL,
+        category_id TEXT NOT NULL,
+        category_name TEXT NOT NULL,
+        amount REAL NOT NULL,
+        is_income INTEGER NOT NULL,
+        note TEXT,
+        color_value INTEGER NOT NULL,
+        frequency TEXT NOT NULL,
+        interval_value INTEGER NOT NULL DEFAULT 1,
+        start_date TEXT NOT NULL,
+        end_date TEXT,
+        next_run_date TEXT NOT NULL,
+        last_generated_date TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE RESTRICT,
+        FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE RESTRICT
+      )
+    ''');
+  }
+
   Future<void> _createIndexes(Database db) async {
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date DESC)',
@@ -194,6 +249,9 @@ class DatabaseHelper {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_transactions_account_id ON transactions(account_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_transactions_generated_from_recurring_id ON transactions(generated_from_recurring_id)',
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_categories_kind_name ON categories(kind, name)',
@@ -212,6 +270,12 @@ class DatabaseHelper {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_goals_target_date ON goals(target_date)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_recurring_transactions_active_next_run ON recurring_transactions(is_active, next_run_date)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_recurring_transactions_category_id ON recurring_transactions(category_id)',
     );
   }
 
