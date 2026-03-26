@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/di/app_services.dart';
+import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/budget_model.dart';
 import '../../domain/entities/budget_entity.dart';
@@ -127,22 +128,11 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   }
 
   String _monthLabel(DateTime date) {
-    const months = <String>[
-      'Enero',
-      'Febrero',
-      'Marzo',
-      'Abril',
-      'Mayo',
-      'Junio',
-      'Julio',
-      'Agosto',
-      'Septiembre',
-      'Octubre',
-      'Noviembre',
-      'Diciembre',
-    ];
+    return AppFormatters.formatMonthYear(date);
+  }
 
-    return '${months[date.month - 1]} ${date.year}';
+  String _formatCurrency(double value) {
+    return AppFormatters.formatCurrency(value);
   }
 
   @override
@@ -343,7 +333,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                               ),
                             ),
                             Text(
-                              '\$${budget.amountLimit.toStringAsFixed(0)}',
+                              _formatCurrency(budget.amountLimit),
                               style: GoogleFonts.manrope(
                                 fontWeight: FontWeight.w800,
                                 color: AppTheme.onSurface,
@@ -368,7 +358,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Gastado: \$${budget.spentAmount.toStringAsFixed(0)}',
+                              'Gastado: ${_formatCurrency(budget.spentAmount)}',
                               style: GoogleFonts.manrope(
                                 fontSize: 12,
                                 color: AppTheme.onSurfaceMuted,
@@ -376,8 +366,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                             ),
                             Text(
                               budget.isExceeded
-                                  ? 'Exceso: \$${(budget.spentAmount - budget.amountLimit).toStringAsFixed(0)}'
-                                  : 'Disponible: \$${budget.remainingAmount.toStringAsFixed(0)}',
+                                  ? 'Exceso: ${_formatCurrency(budget.spentAmount - budget.amountLimit)}'
+                                  : 'Disponible: ${_formatCurrency(budget.remainingAmount)}',
                               style: GoogleFonts.manrope(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -430,7 +420,7 @@ class _BudgetMetric extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '\$${value.toStringAsFixed(0)}',
+            AppFormatters.formatCurrency(value),
             style: GoogleFonts.manrope(
               fontWeight: FontWeight.w800,
               color: color,
