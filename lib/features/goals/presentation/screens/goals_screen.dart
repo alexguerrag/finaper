@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/di/app_services.dart';
+import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/goal_model.dart';
 import '../../domain/entities/goal_entity.dart';
@@ -160,17 +161,18 @@ class _GoalsScreenState extends State<GoalsScreen> {
     }
   }
 
-  String _formatDate(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    return '$day/$month/${date.year}';
-  }
-
   String _dateSubtitle(GoalEntity goal) {
     if (goal.targetDate == null) {
       return 'Sin fecha objetivo';
     }
-    return 'Meta para ${_formatDate(goal.targetDate!)}';
+
+    return 'Meta para ${AppFormatters.formatShortDate(goal.targetDate!)}';
+  }
+
+  String _progressAmountsLabel(GoalEntity goal) {
+    final current = AppFormatters.formatCurrency(goal.currentAmount);
+    final target = AppFormatters.formatCurrency(goal.targetAmount);
+    return '$current / $target';
   }
 
   @override
@@ -388,7 +390,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '\$${goal.currentAmount.toStringAsFixed(0)} / \$${goal.targetAmount.toStringAsFixed(0)}',
+                              _progressAmountsLabel(goal),
                               style: GoogleFonts.manrope(
                                 fontSize: 12,
                                 color: AppTheme.onSurfaceMuted,

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/di/app_services.dart';
 import '../../../../core/enums/recurrence_frequency.dart';
+import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/recurring_transaction_model.dart';
 import '../../domain/entities/recurring_transaction_entity.dart';
@@ -191,9 +192,15 @@ class _RecurringTransactionsScreenState
   }
 
   String _formatDate(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    return '$day/$month/${date.year}';
+    return AppFormatters.formatShortDate(date);
+  }
+
+  String _formatSignedAmount({
+    required double amount,
+    required bool isIncome,
+  }) {
+    final formatted = AppFormatters.formatCurrency(amount.abs());
+    return '${isIncome ? '+' : '-'}$formatted';
   }
 
   String _frequencyLabel(RecurringTransactionEntity item) {
@@ -404,9 +411,10 @@ class _RecurringTransactionsScreenState
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  item.isIncome
-                                      ? '+\$${item.amount.toStringAsFixed(2)}'
-                                      : '-\$${item.amount.toStringAsFixed(2)}',
+                                  _formatSignedAmount(
+                                    amount: item.amount,
+                                    isIncome: item.isIncome,
+                                  ),
                                   style: GoogleFonts.manrope(
                                     fontWeight: FontWeight.w800,
                                     color: item.isIncome
