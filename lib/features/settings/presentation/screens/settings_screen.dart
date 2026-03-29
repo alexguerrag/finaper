@@ -7,6 +7,8 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../export_backup/domain/entities/export_file_entity.dart';
 import '../../../export_backup/domain/usecases/export_backup_json.dart';
 import '../../../export_backup/domain/usecases/export_transactions_csv.dart';
+import '../../../export_backup/presentation/controllers/export_file_actions_controller.dart';
+import '../../../export_backup/presentation/widgets/export_file_actions_dialog.dart';
 import '../controllers/settings_controller.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -25,6 +27,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   final ExportTransactionsCsv _exportTransactionsCsv =
       AppServices.instance.exportTransactionsCsv;
+
+  final ExportFileActionsController _exportFileActionsController =
+      AppServices.instance.exportFileActionsController;
 
   static const List<_OptionItem> _currencyOptions = [
     _OptionItem('CLP', 'Peso chileno (CLP)'),
@@ -170,57 +175,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String title,
     required ExportFileEntity file,
   }) async {
+    _exportFileActionsController.clearError();
+
     await showDialog<void>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppTheme.surface,
-          title: Text(
-            title,
-            style: GoogleFonts.manrope(
-              fontWeight: FontWeight.w700,
-              color: AppTheme.onSurface,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _DialogInfoRow(
-                label: 'Archivo',
-                value: file.fileName,
-              ),
-              const SizedBox(height: 12),
-              _DialogInfoRow(
-                label: 'Tipo',
-                value: file.mimeType,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Ruta',
-                style: GoogleFonts.manrope(
-                  fontSize: 12,
-                  color: AppTheme.onSurfaceMuted,
-                ),
-              ),
-              const SizedBox(height: 4),
-              SelectableText(
-                file.filePath,
-                style: GoogleFonts.manrope(
-                  fontSize: 12,
-                  color: AppTheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cerrar'),
-            ),
-          ],
+      builder: (_) {
+        return ExportFileActionsDialog(
+          title: title,
+          file: file,
+          controller: _exportFileActionsController,
         );
       },
     );
@@ -570,46 +533,6 @@ class _PreviewRow extends StatelessWidget {
             textAlign: TextAlign.end,
             style: GoogleFonts.manrope(
               fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.onSurface,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DialogInfoRow extends StatelessWidget {
-  const _DialogInfoRow({
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 64,
-          child: Text(
-            label,
-            style: GoogleFonts.manrope(
-              fontSize: 12,
-              color: AppTheme.onSurfaceMuted,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            style: GoogleFonts.manrope(
-              fontSize: 12,
               fontWeight: FontWeight.w600,
               color: AppTheme.onSurface,
             ),
