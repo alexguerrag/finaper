@@ -17,6 +17,11 @@ import '../../features/categories/domain/repositories/categories_repository.dart
 import '../../features/categories/domain/usecases/create_category.dart';
 import '../../features/categories/domain/usecases/get_categories_by_kind.dart';
 import '../../features/dashboard/data/local/dashboard_local_datasource.dart';
+import '../../features/export_backup/data/local/export_backup_local_datasource.dart';
+import '../../features/export_backup/data/repositories/export_backup_repository_impl.dart';
+import '../../features/export_backup/domain/repositories/export_backup_repository.dart';
+import '../../features/export_backup/domain/usecases/export_backup_json.dart';
+import '../../features/export_backup/domain/usecases/export_transactions_csv.dart';
 import '../../features/goals/data/local/goals_local_datasource.dart';
 import '../../features/goals/data/repositories/goals_repository_impl.dart';
 import '../../features/goals/domain/repositories/goals_repository.dart';
@@ -146,6 +151,18 @@ class AppServices {
     getAppSettings: getAppSettings,
     saveAppSettings: saveAppSettings,
   );
+
+  late final ExportBackupLocalDataSource exportBackupLocalDataSource =
+      ExportBackupLocalDataSourceImpl(databaseHelper);
+
+  late final ExportBackupRepository exportBackupRepository =
+      ExportBackupRepositoryImpl(exportBackupLocalDataSource);
+
+  late final ExportBackupJson exportBackupJson =
+      ExportBackupJson(exportBackupRepository);
+
+  late final ExportTransactionsCsv exportTransactionsCsv =
+      ExportTransactionsCsv(exportBackupRepository);
 
   Future<void> initialize() async {
     try {

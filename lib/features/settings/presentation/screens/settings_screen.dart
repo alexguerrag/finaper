@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../app/di/app_services.dart';
 import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../export_backup/domain/entities/export_file_entity.dart';
+import '../../../export_backup/domain/usecases/export_backup_json.dart';
+import '../../../export_backup/domain/usecases/export_transactions_csv.dart';
 import '../controllers/settings_controller.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -16,6 +19,12 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final SettingsController _controller =
       AppServices.instance.settingsController;
+
+  final ExportBackupJson _exportBackupJson =
+      AppServices.instance.exportBackupJson;
+
+  final ExportTransactionsCsv _exportTransactionsCsv =
+      AppServices.instance.exportTransactionsCsv;
 
   static const List<_OptionItem> _currencyOptions = [
     _OptionItem('CLP', 'Peso chileno (CLP)'),
@@ -37,6 +46,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late String _selectedCurrencyCode;
   late String _selectedLocaleCode;
   late bool _useSystemLocale;
+
+  bool _isExportingBackup = false;
+  bool _isExportingCsv = false;
 
   @override
   void initState() {
@@ -79,6 +91,138 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   'No se pudieron guardar las preferencias.'),
         ),
       ),
+    );
+  }
+
+  Future<void> _exportBackup() async {
+    if (_isExportingBackup) return;
+
+    setState(() {
+      _isExportingBackup = true;
+    });
+
+    try {
+      final file = await _exportBackupJson();
+
+      if (!mounted) return;
+
+      await _showExportSuccessDialog(
+        title: 'Respaldo JSON generado',
+        file: file,
+      );
+    } catch (e, s) {
+      debugPrint('SettingsScreen _exportBackup error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo generar el respaldo JSON.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isExportingBackup = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _exportCsv() async {
+    if (_isExportingCsv) return;
+
+    setState(() {
+      _isExportingCsv = true;
+    });
+
+    try {
+      final file = await _exportTransactionsCsv();
+
+      if (!mounted) return;
+
+      await _showExportSuccessDialog(
+        title: 'CSV de transacciones generado',
+        file: file,
+      );
+    } catch (e, s) {
+      debugPrint('SettingsScreen _exportCsv error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo generar el CSV de transacciones.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isExportingCsv = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _showExportSuccessDialog({
+    required String title,
+    required ExportFileEntity file,
+  }) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.surface,
+          title: Text(
+            title,
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w700,
+              color: AppTheme.onSurface,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _DialogInfoRow(
+                label: 'Archivo',
+                value: file.fileName,
+              ),
+              const SizedBox(height: 12),
+              _DialogInfoRow(
+                label: 'Tipo',
+                value: file.mimeType,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Ruta',
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  color: AppTheme.onSurfaceMuted,
+                ),
+              ),
+              const SizedBox(height: 4),
+              SelectableText(
+                file.filePath,
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  color: AppTheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cerrar'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -260,6 +404,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    _SectionCard(
+                      title: 'Exportación y respaldo',
+                      subtitle:
+                          'Genera archivos locales para respaldo completo o exportación de movimientos.',
+                      child: Column(
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: _isExportingBackup || _isExportingCsv
+                                ? null
+                                : _exportBackup,
+                            icon: _isExportingBackup
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.backup_rounded),
+                            label: Text(
+                              _isExportingBackup
+                                  ? 'Generando respaldo...'
+                                  : 'Exportar respaldo JSON',
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: _isExportingBackup || _isExportingCsv
+                                ? null
+                                : _exportCsv,
+                            icon: _isExportingCsv
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.table_view_rounded),
+                            label: Text(
+                              _isExportingCsv
+                                  ? 'Generando CSV...'
+                                  : 'Exportar transacciones CSV',
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     FilledButton.icon(
                       onPressed: _controller.isSaving ? null : _save,
                       icon: _controller.isSaving
@@ -371,6 +570,46 @@ class _PreviewRow extends StatelessWidget {
             textAlign: TextAlign.end,
             style: GoogleFonts.manrope(
               fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.onSurface,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DialogInfoRow extends StatelessWidget {
+  const _DialogInfoRow({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 64,
+          child: Text(
+            label,
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              color: AppTheme.onSurfaceMuted,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: GoogleFonts.manrope(
+              fontSize: 12,
               fontWeight: FontWeight.w600,
               color: AppTheme.onSurface,
             ),

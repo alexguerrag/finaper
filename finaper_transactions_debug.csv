@@ -1,0 +1,11 @@
+id,date,description,category,category_id,account_name,account_id,amount,is_income,note,generated_from_recurring_id
+"rtx-rec-1774449122761-1774666800000","2026-03-28T00:00:00.000","Spotify","Suscripciones","cat-exp-subscriptions","Cuenta principal","acc-cash-main","10.0","0","","rec-1774449122761"
+"rtx-rec-1774449122761-1774580400000","2026-03-27T00:00:00.000","Spotify","Suscripciones","cat-exp-subscriptions","Cuenta principal","acc-cash-main","10.0","0","","rec-1774449122761"
+"rtx-rec-1774449122761-1774494000000","2026-03-26T00:00:00.000","Spotify","Suscripciones","cat-exp-subscriptions","Cuenta principal","acc-cash-main","10.0","0","","rec-1774449122761"
+"1774491274199","2026-03-25T23:14:07.538420","Flete","Otros","cat-inc-other","Cuenta principal","acc-cash-main","100.0","1","",""
+"rtx-rec-1774448139859-1774448093765","2026-03-25T11:14:53.765052","Netflix","Suscripciones","cat-exp-subscriptions","Cuenta principal","acc-cash-main","20.0","0","","rec-1774448139859"
+"rtx-rec-1774449122761-1774407600000","2026-03-25T00:00:00.000","Spotify","Suscripciones","cat-exp-subscriptions","Cuenta principal","acc-cash-main","10.0","0","","rec-1774449122761"
+"1774388979861","2026-03-24T18:49:10.323298","Curso de Programacion","Educaci??n","cat-exp-education","Cuenta principal","acc-cash-main","50.0","0","",""
+"rtx-rec-1774449122761-1774321200000","2026-03-24T00:00:00.000","Spotify","Suscripciones","cat-exp-subscriptions","Cuenta principal","acc-cash-main","10.0","0","","rec-1774449122761"
+"1774385997012","2026-03-03T00:00:00.000","Cafe","Alimentaci??n","cat-exp-food","Cuenta principal","acc-cash-main","10.0","0","",""
+"1774385958635","2026-03-01T00:00:00.000","Sueldo Marzo","Salario","cat-inc-salary","Cuenta principal","acc-cash-main","1000.0","1","",""
