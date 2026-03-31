@@ -1,12 +1,8 @@
-import 'app_module.dart';
+import 'app_registry.dart';
 
 class AppComposer {
-  AppComposer(this._modules);
-
-  final List<AppModule> _modules;
-
   Future<void> compose() async {
-    for (final module in _modules) {
+    for (final module in AppRegistry.modules) {
       await module.register();
     }
   }

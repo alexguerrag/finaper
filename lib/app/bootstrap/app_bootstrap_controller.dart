@@ -2,7 +2,9 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/errors/app_exception.dart';
 import '../../core/logging/app_logger.dart';
-import '../di/app_services.dart';
+import '../../features/settings/di/settings_module.dart';
+import '../di/app_composer.dart';
+import '../di/app_registry.dart';
 import 'bootstrap_status.dart';
 
 class AppBootstrapController extends ChangeNotifier {
@@ -23,10 +25,20 @@ class AppBootstrapController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      AppLogger.info('bootstrap', 'Initializing application services');
-      await AppServices.instance.initialize();
+      AppLogger.info('bootstrap', 'Registering app modules');
+
+      AppRegistry.clear();
+
+      final settingsModule = SettingsModule();
+      AppRegistry.registerModule(settingsModule);
+
+      final composer = AppComposer();
+      await composer.compose();
+
+      await settingsModule.controller.load();
+
       _status = BootstrapStatus.ready;
-      AppLogger.info('bootstrap', 'Application services ready');
+      AppLogger.info('bootstrap', 'Application modules ready');
     } catch (error, stackTrace) {
       _status = BootstrapStatus.failure;
       _errorMessage =
