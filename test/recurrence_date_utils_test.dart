@@ -1,6 +1,6 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:finaper/core/enums/recurrence_frequency.dart';
 import 'package:finaper/features/recurring_transactions/domain/utils/recurrence_date_utils.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('monthly recurrence mantiene el ultimo dia valido del mes', () {
