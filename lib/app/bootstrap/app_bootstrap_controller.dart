@@ -3,7 +3,9 @@ import 'package:flutter/foundation.dart';
 import '../../core/errors/app_exception.dart';
 import '../../core/logging/app_logger.dart';
 import '../../features/settings/di/settings_module.dart';
+import '../../features/transactions/di/transactions_module.dart';
 import '../di/app_composer.dart';
+import '../di/app_locator.dart';
 import '../di/app_registry.dart';
 import 'bootstrap_status.dart';
 
@@ -28,9 +30,16 @@ class AppBootstrapController extends ChangeNotifier {
       AppLogger.info('bootstrap', 'Registering app modules');
 
       AppRegistry.clear();
+      AppLocator.clear();
 
       final settingsModule = SettingsModule();
+      final transactionsModule = TransactionsModule();
+
       AppRegistry.registerModule(settingsModule);
+      AppRegistry.registerModule(transactionsModule);
+
+      AppLocator.register<SettingsModule>(settingsModule);
+      AppLocator.register<TransactionsModule>(transactionsModule);
 
       final composer = AppComposer();
       await composer.compose();
