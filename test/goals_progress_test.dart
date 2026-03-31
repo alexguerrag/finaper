@@ -1,6 +1,6 @@
+import 'package:finaper/features/goals/domain/entities/goal_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:finaper/features/goals/domain/entities/goal_entity.dart';
 
 void main() {
   test('GoalEntity progress y remainingAmount calculan correctamente', () {

@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:finaper/features/budgets/domain/utils/budget_month_key.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('budgetMonthKeyFromDate retorna YYYY-MM', () {

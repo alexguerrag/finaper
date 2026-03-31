@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
 
-import '../features/settings/presentation/controllers/settings_controller.dart';
 import '../core/theme/app_theme.dart';
+import '../features/settings/presentation/controllers/settings_controller.dart';
 import 'di/app_services.dart';
 import 'routes/app_routes.dart';
 

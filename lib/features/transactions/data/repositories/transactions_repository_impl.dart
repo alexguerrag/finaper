@@ -1,7 +1,7 @@
 import '../../domain/entities/transaction_entity.dart';
 import '../../domain/repositories/transactions_repository.dart';
-import '../models/transaction_model.dart';
 import '../local/transaction_local_datasource.dart';
+import '../models/transaction_model.dart';
 
 class TransactionsRepositoryImpl implements TransactionsRepository {
   final TransactionLocalDataSource localDataSource;
