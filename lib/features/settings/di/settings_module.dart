@@ -8,30 +8,26 @@ import '../domain/usecases/save_app_settings.dart';
 import '../presentation/controllers/settings_controller.dart';
 
 class SettingsModule implements AppModule {
-  SettingsModule({DatabaseHelper? databaseHelper})
-      : _databaseHelper = databaseHelper ?? DatabaseHelper.instance;
+  late final AppSettingsLocalDataSource localDataSource;
+  late final AppSettingsRepository repository;
+  late final GetAppSettings getAppSettings;
+  late final SaveAppSettings saveAppSettings;
+  late final SettingsController controller;
 
   final DatabaseHelper _databaseHelper;
 
-  late final AppSettingsLocalDataSource appSettingsLocalDataSource =
-      AppSettingsLocalDataSourceImpl(_databaseHelper);
-
-  late final AppSettingsRepository appSettingsRepository =
-      AppSettingsRepositoryImpl(appSettingsLocalDataSource);
-
-  late final GetAppSettings getAppSettings =
-      GetAppSettings(appSettingsRepository);
-
-  late final SaveAppSettings saveAppSettings =
-      SaveAppSettings(appSettingsRepository);
-
-  late final SettingsController settingsController = SettingsController(
-    getAppSettings: getAppSettings,
-    saveAppSettings: saveAppSettings,
-  );
+  SettingsModule({DatabaseHelper? databaseHelper})
+      : _databaseHelper = databaseHelper ?? DatabaseHelper.instance;
 
   @override
   Future<void> register() async {
-    // Módulo preparado para composición incremental.
+    localDataSource = AppSettingsLocalDataSourceImpl(_databaseHelper);
+    repository = AppSettingsRepositoryImpl(localDataSource);
+    getAppSettings = GetAppSettings(repository);
+    saveAppSettings = SaveAppSettings(repository);
+    controller = SettingsController(
+      getAppSettings: getAppSettings,
+      saveAppSettings: saveAppSettings,
+    );
   }
 }

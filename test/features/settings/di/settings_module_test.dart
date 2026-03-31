@@ -7,6 +7,6 @@ void main() {
 
     await module.register();
 
-    expect(module.settingsController, isNotNull);
+    expect(module.controller, isNotNull);
   });
 }
