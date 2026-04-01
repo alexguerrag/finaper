@@ -9,6 +9,7 @@ import '../../../export_backup/domain/usecases/export_backup_json.dart';
 import '../../../export_backup/domain/usecases/export_transactions_csv.dart';
 import '../../../export_backup/presentation/controllers/export_file_actions_controller.dart';
 import '../../../export_backup/presentation/widgets/export_file_actions_dialog.dart';
+import '../../di/settings_registry.dart';
 import '../controllers/settings_controller.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -19,8 +20,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final SettingsController _controller =
-      AppServices.instance.settingsController;
+  final SettingsController _controller = SettingsRegistry.module.controller;
 
   final ExportBackupJson _exportBackupJson =
       AppServices.instance.exportBackupJson;

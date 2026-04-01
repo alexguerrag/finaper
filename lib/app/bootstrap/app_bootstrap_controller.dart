@@ -2,7 +2,12 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/errors/app_exception.dart';
 import '../../core/logging/app_logger.dart';
-import '../di/app_services.dart';
+import '../../features/budgets/di/budgets_module.dart';
+import '../../features/settings/di/settings_module.dart';
+import '../../features/transactions/di/transactions_module.dart';
+import '../di/app_composer.dart';
+import '../di/app_locator.dart';
+import '../di/app_registry.dart';
 import 'bootstrap_status.dart';
 
 class AppBootstrapController extends ChangeNotifier {
@@ -23,10 +28,30 @@ class AppBootstrapController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      AppLogger.info('bootstrap', 'Initializing application services');
-      await AppServices.instance.initialize();
+      AppLogger.info('bootstrap', 'Registering app modules');
+
+      AppRegistry.clear();
+      AppLocator.clear();
+
+      final settingsModule = SettingsModule();
+      final transactionsModule = TransactionsModule();
+      final budgetsModule = BudgetsModule();
+
+      AppRegistry.registerModule(settingsModule);
+      AppRegistry.registerModule(transactionsModule);
+      AppRegistry.registerModule(budgetsModule);
+
+      AppLocator.register<SettingsModule>(settingsModule);
+      AppLocator.register<TransactionsModule>(transactionsModule);
+      AppLocator.register<BudgetsModule>(budgetsModule);
+
+      final composer = AppComposer();
+      await composer.compose();
+
+      await settingsModule.controller.load();
+
       _status = BootstrapStatus.ready;
-      AppLogger.info('bootstrap', 'Application services ready');
+      AppLogger.info('bootstrap', 'Application modules ready');
     } catch (error, stackTrace) {
       _status = BootstrapStatus.failure;
       _errorMessage =

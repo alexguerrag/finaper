@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 
-import '../../app/di/app_services.dart';
+import '../../features/settings/di/settings_registry.dart';
 import '../../features/settings/domain/entities/app_settings_entity.dart';
 
 class AppFormatters {
@@ -26,10 +26,10 @@ class AppFormatters {
   };
 
   static AppSettingsEntity get _settings =>
-      AppServices.instance.settingsController.currentSettings;
+      SettingsRegistry.module.controller.currentSettings;
 
   static String get _resolvedLocaleCode =>
-      AppServices.instance.settingsController.resolvedLocaleCode;
+      SettingsRegistry.module.controller.resolvedLocaleCode;
 
   static String formatCurrency(num value) {
     return formatCurrencyWith(

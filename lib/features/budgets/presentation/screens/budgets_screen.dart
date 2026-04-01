@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../app/di/app_services.dart';
 import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/budget_model.dart';
+import '../../di/budgets_registry.dart';
 import '../../domain/entities/budget_entity.dart';
 import '../../domain/usecases/get_budgets_by_month.dart';
 import '../../domain/usecases/upsert_budget.dart';
@@ -31,8 +31,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   @override
   void initState() {
     super.initState();
-    _getBudgetsByMonth = AppServices.instance.getBudgetsByMonth;
-    _upsertBudget = AppServices.instance.upsertBudget;
+    _getBudgetsByMonth = BudgetsRegistry.module.getBudgetsByMonth;
+    _upsertBudget = BudgetsRegistry.module.upsertBudget;
     _loadBudgets();
   }
 

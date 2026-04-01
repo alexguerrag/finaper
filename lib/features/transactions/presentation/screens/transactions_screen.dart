@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../app/di/app_services.dart';
 import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/transaction_model.dart';
+import '../../di/transactions_registry.dart';
 import '../../domain/usecases/add_transaction.dart';
 import '../../domain/usecases/get_all_transactions.dart';
 import 'add_transaction_sheet.dart';
@@ -31,8 +31,8 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   @override
   void initState() {
     super.initState();
-    _getAllTransactions = AppServices.instance.getAllTransactions;
-    _addTransaction = AppServices.instance.addTransaction;
+    _getAllTransactions = TransactionsRegistry.module.getAllTransactions;
+    _addTransaction = TransactionsRegistry.module.addTransaction;
     _loadTransactions();
   }
 

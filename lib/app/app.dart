@@ -3,8 +3,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
 
 import '../core/theme/app_theme.dart';
+import '../features/settings/di/settings_registry.dart';
 import '../features/settings/presentation/controllers/settings_controller.dart';
-import 'di/app_services.dart';
 import 'routes/app_routes.dart';
 
 class FinaperApp extends StatelessWidget {
@@ -12,7 +12,7 @@ class FinaperApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settingsController = AppServices.instance.settingsController;
+    final settingsController = SettingsRegistry.module.controller;
 
     return AnimatedBuilder(
       animation: settingsController,
