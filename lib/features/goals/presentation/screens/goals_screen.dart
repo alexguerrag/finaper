@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../app/di/app_services.dart';
 import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/goal_model.dart';
+import '../../di/goals_registry.dart';
 import '../../domain/entities/goal_entity.dart';
 import '../../domain/usecases/create_goal.dart';
 import '../../domain/usecases/get_goals.dart';
@@ -31,9 +31,9 @@ class _GoalsScreenState extends State<GoalsScreen> {
   @override
   void initState() {
     super.initState();
-    _getGoals = AppServices.instance.getGoals;
-    _createGoal = AppServices.instance.createGoal;
-    _updateGoal = AppServices.instance.updateGoal;
+    _getGoals = GoalsRegistry.module.getGoals;
+    _createGoal = GoalsRegistry.module.createGoal;
+    _updateGoal = GoalsRegistry.module.updateGoal;
     _loadGoals();
   }
 
@@ -344,8 +344,9 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                             vertical: 4,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: AppTheme.income
-                                                .withValues(alpha: 0.14),
+                                            color: AppTheme.income.withValues(
+                                              alpha: 0.14,
+                                            ),
                                             borderRadius:
                                                 BorderRadius.circular(999),
                                           ),
