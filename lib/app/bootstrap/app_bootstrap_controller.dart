@@ -2,7 +2,18 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/errors/app_exception.dart';
 import '../../core/logging/app_logger.dart';
-import '../di/app_services.dart';
+import '../../features/accounts/di/accounts_module.dart';
+import '../../features/budgets/di/budgets_module.dart';
+import '../../features/categories/di/categories_module.dart';
+import '../../features/dashboard/di/dashboard_module.dart';
+import '../../features/export_backup/di/export_module.dart';
+import '../../features/goals/di/goals_module.dart';
+import '../../features/recurring_transactions/di/recurring_transactions_module.dart';
+import '../../features/settings/di/settings_module.dart';
+import '../../features/transactions/di/transactions_module.dart';
+import '../di/app_composer.dart';
+import '../di/app_locator.dart';
+import '../di/app_registry.dart';
 import 'bootstrap_status.dart';
 
 class AppBootstrapController extends ChangeNotifier {
@@ -23,10 +34,49 @@ class AppBootstrapController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      AppLogger.info('bootstrap', 'Initializing application services');
-      await AppServices.instance.initialize();
+      AppLogger.info('bootstrap', 'Registering app modules');
+
+      AppRegistry.clear();
+      AppLocator.clear();
+
+      final settingsModule = SettingsModule();
+      final transactionsModule = TransactionsModule();
+      final accountsModule = AccountsModule();
+      final categoriesModule = CategoriesModule();
+      final budgetsModule = BudgetsModule();
+      final goalsModule = GoalsModule();
+      final recurringTransactionsModule = RecurringTransactionsModule();
+      final exportModule = ExportModule();
+      final dashboardModule = DashboardModule();
+
+      AppRegistry.registerModule(settingsModule);
+      AppRegistry.registerModule(transactionsModule);
+      AppRegistry.registerModule(accountsModule);
+      AppRegistry.registerModule(categoriesModule);
+      AppRegistry.registerModule(budgetsModule);
+      AppRegistry.registerModule(goalsModule);
+      AppRegistry.registerModule(recurringTransactionsModule);
+      AppRegistry.registerModule(exportModule);
+      AppRegistry.registerModule(dashboardModule);
+
+      AppLocator.register<SettingsModule>(settingsModule);
+      AppLocator.register<TransactionsModule>(transactionsModule);
+      AppLocator.register<AccountsModule>(accountsModule);
+      AppLocator.register<CategoriesModule>(categoriesModule);
+      AppLocator.register<BudgetsModule>(budgetsModule);
+      AppLocator.register<GoalsModule>(goalsModule);
+      AppLocator.register<RecurringTransactionsModule>(
+          recurringTransactionsModule);
+      AppLocator.register<ExportModule>(exportModule);
+      AppLocator.register<DashboardModule>(dashboardModule);
+
+      final composer = AppComposer();
+      await composer.compose();
+
+      await settingsModule.controller.load();
+
       _status = BootstrapStatus.ready;
-      AppLogger.info('bootstrap', 'Application services ready');
+      AppLogger.info('bootstrap', 'Application modules ready');
     } catch (error, stackTrace) {
       _status = BootstrapStatus.failure;
       _errorMessage =

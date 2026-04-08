@@ -1,0 +1,3 @@
+class TransactionsLocatorProbe {
+  const TransactionsLocatorProbe();
+}

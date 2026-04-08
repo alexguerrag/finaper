@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../app/di/app_services.dart';
 import '../../../../core/enums/account_type.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/account_model.dart';
+import '../../di/accounts_registry.dart';
 import '../../domain/entities/account_entity.dart';
 import '../../domain/usecases/create_account.dart';
 import '../../domain/usecases/get_accounts.dart';
@@ -27,8 +27,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
   @override
   void initState() {
     super.initState();
-    _getAccounts = AppServices.instance.getAccounts;
-    _createAccount = AppServices.instance.createAccount;
+    _getAccounts = AccountsRegistry.module.getAccounts;
+    _createAccount = AccountsRegistry.module.createAccount;
     _loadAccounts();
   }
 

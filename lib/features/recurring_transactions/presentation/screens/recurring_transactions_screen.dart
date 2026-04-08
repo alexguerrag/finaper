@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../app/di/app_services.dart';
 import '../../../../core/enums/recurrence_frequency.dart';
 import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/recurring_transaction_model.dart';
+import '../../di/recurring_transactions_registry.dart';
 import '../../domain/entities/recurring_transaction_entity.dart';
 import '../../domain/usecases/create_recurring_transaction.dart';
 import '../../domain/usecases/get_recurring_transactions.dart';
@@ -35,13 +35,14 @@ class _RecurringTransactionsScreenState
   @override
   void initState() {
     super.initState();
-    _getRecurringTransactions = AppServices.instance.getRecurringTransactions;
+    _getRecurringTransactions =
+        RecurringTransactionsRegistry.module.getRecurringTransactions;
     _createRecurringTransaction =
-        AppServices.instance.createRecurringTransaction;
+        RecurringTransactionsRegistry.module.createRecurringTransaction;
     _updateRecurringTransaction =
-        AppServices.instance.updateRecurringTransaction;
+        RecurringTransactionsRegistry.module.updateRecurringTransaction;
     _syncDueRecurringTransactions =
-        AppServices.instance.syncDueRecurringTransactions;
+        RecurringTransactionsRegistry.module.syncDueRecurringTransactions;
     _loadRecurringTransactions();
   }
 
