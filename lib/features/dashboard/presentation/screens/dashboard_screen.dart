@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../app/di/app_services.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/local/dashboard_local_datasource.dart';
+import '../../di/dashboard_registry.dart';
 import '../widgets/balance_hero_widget.dart';
 import '../widgets/budget_alert_banner_widget.dart';
 import '../widgets/budget_bars_widget.dart';
@@ -34,7 +34,8 @@ class DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _dashboardLocalDataSource = AppServices.instance.dashboardLocalDataSource;
+    _dashboardLocalDataSource =
+        DashboardRegistry.module.dashboardLocalDataSource;
     _loadSummary();
   }
 

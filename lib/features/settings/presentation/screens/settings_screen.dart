@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../app/di/app_services.dart';
 import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../export_backup/di/export_registry.dart';
 import '../../../export_backup/domain/entities/export_file_entity.dart';
 import '../../../export_backup/domain/usecases/export_backup_json.dart';
 import '../../../export_backup/domain/usecases/export_transactions_csv.dart';
@@ -23,13 +23,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final SettingsController _controller = SettingsRegistry.module.controller;
 
   final ExportBackupJson _exportBackupJson =
-      AppServices.instance.exportBackupJson;
+      ExportRegistry.module.exportBackupJson;
 
   final ExportTransactionsCsv _exportTransactionsCsv =
-      AppServices.instance.exportTransactionsCsv;
+      ExportRegistry.module.exportTransactionsCsv;
 
   final ExportFileActionsController _exportFileActionsController =
-      AppServices.instance.exportFileActionsController;
+      ExportRegistry.module.exportFileActionsController;
 
   static const List<_OptionItem> _currencyOptions = [
     _OptionItem('CLP', 'Peso chileno (CLP)'),
