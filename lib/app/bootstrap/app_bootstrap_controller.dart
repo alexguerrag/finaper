@@ -4,6 +4,7 @@ import '../../core/errors/app_exception.dart';
 import '../../core/logging/app_logger.dart';
 import '../../features/budgets/di/budgets_module.dart';
 import '../../features/goals/di/goals_module.dart';
+import '../../features/recurring_transactions/di/recurring_transactions_module.dart';
 import '../../features/settings/di/settings_module.dart';
 import '../../features/transactions/di/transactions_module.dart';
 import '../di/app_composer.dart';
@@ -38,16 +39,20 @@ class AppBootstrapController extends ChangeNotifier {
       final transactionsModule = TransactionsModule();
       final budgetsModule = BudgetsModule();
       final goalsModule = GoalsModule();
+      final recurringTransactionsModule = RecurringTransactionsModule();
 
       AppRegistry.registerModule(settingsModule);
       AppRegistry.registerModule(transactionsModule);
       AppRegistry.registerModule(budgetsModule);
       AppRegistry.registerModule(goalsModule);
+      AppRegistry.registerModule(recurringTransactionsModule);
 
       AppLocator.register<SettingsModule>(settingsModule);
       AppLocator.register<TransactionsModule>(transactionsModule);
       AppLocator.register<BudgetsModule>(budgetsModule);
       AppLocator.register<GoalsModule>(goalsModule);
+      AppLocator.register<RecurringTransactionsModule>(
+          recurringTransactionsModule);
 
       final composer = AppComposer();
       await composer.compose();
