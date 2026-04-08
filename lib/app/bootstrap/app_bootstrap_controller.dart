@@ -2,7 +2,9 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/errors/app_exception.dart';
 import '../../core/logging/app_logger.dart';
+import '../../features/accounts/di/accounts_module.dart';
 import '../../features/budgets/di/budgets_module.dart';
+import '../../features/categories/di/categories_module.dart';
 import '../../features/goals/di/goals_module.dart';
 import '../../features/recurring_transactions/di/recurring_transactions_module.dart';
 import '../../features/settings/di/settings_module.dart';
@@ -37,18 +39,24 @@ class AppBootstrapController extends ChangeNotifier {
 
       final settingsModule = SettingsModule();
       final transactionsModule = TransactionsModule();
+      final accountsModule = AccountsModule();
+      final categoriesModule = CategoriesModule();
       final budgetsModule = BudgetsModule();
       final goalsModule = GoalsModule();
       final recurringTransactionsModule = RecurringTransactionsModule();
 
       AppRegistry.registerModule(settingsModule);
       AppRegistry.registerModule(transactionsModule);
+      AppRegistry.registerModule(accountsModule);
+      AppRegistry.registerModule(categoriesModule);
       AppRegistry.registerModule(budgetsModule);
       AppRegistry.registerModule(goalsModule);
       AppRegistry.registerModule(recurringTransactionsModule);
 
       AppLocator.register<SettingsModule>(settingsModule);
       AppLocator.register<TransactionsModule>(transactionsModule);
+      AppLocator.register<AccountsModule>(accountsModule);
+      AppLocator.register<CategoriesModule>(categoriesModule);
       AppLocator.register<BudgetsModule>(budgetsModule);
       AppLocator.register<GoalsModule>(goalsModule);
       AppLocator.register<RecurringTransactionsModule>(
