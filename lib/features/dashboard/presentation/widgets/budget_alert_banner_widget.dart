@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../app/di/app_services.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../budgets/di/budgets_registry.dart';
 import '../../../budgets/domain/entities/budget_entity.dart';
 import '../../../budgets/domain/usecases/get_budgets_by_month.dart';
 import '../../../budgets/domain/utils/budget_month_key.dart';
@@ -32,7 +32,7 @@ class _BudgetAlertBannerWidgetState extends State<BudgetAlertBannerWidget> {
   @override
   void initState() {
     super.initState();
-    _getBudgetsByMonth = AppServices.instance.getBudgetsByMonth;
+    _getBudgetsByMonth = BudgetsRegistry.module.getBudgetsByMonth;
     _loadAlert();
   }
 

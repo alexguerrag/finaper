@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../app/di/app_services.dart';
 import '../../../../core/enums/category_kind.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../categories/di/categories_registry.dart';
 import '../../../categories/domain/entities/category_entity.dart';
 import '../../data/models/budget_model.dart';
 
@@ -43,7 +43,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
 
   Future<void> _loadExpenseCategories() async {
     try {
-      final categories = await AppServices.instance.getCategoriesByKind(
+      final categories = await CategoriesRegistry.module.getCategoriesByKind(
         kind: CategoryKind.expense,
       );
 

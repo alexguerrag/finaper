@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../app/di/app_services.dart';
 import '../../../../core/enums/category_kind.dart';
 import '../../../../core/enums/recurrence_frequency.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../accounts/di/accounts_registry.dart';
 import '../../../accounts/domain/entities/account_entity.dart';
+import '../../../categories/di/categories_registry.dart';
 import '../../../categories/domain/entities/category_entity.dart';
 import '../../data/models/recurring_transaction_model.dart';
 
@@ -62,8 +63,8 @@ class _AddRecurringTransactionSheetState
     });
 
     try {
-      final accounts = await AppServices.instance.getAccounts();
-      final categories = await AppServices.instance.getCategoriesByKind(
+      final accounts = await AccountsRegistry.module.getAccounts();
+      final categories = await CategoriesRegistry.module.getCategoriesByKind(
         kind: _isIncome ? CategoryKind.income : CategoryKind.expense,
       );
 
@@ -104,7 +105,7 @@ class _AddRecurringTransactionSheetState
     });
 
     try {
-      final categories = await AppServices.instance.getCategoriesByKind(
+      final categories = await CategoriesRegistry.module.getCategoriesByKind(
         kind: _isIncome ? CategoryKind.income : CategoryKind.expense,
       );
 

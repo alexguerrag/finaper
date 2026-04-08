@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../app/di/app_services.dart';
 import '../../../../core/enums/category_kind.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/category_model.dart';
+import '../../di/categories_registry.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/usecases/create_category.dart';
 import '../../domain/usecases/get_categories_by_kind.dart';
@@ -28,8 +28,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   @override
   void initState() {
     super.initState();
-    _getCategoriesByKind = AppServices.instance.getCategoriesByKind;
-    _createCategory = AppServices.instance.createCategory;
+    _getCategoriesByKind = CategoriesRegistry.module.getCategoriesByKind;
+    _createCategory = CategoriesRegistry.module.createCategory;
     _loadCategories();
   }
 
