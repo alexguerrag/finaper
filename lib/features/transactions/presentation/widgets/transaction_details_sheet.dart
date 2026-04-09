@@ -49,15 +49,16 @@ class TransactionDetailsSheet extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 52,
-                    height: 52,
+                    width: 56,
+                    height: 56,
                     decoration: BoxDecoration(
                       color: iconColor.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(18),
                     ),
                     child: Icon(
                       transaction.isIncome
@@ -71,20 +72,35 @@ class TransactionDetailsSheet extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: amountColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: amountColor.withValues(alpha: 0.24),
+                            ),
+                          ),
+                          child: Text(
+                            transaction.isIncome ? 'Ingreso' : 'Gasto',
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: amountColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
                         Text(
                           transaction.description,
                           style: GoogleFonts.manrope(
-                            fontSize: 20,
+                            fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: AppTheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          transaction.isIncome ? 'Ingreso' : 'Gasto',
-                          style: GoogleFonts.manrope(
-                            fontSize: 13,
-                            color: AppTheme.onSurfaceMuted,
+                            height: 1.15,
                           ),
                         ),
                       ],
@@ -92,13 +108,16 @@ class TransactionDetailsSheet extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
                 decoration: BoxDecoration(
                   color: AppTheme.surface,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.05),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,22 +126,33 @@ class TransactionDetailsSheet extends StatelessWidget {
                       'Monto',
                       style: GoogleFonts.manrope(
                         fontSize: 12,
+                        fontWeight: FontWeight.w600,
                         color: AppTheme.onSurfaceMuted,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Text(
                       '${transaction.isIncome ? '+' : '-'}${AppFormatters.formatCurrency(transaction.amount.abs())}',
                       style: GoogleFonts.manrope(
-                        fontSize: 26,
+                        fontSize: 30,
                         fontWeight: FontWeight.w800,
                         color: amountColor,
+                        height: 1,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
+              Text(
+                'Detalle',
+                style: GoogleFonts.manrope(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.onSurfaceMuted,
+                ),
+              ),
+              const SizedBox(height: 10),
               _InfoRow(
                 icon: Icons.category_rounded,
                 label: 'Categoría',
@@ -149,27 +179,58 @@ class TransactionDetailsSheet extends StatelessWidget {
                   multiline: true,
                 ),
               ],
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
+              Text(
+                'Acciones',
+                style: GoogleFonts.manrope(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.onSurfaceMuted,
+                ),
+              ),
+              const SizedBox(height: 10),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: onDuplicate,
-                      icon: const Icon(Icons.content_copy_rounded),
+                      onPressed: onEdit,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.10),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      icon: const Icon(Icons.edit_rounded),
                       label: Text(
-                        'Duplicar',
-                        style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+                        'Editar',
+                        style: GoogleFonts.manrope(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: onEdit,
-                      icon: const Icon(Icons.edit_rounded),
+                      onPressed: onDuplicate,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.10),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      icon: const Icon(Icons.content_copy_rounded),
                       label: Text(
-                        'Editar',
-                        style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+                        'Duplicar',
+                        style: GoogleFonts.manrope(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
@@ -183,7 +244,7 @@ class TransactionDetailsSheet extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     backgroundColor: AppTheme.expense,
                     foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(52),
+                    minimumSize: const Size.fromHeight(54),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -224,12 +285,27 @@ class _InfoRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.04),
+        ),
       ),
       child: Row(
         crossAxisAlignment:
             multiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
-          Icon(icon, size: 18, color: AppTheme.onSurfaceMuted),
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              size: 18,
+              color: AppTheme.onSurfaceMuted,
+            ),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -239,6 +315,7 @@ class _InfoRow extends StatelessWidget {
                   label,
                   style: GoogleFonts.manrope(
                     fontSize: 12,
+                    fontWeight: FontWeight.w600,
                     color: AppTheme.onSurfaceMuted,
                   ),
                 ),
@@ -248,6 +325,7 @@ class _InfoRow extends StatelessWidget {
                   style: GoogleFonts.manrope(
                     fontWeight: FontWeight.w700,
                     color: AppTheme.onSurface,
+                    height: multiline ? 1.35 : 1.2,
                   ),
                 ),
               ],
