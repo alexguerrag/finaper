@@ -199,8 +199,8 @@ class _TransactionFiltersSheetState extends State<TransactionFiltersSheet> {
                       setState(() {
                         _state = _state.copyWith(
                           dateFilter: option,
-                          clearCustomRange: option !=
-                              TransactionDateFilterOption.custom,
+                          clearCustomRange:
+                              option != TransactionDateFilterOption.custom,
                         );
                       });
                     },
@@ -229,22 +229,12 @@ class _TransactionFiltersSheetState extends State<TransactionFiltersSheet> {
               ),
               const SizedBox(height: 10),
               ...TransactionSortOption.values.map(
-                (option) => RadioListTile<TransactionSortOption>(
-                  value: option,
-                  groupValue: _state.sortOption,
-                  activeColor: AppTheme.primary,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    _sortLabel(option),
-                    style: GoogleFonts.manrope(
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.onSurface,
-                    ),
-                  ),
-                  onChanged: (value) {
-                    if (value == null) return;
+                (option) => _SortOptionTile(
+                  label: _sortLabel(option),
+                  selected: _state.sortOption == option,
+                  onTap: () {
                     setState(() {
-                      _state = _state.copyWith(sortOption: value);
+                      _state = _state.copyWith(sortOption: option);
                     });
                   },
                 ),
@@ -326,6 +316,62 @@ class _FilterChoiceChip extends StatelessWidget {
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: selected ? AppTheme.onSurface : AppTheme.onSurfaceMuted,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SortOptionTile extends StatelessWidget {
+  const _SortOptionTile({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: selected
+            ? AppTheme.primary.withValues(alpha: 0.10)
+            : AppTheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: selected
+              ? AppTheme.primary.withValues(alpha: 0.55)
+              : Colors.white.withValues(alpha: 0.08),
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.onSurface,
+                  ),
+                ),
+              ),
+              Icon(
+                selected
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
+                color: selected ? AppTheme.primary : AppTheme.onSurfaceMuted,
+              ),
+            ],
           ),
         ),
       ),

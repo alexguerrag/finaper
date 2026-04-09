@@ -21,7 +21,8 @@ class TransactionDetailsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final amountColor = transaction.isIncome ? AppTheme.income : AppTheme.expense;
+    final amountColor =
+        transaction.isIncome ? AppTheme.income : AppTheme.expense;
     final iconColor = transaction.color ?? amountColor;
     final note = transaction.note.trim();
 
@@ -137,7 +138,7 @@ class TransactionDetailsSheet extends StatelessWidget {
               _InfoRow(
                 icon: Icons.calendar_today_rounded,
                 label: 'Fecha',
-                value: AppFormatters.formatLongDate(transaction.date),
+                value: AppFormatters.formatShortDate(transaction.date),
               ),
               if (note.isNotEmpty) ...[
                 const SizedBox(height: 12),

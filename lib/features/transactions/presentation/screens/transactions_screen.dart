@@ -9,6 +9,8 @@ import '../../domain/usecases/add_transaction.dart';
 import '../../domain/usecases/delete_transaction.dart';
 import '../../domain/usecases/get_all_transactions.dart';
 import '../../domain/usecases/update_transaction.dart';
+import '../widgets/transaction_details_sheet.dart';
+import '../widgets/transaction_filters_sheet.dart';
 import 'add_transaction_sheet.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -31,6 +33,12 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   List<TransactionModel> _transactions = <TransactionModel>[];
+
+  TransactionListFilterState _listFilterState =
+      const TransactionListFilterState(
+    dateFilter: TransactionDateFilterOption.all,
+    sortOption: TransactionSortOption.newestFirst,
+  );
 
   @override
   void initState() {
@@ -117,6 +125,91 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _openTransactionDetails(TransactionModel transaction) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => TransactionDetailsSheet(
+        transaction: transaction,
+        onEdit: () {
+          Navigator.of(context).pop();
+          _openEditTransactionSheet(transaction);
+        },
+        onDelete: () {
+          Navigator.of(context).pop();
+          _confirmDeleteTransaction(transaction);
+        },
+        onDuplicate: () {
+          Navigator.of(context).pop();
+          _duplicateTransaction(transaction);
+        },
+      ),
+    );
+  }
+
+  Future<void> _openFiltersSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => TransactionFiltersSheet(
+        initialState: _listFilterState,
+        onApply: (state) {
+          setState(() {
+            _listFilterState = state;
+          });
+        },
+      ),
+    );
+  }
+
+  Future<void> _duplicateTransaction(TransactionModel transaction) async {
+    try {
+      final duplicated = TransactionModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        accountId: transaction.accountId,
+        accountName: transaction.accountName,
+        description: transaction.description,
+        categoryId: transaction.categoryId,
+        category: transaction.category,
+        amount: transaction.amount,
+        isIncome: transaction.isIncome,
+        date: DateTime.now(),
+        note: transaction.note,
+        color: transaction.color,
+      );
+
+      await _addTransaction(duplicated);
+      await refreshTransactions();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Transacción duplicada correctamente.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    } catch (e, s) {
+      debugPrint('Duplicate transaction error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo duplicar la transacción.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _confirmDeleteTransaction(TransactionModel transaction) async {
@@ -226,11 +319,15 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     setState(() {
       _searchQuery = '';
       _filter = _TransactionFilter.all;
+      _listFilterState = const TransactionListFilterState(
+        dateFilter: TransactionDateFilterOption.all,
+        sortOption: TransactionSortOption.newestFirst,
+      );
     });
   }
 
-  List<TransactionModel> get _filteredTransactions {
-    var items = _transactions;
+  List<TransactionModel> get _visibleTransactions {
+    var items = List<TransactionModel>.from(_transactions);
 
     if (_filter == _TransactionFilter.income) {
       items = items.where((item) => item.isIncome).toList();
@@ -248,8 +345,77 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       }).toList();
     }
 
-    items.sort((a, b) => b.date.compareTo(a.date));
+    items = _applyDateFilter(items);
+    items = _applySort(items);
+
     return items;
+  }
+
+  List<TransactionModel> _applyDateFilter(List<TransactionModel> items) {
+    final option = _listFilterState.dateFilter;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    switch (option) {
+      case TransactionDateFilterOption.all:
+        return items;
+      case TransactionDateFilterOption.last7Days:
+        final start = today.subtract(const Duration(days: 6));
+        return items.where((item) => !_isBeforeDate(item.date, start)).toList();
+      case TransactionDateFilterOption.last30Days:
+        final start = today.subtract(const Duration(days: 29));
+        return items.where((item) => !_isBeforeDate(item.date, start)).toList();
+      case TransactionDateFilterOption.thisMonth:
+        final start = DateTime(now.year, now.month, 1);
+        return items.where((item) => !_isBeforeDate(item.date, start)).toList();
+      case TransactionDateFilterOption.custom:
+        final range = _listFilterState.customRange;
+        if (range == null) return items;
+        final start = DateTime(
+          range.start.year,
+          range.start.month,
+          range.start.day,
+        );
+        final end = DateTime(
+          range.end.year,
+          range.end.month,
+          range.end.day,
+          23,
+          59,
+          59,
+        );
+        return items
+            .where(
+              (item) => !item.date.isBefore(start) && !item.date.isAfter(end),
+            )
+            .toList();
+    }
+  }
+
+  List<TransactionModel> _applySort(List<TransactionModel> items) {
+    final sorted = List<TransactionModel>.from(items);
+
+    switch (_listFilterState.sortOption) {
+      case TransactionSortOption.newestFirst:
+        sorted.sort((a, b) => b.date.compareTo(a.date));
+        break;
+      case TransactionSortOption.oldestFirst:
+        sorted.sort((a, b) => a.date.compareTo(b.date));
+        break;
+      case TransactionSortOption.highestAmount:
+        sorted.sort((a, b) => b.amount.compareTo(a.amount));
+        break;
+      case TransactionSortOption.lowestAmount:
+        sorted.sort((a, b) => a.amount.compareTo(b.amount));
+        break;
+    }
+
+    return sorted;
+  }
+
+  bool _isBeforeDate(DateTime value, DateTime reference) {
+    final normalized = DateTime(value.year, value.month, value.day);
+    return normalized.isBefore(reference);
   }
 
   Map<String, List<TransactionModel>> get _groupedTransactions {
@@ -258,7 +424,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     final todayKey = _dateKey(now);
     final yesterdayKey = _dateKey(now.subtract(const Duration(days: 1)));
 
-    for (final transaction in _filteredTransactions) {
+    for (final transaction in _visibleTransactions) {
       final key = _dateKey(transaction.date);
 
       String label;
@@ -295,6 +461,14 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 
   int get _expenseCount => _transactions.where((e) => !e.isIncome).length;
 
+  double get _visibleIncome => _visibleTransactions
+      .where((e) => e.isIncome)
+      .fold<double>(0, (sum, e) => sum + e.amount);
+
+  double get _visibleExpense => _visibleTransactions
+      .where((e) => !e.isIncome)
+      .fold<double>(0, (sum, e) => sum + e.amount);
+
   String _formatSignedAmount({
     required double value,
     required bool isIncome,
@@ -316,15 +490,51 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   bool get _hasActiveFilters =>
-      _searchQuery.trim().isNotEmpty || _filter != _TransactionFilter.all;
+      _searchQuery.trim().isNotEmpty ||
+      _filter != _TransactionFilter.all ||
+      _listFilterState.dateFilter != TransactionDateFilterOption.all ||
+      _listFilterState.sortOption != TransactionSortOption.newestFirst;
+
+  String get _activeDateFilterLabel {
+    switch (_listFilterState.dateFilter) {
+      case TransactionDateFilterOption.all:
+        return 'Todo';
+      case TransactionDateFilterOption.last7Days:
+        return '7 días';
+      case TransactionDateFilterOption.last30Days:
+        return '30 días';
+      case TransactionDateFilterOption.thisMonth:
+        return 'Este mes';
+      case TransactionDateFilterOption.custom:
+        final range = _listFilterState.customRange;
+        if (range == null) return 'Personalizado';
+        return '${range.start.day}/${range.start.month} - ${range.end.day}/${range.end.month}';
+    }
+  }
+
+  String get _activeSortLabel {
+    switch (_listFilterState.sortOption) {
+      case TransactionSortOption.newestFirst:
+        return 'Más recientes';
+      case TransactionSortOption.oldestFirst:
+        return 'Más antiguas';
+      case TransactionSortOption.highestAmount:
+        return 'Mayor monto';
+      case TransactionSortOption.lowestAmount:
+        return 'Menor monto';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final totalIncome = _totalIncome;
     final totalExpense = _totalExpense;
     final net = totalIncome - totalExpense;
+    final visibleIncome = _visibleIncome;
+    final visibleExpense = _visibleExpense;
+    final visibleNet = visibleIncome - visibleExpense;
     final grouped = _groupedTransactions;
-    final filteredTransactions = _filteredTransactions;
+    final visibleTransactions = _visibleTransactions;
     final canPop = Navigator.of(context).canPop();
 
     return Scaffold(
@@ -382,7 +592,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                _resultSummaryText(filteredTransactions.length),
+                                _resultSummaryText(visibleTransactions.length),
                                 style: GoogleFonts.manrope(
                                   fontSize: 13,
                                   color: AppTheme.onSurfaceMuted,
@@ -390,6 +600,19 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                               ),
                             ],
                           ),
+                        ),
+                        IconButton(
+                          onPressed: _openFiltersSheet,
+                          tooltip: 'Filtrar y ordenar',
+                          style: IconButton.styleFrom(
+                            backgroundColor: _hasActiveFilters
+                                ? AppTheme.primary.withValues(alpha: 0.16)
+                                : Colors.white.withValues(alpha: 0.04),
+                            foregroundColor: _hasActiveFilters
+                                ? AppTheme.primary
+                                : AppTheme.onSurface,
+                          ),
+                          icon: const Icon(Icons.tune_rounded),
                         ),
                       ],
                     ),
@@ -468,7 +691,21 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
+                    if (_hasActiveFilters)
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _ActiveFilterBadge(
+                            label: 'Período: $_activeDateFilterLabel',
+                          ),
+                          _ActiveFilterBadge(
+                            label: 'Orden: $_activeSortLabel',
+                          ),
+                        ],
+                      ),
+                    if (_hasActiveFilters) const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -498,6 +735,39 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                                   label: 'Neto',
                                   value: net,
                                   color: net >= 0
+                                      ? AppTheme.income
+                                      : AppTheme.expense,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          Divider(
+                            color: Colors.white.withValues(alpha: 0.08),
+                            height: 1,
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _SummaryItem(
+                                  label: 'Visible ingresos',
+                                  value: visibleIncome,
+                                  color: AppTheme.income,
+                                ),
+                              ),
+                              Expanded(
+                                child: _SummaryItem(
+                                  label: 'Visible gastos',
+                                  value: visibleExpense,
+                                  color: AppTheme.expense,
+                                ),
+                              ),
+                              Expanded(
+                                child: _SummaryItem(
+                                  label: 'Visible neto',
+                                  value: visibleNet,
+                                  color: visibleNet >= 0
                                       ? AppTheme.income
                                       : AppTheme.expense,
                                 ),
@@ -557,7 +827,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                                   isIncome: item.isIncome,
                                 ),
                                 onTap: () {
-                                  _openEditTransactionSheet(item);
+                                  _openTransactionDetails(item);
                                 },
                                 onEdit: () {
                                   _openEditTransactionSheet(item);
@@ -648,6 +918,36 @@ class _FilterChip extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActiveFilterBadge extends StatelessWidget {
+  const _ActiveFilterBadge({
+    required this.label,
+  });
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: AppTheme.primary.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.manrope(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: AppTheme.onSurface,
         ),
       ),
     );
