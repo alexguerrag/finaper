@@ -10,7 +10,7 @@ class DatabaseHelper {
   static Database? _database;
 
   static const String _databaseName = 'finaper.db';
-  static const int _databaseVersion = 7;
+  static const int _databaseVersion = 8;
 
   static const String defaultAccountId = 'acc-cash-main';
   static const String defaultAccountName = 'Cuenta principal';
@@ -56,6 +56,7 @@ class DatabaseHelper {
       await _createGoalsTable(db);
       await _createRecurringTransactionsTable(db);
       await _createAppSettingsTable(db);
+      await _createTransactionFormPreferencesTable(db);
       await _seedAccounts(db);
       await _seedCategories(db);
       await _seedAppSettings(db);
@@ -123,6 +124,10 @@ class DatabaseHelper {
       if (oldVersion < 7) {
         await _createAppSettingsTable(db);
         await _seedAppSettings(db);
+      }
+
+      if (oldVersion < 8) {
+        await _createTransactionFormPreferencesTable(db);
       }
 
       await _createIndexes(db);
@@ -252,6 +257,18 @@ class DatabaseHelper {
         locale_code TEXT NOT NULL,
         use_system_locale INTEGER NOT NULL DEFAULT 1,
         updated_at TEXT NOT NULL
+      )
+    ''');
+  }
+
+  Future<void> _createTransactionFormPreferencesTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS transaction_form_preferences (
+        id INTEGER PRIMARY KEY CHECK(id = 1),
+        last_account_id TEXT,
+        last_expense_category_id TEXT,
+        last_income_category_id TEXT,
+        last_quick_date_option TEXT
       )
     ''');
   }

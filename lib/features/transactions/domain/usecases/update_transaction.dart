@@ -2,11 +2,11 @@ import '../entities/transaction_entity.dart';
 import '../repositories/transactions_repository.dart';
 
 class UpdateTransaction {
-  final TransactionsRepository repository;
+  const UpdateTransaction(this._repository);
 
-  UpdateTransaction(this.repository);
+  final TransactionsRepository _repository;
 
-  Future<TransactionEntity> call(TransactionEntity transaction) async {
-    return repository.update(transaction);
+  Future<TransactionEntity> call(TransactionEntity transaction) {
+    return _repository.update(transaction);
   }
 }

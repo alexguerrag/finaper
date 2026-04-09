@@ -8,17 +8,29 @@ import '../../../accounts/domain/entities/account_entity.dart';
 import '../../../categories/di/categories_registry.dart';
 import '../../../categories/domain/entities/category_entity.dart';
 import '../../data/models/transaction_model.dart';
+import '../../di/transactions_registry.dart';
+import '../../domain/entities/transaction_form_preferences_entity.dart';
 
 class AddTransactionSheet extends StatefulWidget {
   const AddTransactionSheet({
     super.key,
     required this.onAdd,
+    this.initialTransaction,
   });
 
   final Future<void> Function(TransactionModel transaction) onAdd;
+  final TransactionModel? initialTransaction;
+
+  bool get isEditing => initialTransaction != null;
 
   @override
   State<AddTransactionSheet> createState() => _AddTransactionSheetState();
+}
+
+enum _QuickDateOption {
+  today,
+  yesterday,
+  custom,
 }
 
 class _AddTransactionSheetState extends State<AddTransactionSheet> {
@@ -33,6 +45,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   bool _isLoadingCoreData = true;
 
   DateTime _selectedDate = DateTime.now();
+  _QuickDateOption _quickDateOption = _QuickDateOption.today;
 
   List<AccountEntity> _accounts = <AccountEntity>[];
   List<CategoryEntity> _categories = <CategoryEntity>[];
@@ -40,9 +53,14 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   String? _selectedAccountId;
   String? _selectedCategoryId;
 
+  String? _lastExpenseCategoryId;
+  String? _lastIncomeCategoryId;
+  String? _lastAccountId;
+
   @override
   void initState() {
     super.initState();
+    _hydrateInitialDraft();
     _bootstrapCoreData();
   }
 
@@ -54,25 +72,80 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     super.dispose();
   }
 
+  void _hydrateInitialDraft() {
+    final initial = widget.initialTransaction;
+    if (initial == null) return;
+
+    _isIncome = initial.isIncome;
+    _selectedDate = initial.date;
+    _quickDateOption = _resolveQuickDateOption(initial.date);
+    _descriptionController.text = initial.description;
+    _amountController.text = _formatInitialAmount(initial.amount);
+    _noteController.text = initial.note;
+    _selectedAccountId = initial.accountId;
+    _selectedCategoryId = initial.categoryId;
+    _lastAccountId = initial.accountId;
+
+    if (initial.isIncome) {
+      _lastIncomeCategoryId = initial.categoryId;
+    } else {
+      _lastExpenseCategoryId = initial.categoryId;
+    }
+  }
+
+  String _formatInitialAmount(double value) {
+    final asText = value.toStringAsFixed(2);
+    if (asText.endsWith('.00')) {
+      return value.toStringAsFixed(0);
+    }
+    return asText;
+  }
+
+  _QuickDateOption _resolveQuickDateOption(DateTime value) {
+    final normalized = _dateOnly(value);
+    final today = _dateOnly(DateTime.now());
+    final yesterday = _dateOnly(
+      DateTime.now().subtract(const Duration(days: 1)),
+    );
+
+    if (_isSameDate(normalized, today)) {
+      return _QuickDateOption.today;
+    }
+
+    if (_isSameDate(normalized, yesterday)) {
+      return _QuickDateOption.yesterday;
+    }
+
+    return _QuickDateOption.custom;
+  }
+
   Future<void> _bootstrapCoreData() async {
     setState(() {
       _isLoadingCoreData = true;
     });
 
     try {
+      final preferences =
+          await TransactionsRegistry.module.getTransactionFormPreferences();
+      _applyPreferences(preferences);
+
       final accounts = await AccountsRegistry.module.getAccounts();
       final categories = await CategoriesRegistry.module.getCategoriesByKind(
-        kind: _isIncome ? CategoryKind.income : CategoryKind.expense,
+        kind: _currentCategoryKind,
       );
 
       if (!mounted) return;
 
+      final resolvedAccountId = _resolveAccountId(accounts);
+      final resolvedCategoryId = _resolveCategoryId(categories);
+
       setState(() {
         _accounts = accounts;
         _categories = categories;
-        _selectedAccountId = accounts.isNotEmpty ? accounts.first.id : null;
-        _selectedCategoryId =
-            categories.isNotEmpty ? categories.first.id : null;
+        _selectedAccountId = resolvedAccountId;
+        _selectedCategoryId = resolvedCategoryId;
+        _lastAccountId = resolvedAccountId;
+        _rememberCurrentCategorySelection(resolvedCategoryId);
         _isLoadingCoreData = false;
       });
     } catch (e, s) {
@@ -96,6 +169,62 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     }
   }
 
+  void _applyPreferences(TransactionFormPreferencesEntity preferences) {
+    if (widget.isEditing) return;
+
+    _lastAccountId = preferences.lastAccountId;
+    _lastExpenseCategoryId = preferences.lastExpenseCategoryId;
+    _lastIncomeCategoryId = preferences.lastIncomeCategoryId;
+
+    switch (preferences.lastQuickDateOption) {
+      case 'today':
+        _quickDateOption = _QuickDateOption.today;
+        _selectedDate = _dateOnly(DateTime.now());
+        break;
+      case 'yesterday':
+        _quickDateOption = _QuickDateOption.yesterday;
+        _selectedDate = _dateOnly(
+          DateTime.now().subtract(const Duration(days: 1)),
+        );
+        break;
+      default:
+        _quickDateOption = _QuickDateOption.today;
+        _selectedDate = _dateOnly(DateTime.now());
+    }
+
+    _selectedAccountId = preferences.lastAccountId;
+    _selectedCategoryId = _preferredCategoryIdForCurrentType;
+  }
+
+  String? _resolveAccountId(List<AccountEntity> accounts) {
+    if (accounts.isEmpty) return null;
+
+    final selected = _selectedAccountId ?? _lastAccountId;
+    if (selected != null && accounts.any((account) => account.id == selected)) {
+      return selected;
+    }
+
+    return accounts.first.id;
+  }
+
+  String? _resolveCategoryId(List<CategoryEntity> categories) {
+    if (categories.isEmpty) return null;
+
+    final preferredId = _preferredCategoryIdForCurrentType;
+    if (preferredId != null &&
+        categories.any((category) => category.id == preferredId)) {
+      return preferredId;
+    }
+
+    final alreadySelected = _selectedCategoryId;
+    if (alreadySelected != null &&
+        categories.any((category) => category.id == alreadySelected)) {
+      return alreadySelected;
+    }
+
+    return categories.first.id;
+  }
+
   Future<void> _reloadCategoriesForType() async {
     setState(() {
       _isLoadingCoreData = true;
@@ -103,15 +232,17 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
     try {
       final categories = await CategoriesRegistry.module.getCategoriesByKind(
-        kind: _isIncome ? CategoryKind.income : CategoryKind.expense,
+        kind: _currentCategoryKind,
       );
 
       if (!mounted) return;
 
+      final resolvedCategoryId = _resolveCategoryId(categories);
+
       setState(() {
         _categories = categories;
-        _selectedCategoryId =
-            categories.isNotEmpty ? categories.first.id : null;
+        _selectedCategoryId = resolvedCategoryId;
+        _rememberCurrentCategorySelection(resolvedCategoryId);
         _isLoadingCoreData = false;
       });
     } catch (e, s) {
@@ -138,14 +269,49 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   Future<void> _handleTypeChange(bool value) async {
     if (_isIncome == value) return;
 
+    _rememberCurrentCategorySelection(_selectedCategoryId);
+
     setState(() {
       _isIncome = value;
+      _selectedCategoryId = null;
     });
 
     await _reloadCategoriesForType();
   }
 
-  Future<void> _pickDate() async {
+  CategoryKind get _currentCategoryKind =>
+      _isIncome ? CategoryKind.income : CategoryKind.expense;
+
+  String? get _preferredCategoryIdForCurrentType =>
+      _isIncome ? _lastIncomeCategoryId : _lastExpenseCategoryId;
+
+  void _rememberCurrentCategorySelection(String? categoryId) {
+    if (categoryId == null || categoryId.isEmpty) return;
+
+    if (_isIncome) {
+      _lastIncomeCategoryId = categoryId;
+    } else {
+      _lastExpenseCategoryId = categoryId;
+    }
+  }
+
+  void _selectToday() {
+    setState(() {
+      _selectedDate = _dateOnly(DateTime.now());
+      _quickDateOption = _QuickDateOption.today;
+    });
+  }
+
+  void _selectYesterday() {
+    setState(() {
+      _selectedDate = _dateOnly(
+        DateTime.now().subtract(const Duration(days: 1)),
+      );
+      _quickDateOption = _QuickDateOption.yesterday;
+    });
+  }
+
+  Future<void> _pickCustomDate() async {
     try {
       final picked = await showDatePicker(
         context: context,
@@ -167,11 +333,36 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       if (picked == null) return;
 
       setState(() {
-        _selectedDate = picked;
+        _selectedDate = _dateOnly(picked);
+        _quickDateOption = _QuickDateOption.custom;
       });
-    } catch (e) {
+    } catch (e, s) {
       debugPrint('Date picker error: $e');
+      debugPrintStack(stackTrace: s);
     }
+  }
+
+  DateTime _dateOnly(DateTime value) {
+    return DateTime(value.year, value.month, value.day);
+  }
+
+  bool _isSameDate(DateTime left, DateTime right) {
+    return left.year == right.year &&
+        left.month == right.month &&
+        left.day == right.day;
+  }
+
+  Future<void> _persistPreferences() async {
+    if (widget.isEditing) return;
+
+    await TransactionsRegistry.module.saveTransactionFormPreferences(
+      TransactionFormPreferencesEntity(
+        lastAccountId: _selectedAccountId,
+        lastExpenseCategoryId: _lastExpenseCategoryId,
+        lastIncomeCategoryId: _lastIncomeCategoryId,
+        lastQuickDateOption: _quickDateOption.name,
+      ),
+    );
   }
 
   Future<void> _submit() async {
@@ -189,11 +380,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
     if (!_formKey.currentState!.validate()) return;
 
-    final selectedAccount = _accounts.where((a) => a.id == _selectedAccountId);
-    final selectedCategory =
-        _categories.where((c) => c.id == _selectedCategoryId);
+    final account = _selectedAccount();
+    final category = _selectedCategory();
 
-    if (selectedAccount.isEmpty || selectedCategory.isEmpty) {
+    if (account == null || category == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -214,11 +404,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           _amountController.text.trim().replaceAll(',', '.');
       final amount = double.parse(normalizedAmount);
 
-      final account = selectedAccount.first;
-      final category = selectedCategory.first;
-
       final transaction = TransactionModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: widget.initialTransaction?.id ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
         accountId: account.id,
         accountName: account.name,
         description: _descriptionController.text.trim(),
@@ -232,15 +420,20 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       );
 
       await widget.onAdd(transaction);
+      await _persistPreferences();
 
       if (!mounted) return;
 
       Navigator.of(context).pop();
 
+      final successMessage = widget.isEditing
+          ? 'Transacción actualizada correctamente.'
+          : 'Transacción guardada correctamente.';
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Transacción guardada correctamente.',
+            successMessage,
             style: GoogleFonts.manrope(),
           ),
         ),
@@ -254,7 +447,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'No se pudo guardar la transacción.',
+            widget.isEditing
+                ? 'No se pudo actualizar la transacción.'
+                : 'No se pudo guardar la transacción.',
             style: GoogleFonts.manrope(),
           ),
         ),
@@ -268,10 +463,42 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     }
   }
 
+  AccountEntity? _selectedAccount() {
+    for (final account in _accounts) {
+      if (account.id == _selectedAccountId) return account;
+    }
+    return null;
+  }
+
+  CategoryEntity? _selectedCategory() {
+    for (final category in _categories) {
+      if (category.id == _selectedCategoryId) return category;
+    }
+    return null;
+  }
+
   String _formatDate(DateTime date) {
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
     return '$day/$month/${date.year}';
+  }
+
+  Color get _accentColor => _isIncome ? AppTheme.income : AppTheme.expense;
+
+  String get _sheetTitle =>
+      widget.isEditing ? 'Editar transacción' : 'Nueva transacción';
+
+  String get _sheetSubtitle => widget.isEditing
+      ? 'Actualiza los datos de tu movimiento'
+      : 'Registra un gasto o ingreso en segundos';
+
+  String get _primaryButtonLabel {
+    if (_isSaving) {
+      return widget.isEditing ? 'Guardando cambios...' : 'Guardando...';
+    }
+
+    if (widget.isEditing) return 'Guardar cambios';
+    return _isIncome ? 'Guardar ingreso' : 'Guardar gasto';
   }
 
   @override
@@ -280,240 +507,216 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
     return SafeArea(
       top: false,
-      child: Padding(
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
         padding: EdgeInsets.only(bottom: bottomInset),
         child: Container(
           decoration: const BoxDecoration(
             color: AppTheme.surfaceElevated,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-          child: SingleChildScrollView(
-            child: _isLoadingCoreData &&
-                    _accounts.isEmpty &&
-                    _categories.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 48),
-                    child: Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  )
-                : Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(
-                          child: Container(
-                            width: 48,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.16),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'Nueva transacción',
-                          style: GoogleFonts.manrope(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _TypeCard(
-                                title: 'Gasto',
-                                icon: Icons.arrow_upward_rounded,
-                                selected: !_isIncome,
-                                color: AppTheme.expense,
-                                onTap: () {
-                                  _handleTypeChange(false);
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _TypeCard(
-                                title: 'Ingreso',
-                                icon: Icons.arrow_downward_rounded,
-                                selected: _isIncome,
-                                color: AppTheme.income,
-                                onTap: () {
-                                  _handleTypeChange(true);
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          key: ValueKey(
-                            'account-${_selectedAccountId ?? 'empty'}',
-                          ),
-                          initialValue: _selectedAccountId,
-                          decoration: const InputDecoration(
-                            labelText: 'Cuenta',
-                          ),
-                          items: _accounts
-                              .map(
-                                (account) => DropdownMenuItem<String>(
-                                  value: account.id,
-                                  child: Text(account.name),
-                                ),
-                              )
-                              .toList(),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Selecciona una cuenta';
-                            }
-                            return null;
-                          },
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedAccountId = value;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<String>(
-                          key: ValueKey(
-                            'category-${_isIncome ? 'income' : 'expense'}-${_selectedCategoryId ?? 'empty'}',
-                          ),
-                          initialValue: _selectedCategoryId,
-                          decoration: const InputDecoration(
-                            labelText: 'Categoría',
-                          ),
-                          items: _categories
-                              .map(
-                                (category) => DropdownMenuItem<String>(
-                                  value: category.id,
-                                  child: Text(category.name),
-                                ),
-                              )
-                              .toList(),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Selecciona una categoría';
-                            }
-                            return null;
-                          },
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedCategoryId = value;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _descriptionController,
-                          textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            labelText: 'Descripción',
-                            hintText: 'Ej. Supermercado, salario, taxi...',
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Ingresa una descripción';
-                            }
-                            if (value.trim().length < 3) {
-                              return 'Debe tener al menos 3 caracteres';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _amountController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            labelText: 'Monto',
-                            hintText: 'Ej. 250.50',
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Ingresa un monto';
-                            }
-
-                            final normalized =
-                                value.trim().replaceAll(',', '.');
-                            final parsed = double.tryParse(normalized);
-
-                            if (parsed == null) {
-                              return 'Monto inválido';
-                            }
-
-                            if (parsed <= 0) {
-                              return 'El monto debe ser mayor a cero';
-                            }
-
-                            return null;
-                          },
-                          onChanged: (value) {
-                            final normalized = value.replaceAll(',', '.');
-                            if (normalized != value) {
-                              _amountController.value =
-                                  _amountController.value.copyWith(
-                                text: normalized,
-                                selection: TextSelection.collapsed(
-                                  offset: normalized.length,
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        InkWell(
-                          onTap: _pickDate,
-                          borderRadius: BorderRadius.circular(14),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 16,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.06),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.15),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.calendar_month_rounded),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'Fecha: ${_formatDate(_selectedDate)}',
-                                    style: GoogleFonts.manrope(
-                                      color: AppTheme.onSurface,
-                                    ),
+          child: _isLoadingCoreData && _accounts.isEmpty && _categories.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 56),
+                  child: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              : Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Center(
+                                child: Container(
+                                  width: 48,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.16),
+                                    borderRadius: BorderRadius.circular(999),
                                   ),
                                 ),
-                                const Icon(Icons.chevron_right_rounded),
-                              ],
+                              ),
+                              const SizedBox(height: 20),
+                              Text(
+                                _sheetTitle,
+                                style: GoogleFonts.manrope(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppTheme.onSurface,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                _sheetSubtitle,
+                                style: GoogleFonts.manrope(
+                                  fontSize: 13,
+                                  color: AppTheme.onSurfaceMuted,
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _TypeCard(
+                                      title: 'Gasto',
+                                      icon: Icons.arrow_upward_rounded,
+                                      selected: !_isIncome,
+                                      color: AppTheme.expense,
+                                      onTap: () {
+                                        _handleTypeChange(false);
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _TypeCard(
+                                      title: 'Ingreso',
+                                      icon: Icons.arrow_downward_rounded,
+                                      selected: _isIncome,
+                                      color: AppTheme.income,
+                                      onTap: () {
+                                        _handleTypeChange(true);
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 18),
+                              _AmountHeroField(
+                                controller: _amountController,
+                                accentColor: _accentColor,
+                              ),
+                              const SizedBox(height: 16),
+                              DropdownButtonFormField<String>(
+                                key: ValueKey(
+                                  'category-${_isIncome ? 'income' : 'expense'}-${_selectedCategoryId ?? 'empty'}',
+                                ),
+                                initialValue: _selectedCategoryId,
+                                decoration: const InputDecoration(
+                                  labelText: 'Categoría',
+                                ),
+                                items: _categories
+                                    .map(
+                                      (category) => DropdownMenuItem<String>(
+                                        value: category.id,
+                                        child: Text(category.name),
+                                      ),
+                                    )
+                                    .toList(),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Selecciona una categoría';
+                                  }
+                                  return null;
+                                },
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedCategoryId = value;
+                                    _rememberCurrentCategorySelection(value);
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              DropdownButtonFormField<String>(
+                                key: ValueKey(
+                                  'account-${_selectedAccountId ?? 'empty'}',
+                                ),
+                                initialValue: _selectedAccountId,
+                                decoration: const InputDecoration(
+                                  labelText: 'Cuenta',
+                                ),
+                                items: _accounts
+                                    .map(
+                                      (account) => DropdownMenuItem<String>(
+                                        value: account.id,
+                                        child: Text(account.name),
+                                      ),
+                                    )
+                                    .toList(),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Selecciona una cuenta';
+                                  }
+                                  return null;
+                                },
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedAccountId = value;
+                                    _lastAccountId = value;
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Fecha',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.onSurface,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              _QuickDateSelector(
+                                selectedOption: _quickDateOption,
+                                currentDate: _selectedDate,
+                                onTodayTap: _selectToday,
+                                onYesterdayTap: _selectYesterday,
+                                onCustomTap: _pickCustomDate,
+                                formatDate: _formatDate,
+                              ),
+                              const SizedBox(height: 16),
+                              TextFormField(
+                                controller: _descriptionController,
+                                textInputAction: TextInputAction.next,
+                                decoration: const InputDecoration(
+                                  labelText: 'Concepto',
+                                  hintText:
+                                      'Ej. Supermercado, salario, taxi...',
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Agrega un concepto';
+                                  }
+                                  if (value.trim().length < 3) {
+                                    return 'Debe tener al menos 3 caracteres';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _noteController,
+                                minLines: 2,
+                                maxLines: 3,
+                                decoration: const InputDecoration(
+                                  labelText: 'Nota opcional',
+                                  hintText:
+                                      'Agrega un comentario si lo necesitas',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceElevated,
+                          border: Border(
+                            top: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.06),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _noteController,
-                          minLines: 3,
-                          maxLines: 4,
-                          decoration: const InputDecoration(
-                            labelText: 'Nota',
-                            hintText: 'Comentario opcional',
-                          ),
-                        ),
-                        const SizedBox(height: 22),
-                        SizedBox(
+                        child: SizedBox(
                           width: double.infinity,
                           child: FilledButton(
                             onPressed: _isSaving || _isLoadingCoreData
@@ -522,7 +725,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                             style: FilledButton.styleFrom(
                               backgroundColor: AppTheme.primary,
                               foregroundColor: Colors.white,
-                              minimumSize: const Size.fromHeight(54),
+                              minimumSize: const Size.fromHeight(56),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -537,17 +740,203 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                                     ),
                                   )
                                 : Text(
-                                    'Guardar transacción',
+                                    _primaryButtonLabel,
                                     style: GoogleFonts.manrope(
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w800,
                                     ),
                                   ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AmountHeroField extends StatelessWidget {
+  const _AmountHeroField({
+    required this.controller,
+    required this.accentColor,
+  });
+
+  final TextEditingController controller;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: accentColor.withValues(alpha: 0.35),
+        ),
+      ),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        textInputAction: TextInputAction.next,
+        style: GoogleFonts.manrope(
+          fontSize: 28,
+          fontWeight: FontWeight.w800,
+          color: AppTheme.onSurface,
+        ),
+        decoration: InputDecoration(
+          labelText: 'Monto',
+          hintText: '0.00',
+          prefixText: '\$ ',
+          prefixStyle: GoogleFonts.manrope(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: accentColor,
           ),
+          filled: false,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 0,
+            vertical: 8,
+          ),
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          focusedErrorBorder: InputBorder.none,
+        ),
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) {
+            return 'Ingresa un monto';
+          }
+
+          final normalized = value.trim().replaceAll(',', '.');
+          final parsed = double.tryParse(normalized);
+
+          if (parsed == null) {
+            return 'Escribe un monto válido';
+          }
+
+          if (parsed <= 0) {
+            return 'El monto debe ser mayor a cero';
+          }
+
+          return null;
+        },
+        onChanged: (value) {
+          final normalized = value.replaceAll(',', '.');
+          if (normalized != value) {
+            controller.value = controller.value.copyWith(
+              text: normalized,
+              selection: TextSelection.collapsed(
+                offset: normalized.length,
+              ),
+            );
+          }
+        },
+      ),
+    );
+  }
+}
+
+class _QuickDateSelector extends StatelessWidget {
+  const _QuickDateSelector({
+    required this.selectedOption,
+    required this.currentDate,
+    required this.onTodayTap,
+    required this.onYesterdayTap,
+    required this.onCustomTap,
+    required this.formatDate,
+  });
+
+  final _QuickDateOption selectedOption;
+  final DateTime currentDate;
+  final VoidCallback onTodayTap;
+  final VoidCallback onYesterdayTap;
+  final VoidCallback onCustomTap;
+  final String Function(DateTime date) formatDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCustom = selectedOption == _QuickDateOption.custom;
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        _QuickDateChip(
+          label: 'Hoy',
+          selected: selectedOption == _QuickDateOption.today,
+          onTap: onTodayTap,
+        ),
+        _QuickDateChip(
+          label: 'Ayer',
+          selected: selectedOption == _QuickDateOption.yesterday,
+          onTap: onYesterdayTap,
+        ),
+        _QuickDateChip(
+          label: isCustom ? formatDate(currentDate) : 'Elegir fecha',
+          selected: isCustom,
+          onTap: onCustomTap,
+          icon: Icons.calendar_month_rounded,
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickDateChip extends StatelessWidget {
+  const _QuickDateChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppTheme.primary.withValues(alpha: 0.18)
+              : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected
+                ? AppTheme.primary.withValues(alpha: 0.70)
+                : Colors.white.withValues(alpha: 0.10),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                size: 16,
+                color: selected ? AppTheme.primary : AppTheme.onSurfaceMuted,
+              ),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              label,
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: selected ? AppTheme.onSurface : AppTheme.onSurfaceMuted,
+              ),
+            ),
+          ],
         ),
       ),
     );
