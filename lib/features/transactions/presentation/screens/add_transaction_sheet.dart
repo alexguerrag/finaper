@@ -10,6 +10,7 @@ import '../../../categories/domain/entities/category_entity.dart';
 import '../../data/models/transaction_model.dart';
 import '../../di/transactions_registry.dart';
 import '../../domain/entities/transaction_form_preferences_entity.dart';
+import '../widgets/transaction_submit_actions.dart';
 
 class AddTransactionSheet extends StatefulWidget {
   const AddTransactionSheet({
@@ -57,6 +58,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   String? _lastIncomeCategoryId;
   String? _lastAccountId;
 
+  final FocusNode _amountFocusNode = FocusNode();
+  final FocusNode _descriptionFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -69,6 +73,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     _descriptionController.dispose();
     _amountController.dispose();
     _noteController.dispose();
+    _amountFocusNode.dispose();
+    _descriptionFocusNode.dispose();
     super.dispose();
   }
 
@@ -148,6 +154,13 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         _rememberCurrentCategorySelection(resolvedCategoryId);
         _isLoadingCoreData = false;
       });
+
+      if (!widget.isEditing) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _amountFocusNode.requestFocus();
+        });
+      }
     } catch (e, s) {
       debugPrint('AddTransactionSheet bootstrap error: $e');
       debugPrintStack(stackTrace: s);
@@ -365,7 +378,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     );
   }
 
-  Future<void> _submit() async {
+  TransactionModel? _buildTransactionFromForm() {
     if (_isLoadingCoreData || _accounts.isEmpty || _categories.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -375,10 +388,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           ),
         ),
       );
-      return;
+      return null;
     }
 
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) return null;
 
     final account = _selectedAccount();
     final category = _selectedCategory();
@@ -392,33 +405,49 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           ),
         ),
       );
-      return;
+      return null;
     }
+
+    final normalizedAmount = _amountController.text.trim().replaceAll(',', '.');
+    final amount = double.tryParse(normalizedAmount);
+
+    if (amount == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Escribe un monto válido.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+      return null;
+    }
+
+    return TransactionModel(
+      id: widget.initialTransaction?.id ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
+      accountId: account.id,
+      accountName: account.name,
+      description: _descriptionController.text.trim(),
+      categoryId: category.id,
+      category: category.name,
+      amount: amount,
+      isIncome: _isIncome,
+      date: _selectedDate,
+      note: _noteController.text.trim(),
+      color: category.color,
+    );
+  }
+
+  Future<void> _submit() async {
+    final transaction = _buildTransactionFromForm();
+    if (transaction == null) return;
 
     setState(() {
       _isSaving = true;
     });
 
     try {
-      final normalizedAmount =
-          _amountController.text.trim().replaceAll(',', '.');
-      final amount = double.parse(normalizedAmount);
-
-      final transaction = TransactionModel(
-        id: widget.initialTransaction?.id ??
-            DateTime.now().millisecondsSinceEpoch.toString(),
-        accountId: account.id,
-        accountName: account.name,
-        description: _descriptionController.text.trim(),
-        categoryId: category.id,
-        category: category.name,
-        amount: amount,
-        isIncome: _isIncome,
-        date: _selectedDate,
-        note: _noteController.text.trim(),
-        color: category.color,
-      );
-
       await widget.onAdd(transaction);
       await _persistPreferences();
 
@@ -461,6 +490,72 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         });
       }
     }
+  }
+
+  Future<void> _submitAndAddAnother() async {
+    if (widget.isEditing) return;
+
+    final transaction = _buildTransactionFromForm();
+    if (transaction == null) return;
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      await widget.onAdd(transaction);
+      await _persistPreferences();
+
+      if (!mounted) return;
+
+      _resetFormForQuickEntry();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Transacción guardada. Puedes registrar otra.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    } catch (e, s) {
+      debugPrint('Add transaction and continue error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo guardar la transacción.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  void _resetFormForQuickEntry() {
+    _amountController.clear();
+    _descriptionController.clear();
+    _noteController.clear();
+    _selectedDate = _dateOnly(DateTime.now());
+    _quickDateOption = _QuickDateOption.today;
+
+    _formKey.currentState?.reset();
+
+    setState(() {});
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _amountFocusNode.requestFocus();
+    });
   }
 
   AccountEntity? _selectedAccount() {
@@ -593,6 +688,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                               _AmountHeroField(
                                 controller: _amountController,
                                 accentColor: _accentColor,
+                                focusNode: _amountFocusNode,
                               ),
                               const SizedBox(height: 16),
                               DropdownButtonFormField<String>(
@@ -675,6 +771,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _descriptionController,
+                                focusNode: _descriptionFocusNode,
                                 textInputAction: TextInputAction.next,
                                 decoration: const InputDecoration(
                                   labelText: 'Concepto',
@@ -716,36 +813,13 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                             ),
                           ),
                         ),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            onPressed: _isSaving || _isLoadingCoreData
-                                ? null
-                                : _submit,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppTheme.primary,
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size.fromHeight(56),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: _isSaving
-                                ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(
-                                    _primaryButtonLabel,
-                                    style: GoogleFonts.manrope(
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                          ),
+                        child: TransactionSubmitActions(
+                          isSaving: _isSaving,
+                          isEnabled: !_isLoadingCoreData,
+                          primaryLabel: _primaryButtonLabel,
+                          onPrimaryPressed: _submit,
+                          onSecondaryPressed: _submitAndAddAnother,
+                          showSecondary: !widget.isEditing,
                         ),
                       ),
                     ],
@@ -761,10 +835,12 @@ class _AmountHeroField extends StatelessWidget {
   const _AmountHeroField({
     required this.controller,
     required this.accentColor,
+    required this.focusNode,
   });
 
   final TextEditingController controller;
   final Color accentColor;
+  final FocusNode focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -779,6 +855,7 @@ class _AmountHeroField extends StatelessWidget {
       ),
       child: TextFormField(
         controller: controller,
+        focusNode: focusNode,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         textInputAction: TextInputAction.next,
         style: GoogleFonts.manrope(
