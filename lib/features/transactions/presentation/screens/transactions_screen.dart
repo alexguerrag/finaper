@@ -120,6 +120,19 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Future<void> _confirmDeleteTransaction(TransactionModel transaction) async {
+    final transactionId = transaction.id;
+    if (transactionId == null || transactionId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'La transacción no tiene un identificador válido.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+      return;
+    }
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -171,7 +184,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     if (confirm != true) return;
 
     try {
-      await _deleteTransaction(transaction.id ?? '');
+      await _deleteTransaction(transactionId);
       await refreshTransactions();
 
       if (!mounted) return;
@@ -201,6 +214,21 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     }
   }
 
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+    });
+  }
+
+  void _clearFilters() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _filter = _TransactionFilter.all;
+    });
+  }
+
   List<TransactionModel> get _filteredTransactions {
     var items = _transactions;
 
@@ -215,6 +243,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       items = items.where((item) {
         return item.description.toLowerCase().contains(query) ||
             item.category.toLowerCase().contains(query) ||
+            item.accountName.toLowerCase().contains(query) ||
             item.note.toLowerCase().contains(query);
       }).toList();
     }
@@ -262,6 +291,10 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       .where((e) => !e.isIncome)
       .fold<double>(0, (sum, e) => sum + e.amount);
 
+  int get _incomeCount => _transactions.where((e) => e.isIncome).length;
+
+  int get _expenseCount => _transactions.where((e) => !e.isIncome).length;
+
   String _formatSignedAmount({
     required double value,
     required bool isIncome,
@@ -270,21 +303,43 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     return '${isIncome ? '+' : '-'}$formatted';
   }
 
+  String _resultSummaryText(int count) {
+    if (count == 0) {
+      return 'No hay resultados para tu búsqueda actual';
+    }
+
+    if (count == 1) {
+      return '1 transacción encontrada';
+    }
+
+    return '$count transacciones encontradas';
+  }
+
+  bool get _hasActiveFilters =>
+      _searchQuery.trim().isNotEmpty || _filter != _TransactionFilter.all;
+
   @override
   Widget build(BuildContext context) {
     final totalIncome = _totalIncome;
     final totalExpense = _totalExpense;
     final net = totalIncome - totalExpense;
     final grouped = _groupedTransactions;
+    final filteredTransactions = _filteredTransactions;
     final canPop = Navigator.of(context).canPop();
 
     return Scaffold(
       backgroundColor: AppTheme.background,
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _openAddTransactionSheet,
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
-        child: const Icon(Icons.add_rounded),
+        icon: const Icon(Icons.add_rounded),
+        label: Text(
+          'Nueva',
+          style: GoogleFonts.manrope(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
       body: SafeArea(
         child: _isLoading
@@ -314,13 +369,26 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                           const SizedBox(width: 12),
                         ],
                         Expanded(
-                          child: Text(
-                            'Transacciones',
-                            style: GoogleFonts.manrope(
-                              fontSize: 30,
-                              fontWeight: FontWeight.w800,
-                              color: AppTheme.onSurface,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Transacciones',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppTheme.onSurface,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _resultSummaryText(filteredTransactions.length),
+                                style: GoogleFonts.manrope(
+                                  fontSize: 13,
+                                  color: AppTheme.onSurfaceMuted,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -334,8 +402,16 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                         });
                       },
                       decoration: InputDecoration(
-                        hintText: 'Buscar transacción',
+                        hintText:
+                            'Buscar por concepto, categoría, cuenta o nota',
                         prefixIcon: const Icon(Icons.search_rounded),
+                        suffixIcon: _searchQuery.trim().isEmpty
+                            ? null
+                            : IconButton(
+                                onPressed: _clearSearch,
+                                icon: const Icon(Icons.close_rounded),
+                                tooltip: 'Limpiar búsqueda',
+                              ),
                         filled: true,
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(
@@ -353,38 +429,44 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _FilterChip(
-                          label: 'Todas',
-                          selected: _filter == _TransactionFilter.all,
-                          onTap: () {
-                            setState(() {
-                              _filter = _TransactionFilter.all;
-                            });
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _FilterChip(
-                          label: 'Ingresos',
-                          selected: _filter == _TransactionFilter.income,
-                          onTap: () {
-                            setState(() {
-                              _filter = _TransactionFilter.income;
-                            });
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _FilterChip(
-                          label: 'Gastos',
-                          selected: _filter == _TransactionFilter.expense,
-                          onTap: () {
-                            setState(() {
-                              _filter = _TransactionFilter.expense;
-                            });
-                          },
-                        ),
-                      ],
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _FilterChip(
+                            label: 'Todas',
+                            count: _transactions.length,
+                            selected: _filter == _TransactionFilter.all,
+                            onTap: () {
+                              setState(() {
+                                _filter = _TransactionFilter.all;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _FilterChip(
+                            label: 'Ingresos',
+                            count: _incomeCount,
+                            selected: _filter == _TransactionFilter.income,
+                            onTap: () {
+                              setState(() {
+                                _filter = _TransactionFilter.income;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _FilterChip(
+                            label: 'Gastos',
+                            count: _expenseCount,
+                            selected: _filter == _TransactionFilter.expense,
+                            onTap: () {
+                              setState(() {
+                                _filter = _TransactionFilter.expense;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Container(
@@ -393,184 +475,99 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                         color: AppTheme.surface,
                         borderRadius: BorderRadius.circular(18),
                       ),
-                      child: Row(
+                      child: Column(
                         children: [
-                          Expanded(
-                            child: _SummaryItem(
-                              label: 'Ingresos',
-                              value: totalIncome,
-                              color: AppTheme.income,
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _SummaryItem(
+                                  label: 'Ingresos',
+                                  value: totalIncome,
+                                  color: AppTheme.income,
+                                ),
+                              ),
+                              Expanded(
+                                child: _SummaryItem(
+                                  label: 'Gastos',
+                                  value: totalExpense,
+                                  color: AppTheme.expense,
+                                ),
+                              ),
+                              Expanded(
+                                child: _SummaryItem(
+                                  label: 'Neto',
+                                  value: net,
+                                  color: net >= 0
+                                      ? AppTheme.income
+                                      : AppTheme.expense,
+                                ),
+                              ),
+                            ],
                           ),
-                          Expanded(
-                            child: _SummaryItem(
-                              label: 'Gastos',
-                              value: totalExpense,
-                              color: AppTheme.expense,
+                          if (_hasActiveFilters) ...[
+                            const SizedBox(height: 14),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton.icon(
+                                onPressed: _clearFilters,
+                                icon: const Icon(Icons.restart_alt_rounded),
+                                label: Text(
+                                  'Limpiar filtros',
+                                  style: GoogleFonts.manrope(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                          Expanded(
-                            child: _SummaryItem(
-                              label: 'Neto',
-                              value: net,
-                              color:
-                                  net >= 0 ? AppTheme.income : AppTheme.expense,
-                            ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
                     const SizedBox(height: 20),
                     if (grouped.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surface,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Text(
-                          'No hay transacciones para este filtro.',
-                          style: GoogleFonts.manrope(
-                            color: AppTheme.onSurfaceMuted,
-                          ),
-                        ),
+                      _EmptyTransactionsState(
+                        hasActiveFilters: _hasActiveFilters,
+                        onClearFilters: _clearFilters,
+                        onAddTransaction: _openAddTransactionSheet,
                       )
                     else
                       ...grouped.entries.map((entry) {
+                        final dayIncome = entry.value
+                            .where((item) => item.isIncome)
+                            .fold<double>(0, (sum, item) => sum + item.amount);
+                        final dayExpense = entry.value
+                            .where((item) => !item.isIncome)
+                            .fold<double>(0, (sum, item) => sum + item.amount);
+
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              entry.key,
-                              style: GoogleFonts.manrope(
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.onSurfaceMuted,
-                              ),
+                            _TransactionSectionHeader(
+                              label: entry.key,
+                              count: entry.value.length,
+                              income: dayIncome,
+                              expense: dayExpense,
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 10),
                             ...entry.value.map(
-                              (item) => Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.surface,
-                                  borderRadius: BorderRadius.circular(18),
+                              (item) => _TransactionCard(
+                                item: item,
+                                signedAmountText: _formatSignedAmount(
+                                  value: item.amount,
+                                  isIncome: item.isIncome,
                                 ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 42,
-                                      height: 42,
-                                      decoration: BoxDecoration(
-                                        color:
-                                            item.color!.withValues(alpha: 0.16),
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      child: Icon(
-                                        item.isIncome
-                                            ? Icons.arrow_downward_rounded
-                                            : Icons.arrow_upward_rounded,
-                                        color: item.color,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(12),
-                                        onTap: () {
-                                          _openEditTransactionSheet(item);
-                                        },
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 4,
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                item.description,
-                                                style: GoogleFonts.manrope(
-                                                  fontWeight: FontWeight.w700,
-                                                  color: AppTheme.onSurface,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                item.category,
-                                                style: GoogleFonts.manrope(
-                                                  fontSize: 12,
-                                                  color:
-                                                      AppTheme.onSurfaceMuted,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          _formatSignedAmount(
-                                            value: item.amount,
-                                            isIncome: item.isIncome,
-                                          ),
-                                          style: GoogleFonts.manrope(
-                                            fontWeight: FontWeight.w800,
-                                            color: item.isIncome
-                                                ? AppTheme.income
-                                                : AppTheme.expense,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        PopupMenuButton<_TransactionAction>(
-                                          tooltip: 'Acciones',
-                                          color: AppTheme.surfaceElevated,
-                                          icon: const Icon(
-                                            Icons.more_vert_rounded,
-                                            color: AppTheme.onSurfaceMuted,
-                                          ),
-                                          onSelected: (action) {
-                                            switch (action) {
-                                              case _TransactionAction.edit:
-                                                _openEditTransactionSheet(item);
-                                                break;
-                                              case _TransactionAction.delete:
-                                                _confirmDeleteTransaction(item);
-                                                break;
-                                            }
-                                          },
-                                          itemBuilder: (context) => [
-                                            PopupMenuItem<_TransactionAction>(
-                                              value: _TransactionAction.edit,
-                                              child: Text(
-                                                'Editar',
-                                                style: GoogleFonts.manrope(
-                                                  color: AppTheme.onSurface,
-                                                ),
-                                              ),
-                                            ),
-                                            PopupMenuItem<_TransactionAction>(
-                                              value: _TransactionAction.delete,
-                                              child: Text(
-                                                'Eliminar',
-                                                style: GoogleFonts.manrope(
-                                                  color: AppTheme.expense,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                onTap: () {
+                                  _openEditTransactionSheet(item);
+                                },
+                                onEdit: () {
+                                  _openEditTransactionSheet(item);
+                                },
+                                onDelete: () {
+                                  _confirmDeleteTransaction(item);
+                                },
                               ),
                             ),
+                            const SizedBox(height: 6),
                           ],
                         );
                       }),
@@ -596,11 +593,13 @@ enum _TransactionAction {
 class _FilterChip extends StatelessWidget {
   const _FilterChip({
     required this.label,
+    required this.count,
     required this.selected,
     required this.onTap,
   });
 
   final String label;
+  final int count;
   final bool selected;
   final VoidCallback onTap;
 
@@ -613,14 +612,42 @@ class _FilterChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? AppTheme.primary : AppTheme.surface,
           borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.manrope(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: selected ? Colors.white : AppTheme.onSurface,
+          border: Border.all(
+            color: selected
+                ? AppTheme.primary.withValues(alpha: 0.70)
+                : Colors.white.withValues(alpha: 0.08),
           ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: selected ? Colors.white : AppTheme.onSurface,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: selected
+                    ? Colors.white.withValues(alpha: 0.16)
+                    : Colors.white.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '$count',
+                style: GoogleFonts.manrope(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: selected ? Colors.white : AppTheme.onSurfaceMuted,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -662,6 +689,352 @@ class _SummaryItem extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _TransactionSectionHeader extends StatelessWidget {
+  const _TransactionSectionHeader({
+    required this.label,
+    required this.count,
+    required this.income,
+    required this.expense,
+  });
+
+  final String label;
+  final int count;
+  final double income;
+  final double expense;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w800,
+              color: AppTheme.onSurface,
+            ),
+          ),
+        ),
+        Text(
+          '$count mov.',
+          style: GoogleFonts.manrope(
+            fontSize: 12,
+            color: AppTheme.onSurfaceMuted,
+          ),
+        ),
+        const SizedBox(width: 12),
+        if (income > 0)
+          Text(
+            '+${AppFormatters.formatCurrency(income)}',
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.income,
+            ),
+          ),
+        if (income > 0 && expense > 0) const SizedBox(width: 8),
+        if (expense > 0)
+          Text(
+            '-${AppFormatters.formatCurrency(expense)}',
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.expense,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _TransactionCard extends StatelessWidget {
+  const _TransactionCard({
+    required this.item,
+    required this.signedAmountText,
+    required this.onTap,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final TransactionModel item;
+  final String signedAmountText;
+  final VoidCallback onTap;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final note = item.note.trim();
+    final hasNote = note.isNotEmpty;
+    final amountColor = item.isIncome ? AppTheme.income : AppTheme.expense;
+    final iconColor = item.color ?? amountColor;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    item.isIncome
+                        ? Icons.arrow_downward_rounded
+                        : Icons.arrow_upward_rounded,
+                    color: iconColor,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.description,
+                        style: GoogleFonts.manrope(
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          _MetaBadge(
+                            icon: Icons.category_rounded,
+                            label: item.category,
+                          ),
+                          _MetaBadge(
+                            icon: Icons.account_balance_wallet_rounded,
+                            label: item.accountName,
+                          ),
+                          _MetaBadge(
+                            icon: Icons.calendar_today_rounded,
+                            label: AppFormatters.formatShortDate(item.date),
+                          ),
+                        ],
+                      ),
+                      if (hasNote) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          note,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            color: AppTheme.onSurfaceMuted,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      signedAmountText,
+                      style: GoogleFonts.manrope(
+                        fontWeight: FontWeight.w800,
+                        color: amountColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    PopupMenuButton<_TransactionAction>(
+                      tooltip: 'Acciones',
+                      color: AppTheme.surfaceElevated,
+                      icon: const Icon(
+                        Icons.more_vert_rounded,
+                        color: AppTheme.onSurfaceMuted,
+                      ),
+                      onSelected: (action) {
+                        switch (action) {
+                          case _TransactionAction.edit:
+                            onEdit();
+                            break;
+                          case _TransactionAction.delete:
+                            onDelete();
+                            break;
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem<_TransactionAction>(
+                          value: _TransactionAction.edit,
+                          child: Text(
+                            'Editar',
+                            style: GoogleFonts.manrope(
+                              color: AppTheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem<_TransactionAction>(
+                          value: _TransactionAction.delete,
+                          child: Text(
+                            'Eliminar',
+                            style: GoogleFonts.manrope(
+                              color: AppTheme.expense,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MetaBadge extends StatelessWidget {
+  const _MetaBadge({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 12,
+            color: AppTheme.onSurfaceMuted,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.onSurfaceMuted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyTransactionsState extends StatelessWidget {
+  const _EmptyTransactionsState({
+    required this.hasActiveFilters,
+    required this.onClearFilters,
+    required this.onAddTransaction,
+  });
+
+  final bool hasActiveFilters;
+  final VoidCallback onClearFilters;
+  final VoidCallback onAddTransaction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.receipt_long_rounded,
+              color: AppTheme.onSurfaceMuted,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            hasActiveFilters
+                ? 'No encontramos transacciones con esos filtros'
+                : 'Todavía no tienes transacciones',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w800,
+              color: AppTheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            hasActiveFilters
+                ? 'Prueba limpiando la búsqueda o cambiando el filtro.'
+                : 'Comienza registrando tu primer gasto o ingreso.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.manrope(
+              color: AppTheme.onSurfaceMuted,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            alignment: WrapAlignment.center,
+            children: [
+              if (hasActiveFilters)
+                OutlinedButton.icon(
+                  onPressed: onClearFilters,
+                  icon: const Icon(Icons.restart_alt_rounded),
+                  label: Text(
+                    'Limpiar filtros',
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              FilledButton.icon(
+                onPressed: onAddTransaction,
+                icon: const Icon(Icons.add_rounded),
+                label: Text(
+                  'Nueva transacción',
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
