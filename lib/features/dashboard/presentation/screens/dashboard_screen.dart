@@ -6,10 +6,9 @@ import '../../../../core/theme/app_theme.dart';
 import '../../data/local/dashboard_local_datasource.dart';
 import '../../di/dashboard_registry.dart';
 import '../widgets/budget_alert_banner_widget.dart';
-import '../widgets/budget_bars_widget.dart';
 import '../widgets/dashboard_financial_snapshot_widget.dart';
+import '../widgets/dashboard_top_expense_categories_widget.dart';
 import '../widgets/recent_transactions_widget.dart';
-import '../widgets/trend_chart_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -132,7 +131,7 @@ class DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             Text(
-              'Tu resumen financiero',
+              'Tu inicio financiero',
               style: GoogleFonts.manrope(
                 fontSize: 12,
                 color: AppTheme.onSurfaceMuted,
@@ -198,12 +197,16 @@ class DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 DashboardFinancialSnapshotWidget(
-                  periodLabel: summary?.recentPeriodLabel ?? 'Últimos 30 días',
-                  balance: summary?.recentPeriodBalance ?? 0,
-                  income: summary?.recentPeriodIncome ?? 0,
-                  expense: summary?.recentPeriodExpense ?? 0,
-                  transactionCount: summary?.recentPeriodTransactionCount ?? 0,
+                  periodLabel: summary?.currentMonthLabel ?? '',
+                  netFlow: summary?.currentMonthNetFlow ?? 0,
+                  income: summary?.currentMonthIncome ?? 0,
+                  expense: summary?.currentMonthExpense ?? 0,
+                  transactionCount: summary?.currentMonthTransactionCount ?? 0,
                   onOpenTransactions: _goToTransactions,
+                ),
+                const SizedBox(height: 16),
+                DashboardTopExpenseCategoriesWidget(
+                  categories: summary?.topExpenseCategories ?? const [],
                 ),
                 const SizedBox(height: 16),
                 BudgetAlertBannerWidget(
@@ -214,13 +217,6 @@ class DashboardScreenState extends State<DashboardScreen> {
                 RecentTransactionsWidget(
                   transactionsOverride: summary?.recentTransactions,
                   onSeeAll: _goToTransactions,
-                ),
-                const SizedBox(height: 16),
-                const TrendChartWidget(),
-                const SizedBox(height: 16),
-                BudgetBarsWidget(
-                  refreshToken: _refreshVersion,
-                  onManagePressed: _goToBudgets,
                 ),
               ],
             ),

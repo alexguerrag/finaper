@@ -8,7 +8,7 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
   const DashboardFinancialSnapshotWidget({
     super.key,
     required this.periodLabel,
-    required this.balance,
+    required this.netFlow,
     required this.income,
     required this.expense,
     required this.transactionCount,
@@ -16,7 +16,7 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
   });
 
   final String periodLabel;
-  final double balance;
+  final double netFlow;
   final double income;
   final double expense;
   final int transactionCount;
@@ -24,17 +24,18 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final balanceColor = balance >= 0 ? AppTheme.income : AppTheme.expense;
-    final balancePrefix = balance >= 0 ? '' : '-';
-    final balanceText =
-        '$balancePrefix${AppFormatters.formatCurrency(balance.abs())}';
+    final isPositiveFlow = netFlow >= 0;
+    final netFlowColor = isPositiveFlow ? AppTheme.income : AppTheme.expense;
+    final netFlowPrefix = isPositiveFlow ? '' : '-';
+    final netFlowText =
+        '$netFlowPrefix${AppFormatters.formatCurrency(netFlow.abs())}';
 
     final transactionLabel = transactionCount == 1
-        ? '1 movimiento registrado'
-        : '$transactionCount movimientos registrados';
+        ? '1 movimiento este mes'
+        : '$transactionCount movimientos este mes';
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(24),
@@ -59,7 +60,7 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
                   color: AppTheme.primary.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
-                    color: AppTheme.primary.withValues(alpha: 0.28),
+                    color: AppTheme.primary.withValues(alpha: 0.24),
                   ),
                 ),
                 child: Text(
@@ -81,26 +82,36 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           Text(
-            'Balance reciente',
+            'Resumen del mes',
             style: GoogleFonts.manrope(
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: AppTheme.onSurfaceMuted,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
-            balanceText,
+            'Neto entre ingresos y gastos',
             style: GoogleFonts.manrope(
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
-              height: 1,
-              color: balanceColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withValues(alpha: 0.72),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
+          Text(
+            netFlowText,
+            style: GoogleFonts.manrope(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              height: 1,
+              letterSpacing: -0.6,
+              color: netFlowColor,
+            ),
+          ),
+          const SizedBox(height: 18),
           Row(
             children: [
               Expanded(
@@ -120,7 +131,7 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
