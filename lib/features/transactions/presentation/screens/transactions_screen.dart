@@ -89,9 +89,12 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          behavior: SnackBarBehavior.floating,
           content: Text(
             'No se pudieron cargar las transacciones.',
-            style: GoogleFonts.manrope(),
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       );
@@ -189,9 +192,12 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          behavior: SnackBarBehavior.floating,
           content: Text(
             'Transacción duplicada correctamente.',
-            style: GoogleFonts.manrope(),
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       );
@@ -203,9 +209,12 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          behavior: SnackBarBehavior.floating,
           content: Text(
             'No se pudo duplicar la transacción.',
-            style: GoogleFonts.manrope(),
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       );
@@ -217,9 +226,12 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     if (transactionId == null || transactionId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          behavior: SnackBarBehavior.floating,
           content: Text(
             'La transacción no tiene un identificador válido.',
-            style: GoogleFonts.manrope(),
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       );
@@ -284,9 +296,12 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          behavior: SnackBarBehavior.floating,
           content: Text(
             'Transacción eliminada correctamente.',
-            style: GoogleFonts.manrope(),
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       );
@@ -298,9 +313,12 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          behavior: SnackBarBehavior.floating,
           content: Text(
             'No se pudo eliminar la transacción.',
-            style: GoogleFonts.manrope(),
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       );
@@ -495,6 +513,18 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       _listFilterState.dateFilter != TransactionDateFilterOption.all ||
       _listFilterState.sortOption != TransactionSortOption.newestFirst;
 
+  bool get _hasActiveSearch => _searchQuery.trim().isNotEmpty;
+
+  bool get _hasActiveDateFilter =>
+      _listFilterState.dateFilter != TransactionDateFilterOption.all;
+
+  bool get _hasActiveSort =>
+      _listFilterState.sortOption != TransactionSortOption.newestFirst;
+
+  bool get _shouldShowSummaryCard =>
+      _transactions.isNotEmpty &&
+      (!_hasActiveSearch || _filter == _TransactionFilter.all);
+
   String get _activeDateFilterLabel {
     switch (_listFilterState.dateFilter) {
       case TransactionDateFilterOption.all:
@@ -532,10 +562,15 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     final net = totalIncome - totalExpense;
     final visibleIncome = _visibleIncome;
     final visibleExpense = _visibleExpense;
-    final visibleNet = visibleIncome - visibleExpense;
     final grouped = _groupedTransactions;
     final visibleTransactions = _visibleTransactions;
     final canPop = Navigator.of(context).canPop();
+    final visibleCount = visibleTransactions.length;
+    final summaryValue = _filter == _TransactionFilter.expense
+        ? visibleExpense
+        : _filter == _TransactionFilter.income
+            ? visibleIncome
+            : net;
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -559,7 +594,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
             : RefreshIndicator(
                 onRefresh: refreshTransactions,
                 child: ListView(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   children: [
                     Row(
                       children: [
@@ -590,11 +625,12 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                                   color: AppTheme.onSurface,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 6),
                               Text(
-                                _resultSummaryText(visibleTransactions.length),
+                                _resultSummaryText(visibleCount),
                                 style: GoogleFonts.manrope(
                                   fontSize: 13,
+                                  fontWeight: FontWeight.w600,
                                   color: AppTheme.onSurfaceMuted,
                                 ),
                               ),
@@ -616,7 +652,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
                     TextField(
                       controller: _searchController,
                       onChanged: (value) {
@@ -651,7 +687,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
@@ -691,109 +727,41 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    if (_hasActiveFilters)
+                    if (_hasActiveFilters) ...[
+                      const SizedBox(height: 14),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          _ActiveFilterBadge(
-                            label: 'Período: $_activeDateFilterLabel',
-                          ),
-                          _ActiveFilterBadge(
-                            label: 'Orden: $_activeSortLabel',
-                          ),
-                        ],
-                      ),
-                    if (_hasActiveFilters) const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surface,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _SummaryItem(
-                                  label: 'Ingresos',
-                                  value: totalIncome,
-                                  color: AppTheme.income,
-                                ),
-                              ),
-                              Expanded(
-                                child: _SummaryItem(
-                                  label: 'Gastos',
-                                  value: totalExpense,
-                                  color: AppTheme.expense,
-                                ),
-                              ),
-                              Expanded(
-                                child: _SummaryItem(
-                                  label: 'Neto',
-                                  value: net,
-                                  color: net >= 0
-                                      ? AppTheme.income
-                                      : AppTheme.expense,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          Divider(
-                            color: Colors.white.withValues(alpha: 0.08),
-                            height: 1,
-                          ),
-                          const SizedBox(height: 14),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _SummaryItem(
-                                  label: 'Visible ingresos',
-                                  value: visibleIncome,
-                                  color: AppTheme.income,
-                                ),
-                              ),
-                              Expanded(
-                                child: _SummaryItem(
-                                  label: 'Visible gastos',
-                                  value: visibleExpense,
-                                  color: AppTheme.expense,
-                                ),
-                              ),
-                              Expanded(
-                                child: _SummaryItem(
-                                  label: 'Visible neto',
-                                  value: visibleNet,
-                                  color: visibleNet >= 0
-                                      ? AppTheme.income
-                                      : AppTheme.expense,
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (_hasActiveFilters) ...[
-                            const SizedBox(height: 14),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton.icon(
-                                onPressed: _clearFilters,
-                                icon: const Icon(Icons.restart_alt_rounded),
-                                label: Text(
-                                  'Limpiar filtros',
-                                  style: GoogleFonts.manrope(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
+                          if (_hasActiveDateFilter)
+                            _ActiveFilterBadge(
+                              label: 'Período: $_activeDateFilterLabel',
                             ),
-                          ],
+                          if (_hasActiveSort)
+                            _ActiveFilterBadge(
+                              label: 'Orden: $_activeSortLabel',
+                            ),
+                          if (_hasActiveSearch)
+                            const _ActiveFilterBadge(
+                              label: 'Búsqueda activa',
+                            ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 20),
+                    ],
+                    if (_shouldShowSummaryCard) ...[
+                      const SizedBox(height: 18),
+                      _AdaptiveSummaryCard(
+                        filter: _filter,
+                        totalIncome: totalIncome,
+                        totalExpense: totalExpense,
+                        totalNet: net,
+                        visibleCount: visibleCount,
+                        summaryValue: summaryValue,
+                        onClearFilters:
+                            _hasActiveFilters ? _clearFilters : null,
+                      ),
+                    ],
+                    const SizedBox(height: 24),
                     if (grouped.isEmpty)
                       _EmptyTransactionsState(
                         hasActiveFilters: _hasActiveFilters,
@@ -818,7 +786,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                               income: dayIncome,
                               expense: dayExpense,
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 12),
                             ...entry.value.map(
                               (item) => _TransactionCard(
                                 item: item,
@@ -837,7 +805,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                                 },
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 10),
                           ],
                         );
                       }),
@@ -877,7 +845,8 @@ class _FilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? AppTheme.primary : AppTheme.surface,
@@ -954,6 +923,154 @@ class _ActiveFilterBadge extends StatelessWidget {
   }
 }
 
+class _AdaptiveSummaryCard extends StatelessWidget {
+  const _AdaptiveSummaryCard({
+    required this.filter,
+    required this.totalIncome,
+    required this.totalExpense,
+    required this.totalNet,
+    required this.visibleCount,
+    required this.summaryValue,
+    required this.onClearFilters,
+  });
+
+  final _TransactionFilter filter;
+  final double totalIncome;
+  final double totalExpense;
+  final double totalNet;
+  final int visibleCount;
+  final double summaryValue;
+  final VoidCallback? onClearFilters;
+
+  @override
+  Widget build(BuildContext context) {
+    if (filter == _TransactionFilter.all) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.04),
+          ),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: _SummaryItem(
+                    label: 'Ingresos',
+                    value: totalIncome,
+                    color: AppTheme.income,
+                  ),
+                ),
+                Expanded(
+                  child: _SummaryItem(
+                    label: 'Gastos',
+                    value: totalExpense,
+                    color: AppTheme.expense,
+                  ),
+                ),
+                Expanded(
+                  child: _SummaryItem(
+                    label: 'Balance',
+                    value: totalNet,
+                    color: totalNet >= 0 ? AppTheme.income : AppTheme.expense,
+                  ),
+                ),
+              ],
+            ),
+            if (onClearFilters != null) ...[
+              const SizedBox(height: 14),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: onClearFilters,
+                  icon: const Icon(Icons.restart_alt_rounded),
+                  label: Text(
+                    'Limpiar filtros',
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    final isIncome = filter == _TransactionFilter.income;
+    final title = isIncome ? 'Ingresos visibles' : 'Gastos visibles';
+    final accentColor = isIncome ? AppTheme.income : AppTheme.expense;
+    final subtitle = visibleCount == 1
+        ? '1 movimiento en pantalla'
+        : '$visibleCount movimientos en pantalla';
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.04),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.onSurfaceMuted,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  AppFormatters.formatCurrency(summaryValue.abs()),
+                  style: GoogleFonts.manrope(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: accentColor,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.onSurfaceMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (onClearFilters != null)
+            TextButton.icon(
+              onPressed: onClearFilters,
+              icon: const Icon(Icons.restart_alt_rounded),
+              label: Text(
+                'Limpiar',
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SummaryItem extends StatelessWidget {
   const _SummaryItem({
     required this.label,
@@ -977,6 +1094,7 @@ class _SummaryItem extends StatelessWidget {
           label,
           style: GoogleFonts.manrope(
             fontSize: 12,
+            fontWeight: FontWeight.w600,
             color: AppTheme.onSurfaceMuted,
           ),
         ),
@@ -984,6 +1102,7 @@ class _SummaryItem extends StatelessWidget {
         Text(
           '$prefix$formatted',
           style: GoogleFonts.manrope(
+            fontSize: 15,
             fontWeight: FontWeight.w800,
             color: color,
           ),
@@ -1008,45 +1127,66 @@ class _TransactionSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: GoogleFonts.manrope(
-              fontWeight: FontWeight.w800,
-              color: AppTheme.onSurface,
-            ),
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.05),
         ),
-        Text(
-          '$count mov.',
-          style: GoogleFonts.manrope(
-            fontSize: 12,
-            color: AppTheme.onSurfaceMuted,
-          ),
-        ),
-        const SizedBox(width: 12),
-        if (income > 0)
-          Text(
-            '+${AppFormatters.formatCurrency(income)}',
-            style: GoogleFonts.manrope(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.income,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.manrope(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.onSurface,
+              ),
             ),
           ),
-        if (income > 0 && expense > 0) const SizedBox(width: 8),
-        if (expense > 0)
-          Text(
-            '-${AppFormatters.formatCurrency(expense)}',
-            style: GoogleFonts.manrope(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.expense,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              '$count mov.',
+              style: GoogleFonts.manrope(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.onSurfaceMuted,
+              ),
             ),
           ),
-      ],
+          if (income > 0) ...[
+            const SizedBox(width: 10),
+            Text(
+              '+${AppFormatters.formatCurrency(income)}',
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.income,
+              ),
+            ),
+          ],
+          if (expense > 0) ...[
+            const SizedBox(width: 8),
+            Text(
+              '-${AppFormatters.formatCurrency(expense)}',
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.expense,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -1078,6 +1218,9 @@ class _TransactionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.04),
+        ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -1115,10 +1258,10 @@ class _TransactionCard extends StatelessWidget {
                           color: AppTheme.onSurface,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Wrap(
                         spacing: 8,
-                        runSpacing: 6,
+                        runSpacing: 8,
                         children: [
                           _MetaBadge(
                             icon: Icons.category_rounded,
@@ -1135,13 +1278,14 @@ class _TransactionCard extends StatelessWidget {
                         ],
                       ),
                       if (hasNote) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Text(
                           note,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.manrope(
                             fontSize: 12,
+                            height: 1.35,
                             color: AppTheme.onSurfaceMuted,
                           ),
                         ),
@@ -1164,9 +1308,23 @@ class _TransactionCard extends StatelessWidget {
                     PopupMenuButton<_TransactionAction>(
                       tooltip: 'Acciones',
                       color: AppTheme.surfaceElevated,
-                      icon: const Icon(
-                        Icons.more_vert_rounded,
-                        color: AppTheme.onSurfaceMuted,
+                      padding: EdgeInsets.zero,
+                      splashRadius: 18,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      icon: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.04),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.more_vert_rounded,
+                          size: 18,
+                          color: AppTheme.onSurfaceMuted,
+                        ),
                       ),
                       onSelected: (action) {
                         switch (action) {
@@ -1184,6 +1342,7 @@ class _TransactionCard extends StatelessWidget {
                           child: Text(
                             'Editar',
                             style: GoogleFonts.manrope(
+                              fontWeight: FontWeight.w600,
                               color: AppTheme.onSurface,
                             ),
                           ),
@@ -1193,6 +1352,7 @@ class _TransactionCard extends StatelessWidget {
                           child: Text(
                             'Eliminar',
                             style: GoogleFonts.manrope(
+                              fontWeight: FontWeight.w600,
                               color: AppTheme.expense,
                             ),
                           ),
@@ -1222,10 +1382,13 @@ class _MetaBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.04),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1236,12 +1399,15 @@ class _MetaBadge extends StatelessWidget {
             color: AppTheme.onSurfaceMuted,
           ),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: GoogleFonts.manrope(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.onSurfaceMuted,
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.manrope(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.onSurfaceMuted,
+              ),
             ),
           ),
         ],
@@ -1264,32 +1430,36 @@ class _EmptyTransactionsState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.04),
+        ),
       ),
       child: Column(
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(16),
+              color: Colors.white.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: const Icon(
               Icons.receipt_long_rounded,
               color: AppTheme.onSurfaceMuted,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Text(
             hasActiveFilters
-                ? 'No encontramos transacciones con esos filtros'
+                ? 'No encontramos movimientos'
                 : 'Todavía no tienes transacciones',
             textAlign: TextAlign.center,
             style: GoogleFonts.manrope(
+              fontSize: 16,
               fontWeight: FontWeight.w800,
               color: AppTheme.onSurface,
             ),
@@ -1297,14 +1467,15 @@ class _EmptyTransactionsState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             hasActiveFilters
-                ? 'Prueba limpiando la búsqueda o cambiando el filtro.'
-                : 'Comienza registrando tu primer gasto o ingreso.',
+                ? 'Prueba con otros filtros o limpia la búsqueda actual.'
+                : 'Comienza registrando tu primer ingreso o gasto.',
             textAlign: TextAlign.center,
             style: GoogleFonts.manrope(
+              height: 1.35,
               color: AppTheme.onSurfaceMuted,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -1313,6 +1484,14 @@ class _EmptyTransactionsState extends StatelessWidget {
               if (hasActiveFilters)
                 OutlinedButton.icon(
                   onPressed: onClearFilters,
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.10),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
                   icon: const Icon(Icons.restart_alt_rounded),
                   label: Text(
                     'Limpiar filtros',
@@ -1323,6 +1502,11 @@ class _EmptyTransactionsState extends StatelessWidget {
                 ),
               FilledButton.icon(
                 onPressed: onAddTransaction,
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
                 icon: const Icon(Icons.add_rounded),
                 label: Text(
                   'Nueva transacción',
