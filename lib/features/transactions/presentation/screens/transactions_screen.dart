@@ -6,7 +6,9 @@ import '../../../../core/theme/app_theme.dart';
 import '../../data/models/transaction_model.dart';
 import '../../di/transactions_registry.dart';
 import '../../domain/usecases/add_transaction.dart';
+import '../../domain/usecases/delete_transaction.dart';
 import '../../domain/usecases/get_all_transactions.dart';
+import '../../domain/usecases/update_transaction.dart';
 import 'add_transaction_sheet.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -19,6 +21,8 @@ class TransactionsScreen extends StatefulWidget {
 class TransactionsScreenState extends State<TransactionsScreen> {
   late final GetAllTransactions _getAllTransactions;
   late final AddTransaction _addTransaction;
+  late final UpdateTransaction _updateTransaction;
+  late final DeleteTransaction _deleteTransaction;
 
   bool _isLoading = true;
   String _searchQuery = '';
@@ -33,6 +37,8 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     super.initState();
     _getAllTransactions = TransactionsRegistry.module.getAllTransactions;
     _addTransaction = TransactionsRegistry.module.addTransaction;
+    _updateTransaction = TransactionsRegistry.module.updateTransaction;
+    _deleteTransaction = TransactionsRegistry.module.deleteTransaction;
     _loadTransactions();
   }
 
@@ -72,6 +78,15 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       setState(() {
         _isLoading = false;
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudieron cargar las transacciones.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
     }
   }
 
@@ -87,6 +102,103 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _openEditTransactionSheet(TransactionModel transaction) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => AddTransactionSheet(
+        initialTransaction: transaction,
+        onAdd: (updatedTransaction) async {
+          await _updateTransaction(updatedTransaction);
+          await refreshTransactions();
+        },
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteTransaction(TransactionModel transaction) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppTheme.surfaceElevated,
+          title: Text(
+            'Eliminar transacción',
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w800,
+              color: AppTheme.onSurface,
+            ),
+          ),
+          content: Text(
+            '¿Seguro que quieres eliminar "${transaction.description}"?',
+            style: GoogleFonts.manrope(
+              color: AppTheme.onSurfaceMuted,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(false);
+              },
+              child: Text(
+                'Cancelar',
+                style: GoogleFonts.manrope(),
+              ),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(true);
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.expense,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(
+                'Eliminar',
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await _deleteTransaction(transaction.id ?? '');
+      await refreshTransactions();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Transacción eliminada correctamente.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    } catch (e, s) {
+      debugPrint('Delete transaction error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo eliminar la transacción.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    }
   }
 
   List<TransactionModel> get _filteredTransactions {
@@ -363,39 +475,97 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            item.description,
-                                            style: GoogleFonts.manrope(
-                                              fontWeight: FontWeight.w700,
-                                              color: AppTheme.onSurface,
-                                            ),
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(12),
+                                        onTap: () {
+                                          _openEditTransactionSheet(item);
+                                        },
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 4,
                                           ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            item.category,
-                                            style: GoogleFonts.manrope(
-                                              fontSize: 12,
-                                              color: AppTheme.onSurfaceMuted,
-                                            ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                item.description,
+                                                style: GoogleFonts.manrope(
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AppTheme.onSurface,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                item.category,
+                                                style: GoogleFonts.manrope(
+                                                  fontSize: 12,
+                                                  color:
+                                                      AppTheme.onSurfaceMuted,
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ],
+                                        ),
                                       ),
                                     ),
-                                    Text(
-                                      _formatSignedAmount(
-                                        value: item.amount,
-                                        isIncome: item.isIncome,
-                                      ),
-                                      style: GoogleFonts.manrope(
-                                        fontWeight: FontWeight.w800,
-                                        color: item.isIncome
-                                            ? AppTheme.income
-                                            : AppTheme.expense,
-                                      ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          _formatSignedAmount(
+                                            value: item.amount,
+                                            isIncome: item.isIncome,
+                                          ),
+                                          style: GoogleFonts.manrope(
+                                            fontWeight: FontWeight.w800,
+                                            color: item.isIncome
+                                                ? AppTheme.income
+                                                : AppTheme.expense,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        PopupMenuButton<_TransactionAction>(
+                                          tooltip: 'Acciones',
+                                          color: AppTheme.surfaceElevated,
+                                          icon: const Icon(
+                                            Icons.more_vert_rounded,
+                                            color: AppTheme.onSurfaceMuted,
+                                          ),
+                                          onSelected: (action) {
+                                            switch (action) {
+                                              case _TransactionAction.edit:
+                                                _openEditTransactionSheet(item);
+                                                break;
+                                              case _TransactionAction.delete:
+                                                _confirmDeleteTransaction(item);
+                                                break;
+                                            }
+                                          },
+                                          itemBuilder: (context) => [
+                                            PopupMenuItem<_TransactionAction>(
+                                              value: _TransactionAction.edit,
+                                              child: Text(
+                                                'Editar',
+                                                style: GoogleFonts.manrope(
+                                                  color: AppTheme.onSurface,
+                                                ),
+                                              ),
+                                            ),
+                                            PopupMenuItem<_TransactionAction>(
+                                              value: _TransactionAction.delete,
+                                              child: Text(
+                                                'Eliminar',
+                                                style: GoogleFonts.manrope(
+                                                  color: AppTheme.expense,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -416,6 +586,11 @@ enum _TransactionFilter {
   all,
   income,
   expense,
+}
+
+enum _TransactionAction {
+  edit,
+  delete,
 }
 
 class _FilterChip extends StatelessWidget {

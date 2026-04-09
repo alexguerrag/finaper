@@ -8,6 +8,8 @@ import '../../../accounts/domain/entities/account_entity.dart';
 import '../../../categories/di/categories_registry.dart';
 import '../../../categories/domain/entities/category_entity.dart';
 import '../../data/models/transaction_model.dart';
+import '../../di/transactions_registry.dart';
+import '../../domain/entities/transaction_form_preferences_entity.dart';
 
 class AddTransactionSheet extends StatefulWidget {
   const AddTransactionSheet({
@@ -53,6 +55,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
   String? _lastExpenseCategoryId;
   String? _lastIncomeCategoryId;
+  String? _lastAccountId;
 
   @override
   void initState() {
@@ -81,6 +84,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     _noteController.text = initial.note;
     _selectedAccountId = initial.accountId;
     _selectedCategoryId = initial.categoryId;
+    _lastAccountId = initial.accountId;
 
     if (initial.isIncome) {
       _lastIncomeCategoryId = initial.categoryId;
@@ -121,6 +125,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     });
 
     try {
+      final preferences =
+          await TransactionsRegistry.module.getTransactionFormPreferences();
+      _applyPreferences(preferences);
+
       final accounts = await AccountsRegistry.module.getAccounts();
       final categories = await CategoriesRegistry.module.getCategoriesByKind(
         kind: _currentCategoryKind,
@@ -136,6 +144,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         _categories = categories;
         _selectedAccountId = resolvedAccountId;
         _selectedCategoryId = resolvedCategoryId;
+        _lastAccountId = resolvedAccountId;
         _rememberCurrentCategorySelection(resolvedCategoryId);
         _isLoadingCoreData = false;
       });
@@ -160,13 +169,39 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     }
   }
 
+  void _applyPreferences(TransactionFormPreferencesEntity preferences) {
+    if (widget.isEditing) return;
+
+    _lastAccountId = preferences.lastAccountId;
+    _lastExpenseCategoryId = preferences.lastExpenseCategoryId;
+    _lastIncomeCategoryId = preferences.lastIncomeCategoryId;
+
+    switch (preferences.lastQuickDateOption) {
+      case 'today':
+        _quickDateOption = _QuickDateOption.today;
+        _selectedDate = _dateOnly(DateTime.now());
+        break;
+      case 'yesterday':
+        _quickDateOption = _QuickDateOption.yesterday;
+        _selectedDate = _dateOnly(
+          DateTime.now().subtract(const Duration(days: 1)),
+        );
+        break;
+      default:
+        _quickDateOption = _QuickDateOption.today;
+        _selectedDate = _dateOnly(DateTime.now());
+    }
+
+    _selectedAccountId = preferences.lastAccountId;
+    _selectedCategoryId = _preferredCategoryIdForCurrentType;
+  }
+
   String? _resolveAccountId(List<AccountEntity> accounts) {
     if (accounts.isEmpty) return null;
 
-    final alreadySelected = _selectedAccountId;
-    if (alreadySelected != null &&
-        accounts.any((account) => account.id == alreadySelected)) {
-      return alreadySelected;
+    final selected = _selectedAccountId ?? _lastAccountId;
+    if (selected != null && accounts.any((account) => account.id == selected)) {
+      return selected;
     }
 
     return accounts.first.id;
@@ -299,7 +334,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
       setState(() {
         _selectedDate = _dateOnly(picked);
-        _quickDateOption = _resolveQuickDateOption(picked);
+        _quickDateOption = _QuickDateOption.custom;
       });
     } catch (e, s) {
       debugPrint('Date picker error: $e');
@@ -315,6 +350,19 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     return left.year == right.year &&
         left.month == right.month &&
         left.day == right.day;
+  }
+
+  Future<void> _persistPreferences() async {
+    if (widget.isEditing) return;
+
+    await TransactionsRegistry.module.saveTransactionFormPreferences(
+      TransactionFormPreferencesEntity(
+        lastAccountId: _selectedAccountId,
+        lastExpenseCategoryId: _lastExpenseCategoryId,
+        lastIncomeCategoryId: _lastIncomeCategoryId,
+        lastQuickDateOption: _quickDateOption.name,
+      ),
+    );
   }
 
   Future<void> _submit() async {
@@ -372,6 +420,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       );
 
       await widget.onAdd(transaction);
+      await _persistPreferences();
 
       if (!mounted) return;
 
@@ -601,6 +650,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                                 onChanged: (value) {
                                   setState(() {
                                     _selectedAccountId = value;
+                                    _lastAccountId = value;
                                   });
                                 },
                               ),

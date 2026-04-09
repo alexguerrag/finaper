@@ -1,11 +1,11 @@
 import '../repositories/transactions_repository.dart';
 
 class DeleteTransaction {
-  final TransactionsRepository repository;
+  const DeleteTransaction(this._repository);
 
-  DeleteTransaction(this.repository);
+  final TransactionsRepository _repository;
 
-  Future<void> call(String id) async {
-    return repository.delete(id);
+  Future<void> call(String id) {
+    return _repository.delete(id);
   }
 }
