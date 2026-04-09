@@ -7,12 +7,23 @@ class DashboardSummaryData {
     required this.totalIncome,
     required this.totalExpense,
     required this.recentTransactions,
+    required this.recentPeriodIncome,
+    required this.recentPeriodExpense,
+    required this.recentPeriodBalance,
+    required this.recentPeriodTransactionCount,
+    required this.recentPeriodLabel,
   });
 
   final double balance;
   final double totalIncome;
   final double totalExpense;
   final List<TransactionModel> recentTransactions;
+
+  final double recentPeriodIncome;
+  final double recentPeriodExpense;
+  final double recentPeriodBalance;
+  final int recentPeriodTransactionCount;
+  final String recentPeriodLabel;
 }
 
 class DashboardLocalDataSource {
@@ -23,25 +34,59 @@ class DashboardLocalDataSource {
   Future<DashboardSummaryData> getSummary() async {
     final transactions = await _transactionLocalDataSource.getTransactions();
 
-    double income = 0;
-    double expense = 0;
+    double totalIncome = 0;
+    double totalExpense = 0;
 
     for (final transaction in transactions) {
       if (transaction.isIncome) {
-        income += transaction.amount;
+        totalIncome += transaction.amount;
       } else {
-        expense += transaction.amount;
+        totalExpense += transaction.amount;
       }
     }
 
     final sorted = List<TransactionModel>.from(transactions)
       ..sort((a, b) => b.date.compareTo(a.date));
 
+    final now = DateTime.now();
+    final today = _dateOnly(now);
+    final recentStart = today.subtract(const Duration(days: 29));
+
+    double recentIncome = 0;
+    double recentExpense = 0;
+    int recentCount = 0;
+
+    for (final transaction in transactions) {
+      final transactionDate = _dateOnly(transaction.date);
+
+      if (transactionDate.isBefore(recentStart) ||
+          transactionDate.isAfter(today)) {
+        continue;
+      }
+
+      recentCount++;
+
+      if (transaction.isIncome) {
+        recentIncome += transaction.amount;
+      } else {
+        recentExpense += transaction.amount;
+      }
+    }
+
     return DashboardSummaryData(
-      balance: income - expense,
-      totalIncome: income,
-      totalExpense: expense,
+      balance: totalIncome - totalExpense,
+      totalIncome: totalIncome,
+      totalExpense: totalExpense,
       recentTransactions: sorted.take(5).toList(),
+      recentPeriodIncome: recentIncome,
+      recentPeriodExpense: recentExpense,
+      recentPeriodBalance: recentIncome - recentExpense,
+      recentPeriodTransactionCount: recentCount,
+      recentPeriodLabel: 'Últimos 30 días',
     );
+  }
+
+  DateTime _dateOnly(DateTime value) {
+    return DateTime(value.year, value.month, value.day);
   }
 }
