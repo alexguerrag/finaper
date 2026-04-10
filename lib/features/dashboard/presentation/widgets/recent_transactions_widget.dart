@@ -12,10 +12,14 @@ class RecentTransactionsWidget extends StatelessWidget {
     super.key,
     this.transactionsOverride,
     this.onSeeAll,
+    this.title = 'Movimientos del mes',
+    this.emptyMessage = 'Aún no tienes movimientos en este mes',
   });
 
   final List<TransactionModel>? transactionsOverride;
   final VoidCallback? onSeeAll;
+  final String title;
+  final String emptyMessage;
 
   String _formatAmount(TransactionModel tx) {
     final formatted = AppFormatters.formatCurrency(tx.amount.abs());
@@ -47,7 +51,7 @@ class RecentTransactionsWidget extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Últimas transacciones',
+                      title,
                       style: GoogleFonts.manrope(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -72,7 +76,7 @@ class RecentTransactionsWidget extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                   child: Text(
-                    'Aún no tienes transacciones recientes',
+                    emptyMessage,
                     style: GoogleFonts.manrope(
                       fontSize: 12,
                       color: AppTheme.onSurfaceMuted,

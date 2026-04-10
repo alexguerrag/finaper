@@ -5,12 +5,10 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/local/dashboard_local_datasource.dart';
 import '../../di/dashboard_registry.dart';
-import '../widgets/balance_hero_widget.dart';
 import '../widgets/budget_alert_banner_widget.dart';
-import '../widgets/budget_bars_widget.dart';
-import '../widgets/kpi_cards_widget.dart';
+import '../widgets/dashboard_financial_snapshot_widget.dart';
+import '../widgets/dashboard_top_expense_categories_widget.dart';
 import '../widgets/recent_transactions_widget.dart';
-import '../widgets/trend_chart_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -26,6 +24,7 @@ class DashboardScreen extends StatefulWidget {
 
 class DashboardScreenState extends State<DashboardScreen> {
   late final DashboardLocalDataSource _dashboardLocalDataSource;
+  late DateTime _selectedMonth;
 
   bool _isLoading = true;
   int _refreshVersion = 0;
@@ -36,6 +35,7 @@ class DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _dashboardLocalDataSource =
         DashboardRegistry.module.dashboardLocalDataSource;
+    _selectedMonth = _monthStart(DateTime.now());
     _loadSummary();
   }
 
@@ -52,7 +52,9 @@ class DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _loadSummary() async {
     try {
-      final summary = await _dashboardLocalDataSource.getSummary();
+      final summary = await _dashboardLocalDataSource.getSummary(
+        month: _selectedMonth,
+      );
 
       if (!mounted) return;
 
@@ -70,6 +72,35 @@ class DashboardScreenState extends State<DashboardScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _goToPreviousMonth() async {
+    setState(() {
+      _selectedMonth =
+          DateTime(_selectedMonth.year, _selectedMonth.month - 1, 1);
+      _isLoading = true;
+    });
+
+    await _loadSummary();
+  }
+
+  Future<void> _goToNextMonth() async {
+    if (!_canGoToNextMonth) {
+      return;
+    }
+
+    setState(() {
+      _selectedMonth =
+          DateTime(_selectedMonth.year, _selectedMonth.month + 1, 1);
+      _isLoading = true;
+    });
+
+    await _loadSummary();
+  }
+
+  bool get _canGoToNextMonth {
+    final currentMonth = _monthStart(DateTime.now());
+    return _selectedMonth.isBefore(currentMonth);
   }
 
   Future<void> _goToTransactions() async {
@@ -116,8 +147,14 @@ class DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  DateTime _monthStart(DateTime value) {
+    return DateTime(value.year, value.month, 1);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final summary = _summary;
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
@@ -131,7 +168,7 @@ class DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             Text(
-              'Tu resumen financiero',
+              'Tu inicio financiero',
               style: GoogleFonts.manrope(
                 fontSize: 12,
                 color: AppTheme.onSurfaceMuted,
@@ -196,27 +233,28 @@ class DashboardScreenState extends State<DashboardScreen> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                DashboardFinancialSnapshotWidget(
+                  monthLabel: summary?.monthLabel ?? '',
+                  netFlow: summary?.monthNetFlow ?? 0,
+                  income: summary?.monthIncome ?? 0,
+                  expense: summary?.monthExpense ?? 0,
+                  canGoToNextMonth: _canGoToNextMonth,
+                  onPreviousMonth: _goToPreviousMonth,
+                  onNextMonth: _goToNextMonth,
+                  onOpenTransactions: _goToTransactions,
+                ),
+                const SizedBox(height: 16),
+                DashboardTopExpenseCategoriesWidget(
+                  categories: summary?.topExpenseCategories ?? const [],
+                ),
+                const SizedBox(height: 16),
                 BudgetAlertBannerWidget(
-                  refreshToken: _refreshVersion,
-                  onManagePressed: _goToBudgets,
-                ),
-                const SizedBox(height: 12),
-                BalanceHeroWidget(balanceOverride: _summary?.balance),
-                const SizedBox(height: 12),
-                KpiCardsWidget(
-                  incomeOverride: _summary?.totalIncome,
-                  expenseOverride: _summary?.totalExpense,
-                ),
-                const SizedBox(height: 16),
-                const TrendChartWidget(),
-                const SizedBox(height: 16),
-                BudgetBarsWidget(
                   refreshToken: _refreshVersion,
                   onManagePressed: _goToBudgets,
                 ),
                 const SizedBox(height: 16),
                 RecentTransactionsWidget(
-                  transactionsOverride: _summary?.recentTransactions,
+                  transactionsOverride: summary?.recentTransactions,
                   onSeeAll: _goToTransactions,
                 ),
               ],

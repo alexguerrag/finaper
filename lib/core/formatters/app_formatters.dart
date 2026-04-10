@@ -25,6 +25,21 @@ class AppFormatters {
     'MXN': 2,
   };
 
+  static const List<String> _spanishMonthNames = [
+    'enero',
+    'febrero',
+    'marzo',
+    'abril',
+    'mayo',
+    'junio',
+    'julio',
+    'agosto',
+    'septiembre',
+    'octubre',
+    'noviembre',
+    'diciembre',
+  ];
+
   static AppSettingsEntity get _settings =>
       SettingsRegistry.module.controller.currentSettings;
 
@@ -85,13 +100,51 @@ class AppFormatters {
   }
 
   static String formatMonthYear(DateTime value) {
+    return formatMonthYearWith(
+      value: value,
+      localeCode: _resolvedLocaleCode,
+    );
+  }
+
+  static String formatMonthYearWith({
+    required DateTime value,
+    required String localeCode,
+  }) {
+    final normalizedLocale = _normalizeLocaleCode(localeCode);
+
     try {
-      return DateFormat.yMMMM(_resolvedLocaleCode).format(value);
+      return DateFormat.yMMMM(normalizedLocale).format(value);
     } catch (e, s) {
-      debugPrint('formatMonthYear error: $e');
+      if (_isLocaleDataNotInitializedError(e)) {
+        return _fallbackMonthYear(
+          value: value,
+          localeCode: normalizedLocale,
+        );
+      }
+
+      debugPrint('formatMonthYearWith error: $e');
       debugPrintStack(stackTrace: s);
-      return '${value.month}/${value.year}';
+      return _fallbackMonthYear(
+        value: value,
+        localeCode: normalizedLocale,
+      );
     }
+  }
+
+  static bool _isLocaleDataNotInitializedError(Object error) {
+    return error.toString().contains('Locale data has not been initialized');
+  }
+
+  static String _fallbackMonthYear({
+    required DateTime value,
+    required String localeCode,
+  }) {
+    if (localeCode.toLowerCase().startsWith('es')) {
+      final monthName = _spanishMonthNames[value.month - 1];
+      return '$monthName ${value.year}';
+    }
+
+    return '${value.month}/${value.year}';
   }
 
   static String _normalizeLocaleCode(String value) {
