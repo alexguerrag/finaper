@@ -36,9 +36,9 @@ class DashboardTopExpenseCategoriesWidget extends StatelessWidget {
                 color: AppTheme.onSurface,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
-              'Este mes no hay gastos registrados.',
+              'No hay gastos registrados.',
               style: GoogleFonts.manrope(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -49,6 +49,13 @@ class DashboardTopExpenseCategoriesWidget extends StatelessWidget {
         ),
       );
     }
+
+    final sorted = [...categories]
+      ..sort((a, b) => b.amount.compareTo(a.amount));
+    final totalAmount = sorted.fold<double>(
+      0,
+      (sum, category) => sum + category.amount,
+    );
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -70,86 +77,64 @@ class DashboardTopExpenseCategoriesWidget extends StatelessWidget {
               color: AppTheme.onSurface,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            'Este mes',
-            style: GoogleFonts.manrope(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.onSurfaceMuted,
+          const SizedBox(height: 14),
+          _ExpenseTotalHeader(totalAmount: totalAmount),
+          const SizedBox(height: 16),
+          ...sorted.map(
+            (category) => Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: _ExpenseCategoryBarRow(
+                category: category,
+                color: _resolveCategoryColor(category),
+              ),
             ),
           ),
-          const SizedBox(height: 16),
-          ...categories.map(_CategoryRow.new),
         ],
       ),
     );
   }
+
+  Color _resolveCategoryColor(DashboardExpenseCategorySummary category) {
+    if (category.colorValue != null && category.colorValue != 0) {
+      return Color(category.colorValue!).withValues(alpha: 1.0);
+    }
+
+    return AppTheme.primary;
+  }
 }
 
-class _CategoryRow extends StatelessWidget {
-  const _CategoryRow(this.category);
+class _ExpenseTotalHeader extends StatelessWidget {
+  const _ExpenseTotalHeader({
+    required this.totalAmount,
+  });
 
-  final DashboardExpenseCategorySummary category;
+  final double totalAmount;
 
   @override
   Widget build(BuildContext context) {
-    final color = category.colorValue != null && category.colorValue != 0
-        ? Color(category.colorValue!).withValues(alpha: 1.0)
-        : AppTheme.primary;
-
-    final percentageLabel = '${(category.percentage * 100).round()}%';
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Column(
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.05),
+        ),
+      ),
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  category.categoryName,
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.onSurface,
-                  ),
-                ),
-              ),
-              Text(
-                percentageLabel,
-                style: GoogleFonts.manrope(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.onSurfaceMuted,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: category.percentage.clamp(0, 1).toDouble(),
-              minHeight: 8,
-              backgroundColor: Colors.white.withValues(alpha: 0.06),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
+          Container(
+            width: 10,
+            height: 10,
+            decoration: const BoxDecoration(
+              color: AppTheme.expense,
+              shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
+          const SizedBox(width: 10),
+          Expanded(
             child: Text(
-              AppFormatters.formatCurrency(category.amount),
+              'Total gastado',
               style: GoogleFonts.manrope(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -157,8 +142,91 @@ class _CategoryRow extends StatelessWidget {
               ),
             ),
           ),
+          Text(
+            AppFormatters.formatCurrency(totalAmount),
+            style: GoogleFonts.manrope(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.onSurface,
+            ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _ExpenseCategoryBarRow extends StatelessWidget {
+  const _ExpenseCategoryBarRow({
+    required this.category,
+    required this.color,
+  });
+
+  final DashboardExpenseCategorySummary category;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final percentage = (category.percentage * 100).round();
+    final percentageLabel = '$percentage%';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                category.categoryName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.manrope(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.onSurface,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              percentageLabel,
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.onSurfaceMuted,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: category.percentage.clamp(0, 1).toDouble(),
+            minHeight: 9,
+            backgroundColor: Colors.white.withValues(alpha: 0.06),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          AppFormatters.formatCurrency(category.amount),
+          style: GoogleFonts.manrope(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.onSurfaceMuted,
+          ),
+        ),
+      ],
     );
   }
 }

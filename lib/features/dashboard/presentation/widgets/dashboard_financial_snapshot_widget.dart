@@ -56,10 +56,10 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
           Text(
             netFlowText,
             style: GoogleFonts.manrope(
-              fontSize: 32,
+              fontSize: 36,
               fontWeight: FontWeight.w800,
               height: 1,
-              letterSpacing: -0.6,
+              letterSpacing: -0.8,
               color: netFlowColor,
             ),
           ),
@@ -82,20 +82,6 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 14),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: onOpenTransactions,
-              icon: const Icon(Icons.arrow_forward_rounded),
-              label: Text(
-                'Ver movimientos',
-                style: GoogleFonts.manrope(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
           ),
         ],
       ),
