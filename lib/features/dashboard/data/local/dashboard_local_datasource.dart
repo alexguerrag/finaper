@@ -29,6 +29,7 @@ class DashboardSummaryData {
     required this.monthNetFlow,
     required this.monthLabel,
     required this.topExpenseCategories,
+    required this.hasTransactionsInMonth,
   });
 
   final double totalBalance;
@@ -41,6 +42,7 @@ class DashboardSummaryData {
   final double monthNetFlow;
   final String monthLabel;
   final List<DashboardExpenseCategorySummary> topExpenseCategories;
+  final bool hasTransactionsInMonth;
 }
 
 class DashboardLocalDataSource {
@@ -73,9 +75,10 @@ class DashboardLocalDataSource {
     double monthIncome = 0;
     double monthExpense = 0;
 
+    final monthTransactions = <TransactionModel>[];
     final Map<String, _ExpenseCategoryAccumulator> expenseByCategory = {};
 
-    for (final transaction in transactions) {
+    for (final transaction in sorted) {
       final date = transaction.date;
       final isInSelectedMonth =
           !date.isBefore(selectedMonth) && date.isBefore(nextMonth);
@@ -83,6 +86,8 @@ class DashboardLocalDataSource {
       if (!isInSelectedMonth) {
         continue;
       }
+
+      monthTransactions.add(transaction);
 
       if (transaction.isIncome) {
         monthIncome += transaction.amount;
@@ -124,12 +129,16 @@ class DashboardLocalDataSource {
       totalBalance: totalIncome - totalExpense,
       totalIncome: totalIncome,
       totalExpense: totalExpense,
-      recentTransactions: sorted.take(5).toList(),
+      recentTransactions: monthTransactions.take(5).toList(),
       monthIncome: monthIncome,
       monthExpense: monthExpense,
       monthNetFlow: monthIncome - monthExpense,
-      monthLabel: AppFormatters.formatMonthYear(selectedMonth),
+      monthLabel: AppFormatters.formatMonthYearWith(
+        value: selectedMonth,
+        localeCode: 'es_CL',
+      ),
       topExpenseCategories: topExpenseCategories.take(4).toList(),
+      hasTransactionsInMonth: monthTransactions.isNotEmpty,
     );
   }
 

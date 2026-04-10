@@ -38,7 +38,7 @@ class DashboardTopExpenseCategoriesWidget extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Aún no hay gastos registrados este mes.',
+              'Este mes no hay gastos registrados.',
               style: GoogleFonts.manrope(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -72,7 +72,7 @@ class DashboardTopExpenseCategoriesWidget extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Categorías principales del mes',
+            'Este mes',
             style: GoogleFonts.manrope(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -139,7 +139,7 @@ class _CategoryRow extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
-              value: category.percentage.clamp(0, 1),
+              value: category.percentage.clamp(0, 1).toDouble(),
               minHeight: 8,
               backgroundColor: Colors.white.withValues(alpha: 0.06),
               valueColor: AlwaysStoppedAnimation<Color>(color),
