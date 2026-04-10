@@ -94,8 +94,8 @@ class _CategoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = category.colorValue != 0
-        ? Color(category.colorValue).withValues(alpha: 1.0)
+    final color = category.colorValue != null && category.colorValue != 0
+        ? Color(category.colorValue!).withValues(alpha: 1.0)
         : AppTheme.primary;
 
     final percentageLabel = '${(category.percentage * 100).round()}%';

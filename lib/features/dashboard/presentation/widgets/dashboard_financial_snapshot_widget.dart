@@ -7,19 +7,23 @@ import '../../../../core/theme/app_theme.dart';
 class DashboardFinancialSnapshotWidget extends StatelessWidget {
   const DashboardFinancialSnapshotWidget({
     super.key,
-    required this.periodLabel,
+    required this.monthLabel,
     required this.netFlow,
     required this.income,
     required this.expense,
-    required this.transactionCount,
+    required this.canGoToNextMonth,
+    required this.onPreviousMonth,
+    required this.onNextMonth,
     required this.onOpenTransactions,
   });
 
-  final String periodLabel;
+  final String monthLabel;
   final double netFlow;
   final double income;
   final double expense;
-  final int transactionCount;
+  final bool canGoToNextMonth;
+  final VoidCallback onPreviousMonth;
+  final VoidCallback onNextMonth;
   final VoidCallback onOpenTransactions;
 
   @override
@@ -29,10 +33,6 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
     final netFlowPrefix = isPositiveFlow ? '' : '-';
     final netFlowText =
         '$netFlowPrefix${AppFormatters.formatCurrency(netFlow.abs())}';
-
-    final transactionLabel = transactionCount == 1
-        ? '1 movimiento este mes'
-        : '$transactionCount movimientos este mes';
 
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
@@ -46,61 +46,13 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: AppTheme.primary.withValues(alpha: 0.24),
-                  ),
-                ),
-                child: Text(
-                  periodLabel,
-                  style: GoogleFonts.manrope(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.primary,
-                  ),
-                ),
-              ),
-              Text(
-                transactionLabel,
-                style: GoogleFonts.manrope(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.onSurfaceMuted,
-                ),
-              ),
-            ],
+          _MonthNavigator(
+            label: monthLabel,
+            canGoToNextMonth: canGoToNextMonth,
+            onPreviousMonth: onPreviousMonth,
+            onNextMonth: onNextMonth,
           ),
           const SizedBox(height: 18),
-          Text(
-            'Resumen del mes',
-            style: GoogleFonts.manrope(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.onSurfaceMuted,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Neto entre ingresos y gastos',
-            style: GoogleFonts.manrope(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.72),
-            ),
-          ),
-          const SizedBox(height: 10),
           Text(
             netFlowText,
             style: GoogleFonts.manrope(
@@ -146,6 +98,86 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MonthNavigator extends StatelessWidget {
+  const _MonthNavigator({
+    required this.label,
+    required this.canGoToNextMonth,
+    required this.onPreviousMonth,
+    required this.onNextMonth,
+  });
+
+  final String label;
+  final bool canGoToNextMonth;
+  final VoidCallback onPreviousMonth;
+  final VoidCallback onNextMonth;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _MonthButton(
+          icon: Icons.chevron_left_rounded,
+          onPressed: onPreviousMonth,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.manrope(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.primary,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        _MonthButton(
+          icon: Icons.chevron_right_rounded,
+          onPressed: canGoToNextMonth ? onNextMonth : null,
+        ),
+      ],
+    );
+  }
+}
+
+class _MonthButton extends StatelessWidget {
+  const _MonthButton({
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnabled = onPressed != null;
+
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: isEnabled ? 0.05 : 0.02),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: isEnabled ? 0.08 : 0.04),
+          ),
+        ),
+        child: Icon(
+          icon,
+          color: isEnabled
+              ? AppTheme.onSurface
+              : AppTheme.onSurfaceMuted.withValues(alpha: 0.45),
+        ),
       ),
     );
   }

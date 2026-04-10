@@ -24,6 +24,7 @@ class DashboardScreen extends StatefulWidget {
 
 class DashboardScreenState extends State<DashboardScreen> {
   late final DashboardLocalDataSource _dashboardLocalDataSource;
+  late DateTime _selectedMonth;
 
   bool _isLoading = true;
   int _refreshVersion = 0;
@@ -34,6 +35,7 @@ class DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _dashboardLocalDataSource =
         DashboardRegistry.module.dashboardLocalDataSource;
+    _selectedMonth = _monthStart(DateTime.now());
     _loadSummary();
   }
 
@@ -50,7 +52,9 @@ class DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _loadSummary() async {
     try {
-      final summary = await _dashboardLocalDataSource.getSummary();
+      final summary = await _dashboardLocalDataSource.getSummary(
+        month: _selectedMonth,
+      );
 
       if (!mounted) return;
 
@@ -68,6 +72,35 @@ class DashboardScreenState extends State<DashboardScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _goToPreviousMonth() async {
+    setState(() {
+      _selectedMonth =
+          DateTime(_selectedMonth.year, _selectedMonth.month - 1, 1);
+      _isLoading = true;
+    });
+
+    await _loadSummary();
+  }
+
+  Future<void> _goToNextMonth() async {
+    if (!_canGoToNextMonth) {
+      return;
+    }
+
+    setState(() {
+      _selectedMonth =
+          DateTime(_selectedMonth.year, _selectedMonth.month + 1, 1);
+      _isLoading = true;
+    });
+
+    await _loadSummary();
+  }
+
+  bool get _canGoToNextMonth {
+    final currentMonth = _monthStart(DateTime.now());
+    return _selectedMonth.isBefore(currentMonth);
   }
 
   Future<void> _goToTransactions() async {
@@ -112,6 +145,10 @@ class DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _refreshVersion++;
     });
+  }
+
+  DateTime _monthStart(DateTime value) {
+    return DateTime(value.year, value.month, 1);
   }
 
   @override
@@ -197,11 +234,13 @@ class DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 DashboardFinancialSnapshotWidget(
-                  periodLabel: summary?.currentMonthLabel ?? '',
-                  netFlow: summary?.currentMonthNetFlow ?? 0,
-                  income: summary?.currentMonthIncome ?? 0,
-                  expense: summary?.currentMonthExpense ?? 0,
-                  transactionCount: summary?.currentMonthTransactionCount ?? 0,
+                  monthLabel: summary?.monthLabel ?? '',
+                  netFlow: summary?.monthNetFlow ?? 0,
+                  income: summary?.monthIncome ?? 0,
+                  expense: summary?.monthExpense ?? 0,
+                  canGoToNextMonth: _canGoToNextMonth,
+                  onPreviousMonth: _goToPreviousMonth,
+                  onNextMonth: _goToNextMonth,
                   onOpenTransactions: _goToTransactions,
                 ),
                 const SizedBox(height: 16),

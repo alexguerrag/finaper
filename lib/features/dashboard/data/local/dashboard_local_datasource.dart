@@ -15,33 +15,31 @@ class DashboardExpenseCategorySummary {
   final String categoryName;
   final double amount;
   final double percentage;
-  final int colorValue;
+  final int? colorValue;
 }
 
 class DashboardSummaryData {
   const DashboardSummaryData({
-    required this.balance,
+    required this.totalBalance,
     required this.totalIncome,
     required this.totalExpense,
     required this.recentTransactions,
-    required this.currentMonthIncome,
-    required this.currentMonthExpense,
-    required this.currentMonthNetFlow,
-    required this.currentMonthTransactionCount,
-    required this.currentMonthLabel,
+    required this.monthIncome,
+    required this.monthExpense,
+    required this.monthNetFlow,
+    required this.monthLabel,
     required this.topExpenseCategories,
   });
 
-  final double balance;
+  final double totalBalance;
   final double totalIncome;
   final double totalExpense;
   final List<TransactionModel> recentTransactions;
 
-  final double currentMonthIncome;
-  final double currentMonthExpense;
-  final double currentMonthNetFlow;
-  final int currentMonthTransactionCount;
-  final String currentMonthLabel;
+  final double monthIncome;
+  final double monthExpense;
+  final double monthNetFlow;
+  final String monthLabel;
   final List<DashboardExpenseCategorySummary> topExpenseCategories;
 }
 
@@ -50,7 +48,9 @@ class DashboardLocalDataSource {
 
   final TransactionLocalDataSource _transactionLocalDataSource;
 
-  Future<DashboardSummaryData> getSummary() async {
+  Future<DashboardSummaryData> getSummary({
+    DateTime? month,
+  }) async {
     final transactions = await _transactionLocalDataSource.getTransactions();
 
     double totalIncome = 0;
@@ -67,47 +67,40 @@ class DashboardLocalDataSource {
     final sorted = List<TransactionModel>.from(transactions)
       ..sort((a, b) => b.date.compareTo(a.date));
 
-    final now = DateTime.now();
-    final currentMonthStart = DateTime(now.year, now.month, 1);
-    final nextMonthStart = DateTime(now.year, now.month + 1, 1);
+    final selectedMonth = _monthStart(month ?? DateTime.now());
+    final nextMonth = DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
 
-    double currentMonthIncome = 0;
-    double currentMonthExpense = 0;
-    int currentMonthTransactionCount = 0;
+    double monthIncome = 0;
+    double monthExpense = 0;
 
     final Map<String, _ExpenseCategoryAccumulator> expenseByCategory = {};
 
     for (final transaction in transactions) {
-      final transactionDate = transaction.date;
+      final date = transaction.date;
+      final isInSelectedMonth =
+          !date.isBefore(selectedMonth) && date.isBefore(nextMonth);
 
-      final isInCurrentMonth = !transactionDate.isBefore(currentMonthStart) &&
-          transactionDate.isBefore(nextMonthStart);
-
-      if (!isInCurrentMonth) {
+      if (!isInSelectedMonth) {
         continue;
       }
-
-      currentMonthTransactionCount++;
 
       if (transaction.isIncome) {
-        currentMonthIncome += transaction.amount;
+        monthIncome += transaction.amount;
         continue;
       }
 
-      currentMonthExpense += transaction.amount;
+      monthExpense += transaction.amount;
 
-      final categoryId = transaction.categoryId;
-      final existing = expenseByCategory[categoryId];
-
+      final existing = expenseByCategory[transaction.categoryId];
       if (existing == null) {
-        expenseByCategory[categoryId] = _ExpenseCategoryAccumulator(
-          categoryId: categoryId,
+        expenseByCategory[transaction.categoryId] = _ExpenseCategoryAccumulator(
+          categoryId: transaction.categoryId,
           categoryName: transaction.category,
           amount: transaction.amount,
           colorValue: transaction.color?.toARGB32(),
         );
       } else {
-        expenseByCategory[categoryId] = existing.copyWith(
+        expenseByCategory[transaction.categoryId] = existing.copyWith(
           amount: existing.amount + transaction.amount,
           colorValue: existing.colorValue ?? transaction.color?.toARGB32(),
         );
@@ -120,30 +113,28 @@ class DashboardLocalDataSource {
             categoryId: item.categoryId,
             categoryName: item.categoryName,
             amount: item.amount,
-            percentage:
-                currentMonthExpense > 0 ? item.amount / currentMonthExpense : 0,
-            colorValue: item.colorValue ?? 0xFF000000,
+            percentage: monthExpense > 0 ? item.amount / monthExpense : 0,
+            colorValue: item.colorValue,
           ),
         )
         .toList()
       ..sort((a, b) => b.amount.compareTo(a.amount));
 
     return DashboardSummaryData(
-      balance: totalIncome - totalExpense,
+      totalBalance: totalIncome - totalExpense,
       totalIncome: totalIncome,
       totalExpense: totalExpense,
       recentTransactions: sorted.take(5).toList(),
-      currentMonthIncome: currentMonthIncome,
-      currentMonthExpense: currentMonthExpense,
-      currentMonthNetFlow: currentMonthIncome - currentMonthExpense,
-      currentMonthTransactionCount: currentMonthTransactionCount,
-      currentMonthLabel: _buildCurrentMonthLabel(now),
+      monthIncome: monthIncome,
+      monthExpense: monthExpense,
+      monthNetFlow: monthIncome - monthExpense,
+      monthLabel: AppFormatters.formatMonthYear(selectedMonth),
       topExpenseCategories: topExpenseCategories.take(4).toList(),
     );
   }
 
-  String _buildCurrentMonthLabel(DateTime now) {
-    return AppFormatters.formatMonthYear(now);
+  DateTime _monthStart(DateTime value) {
+    return DateTime(value.year, value.month, 1);
   }
 }
 
