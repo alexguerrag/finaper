@@ -149,7 +149,8 @@ void main() {
     expect(result.preview.databaseVersion, 7);
     expect(result.preview.backupFormatVersion, 1);
     expect(result.preview.hasTransactionFormPreferences, isFalse);
-    expect(result.payload['transaction_form_preferences'], isA<Map<String, dynamic>>());
+    expect(result.payload['transaction_form_preferences'],
+        isA<Map<String, dynamic>>());
     expect(result.warnings, hasLength(2));
     expect(
       result.warnings.first,

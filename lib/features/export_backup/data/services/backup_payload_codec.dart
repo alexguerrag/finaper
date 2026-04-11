@@ -125,14 +125,16 @@ class BackupPayloadCodec {
       backupFormatVersion: backupFormatVersion,
       accountsCount: _normalizeRows(normalizedPayload['accounts']).length,
       categoriesCount: _normalizeRows(normalizedPayload['categories']).length,
-      transactionsCount: _normalizeRows(normalizedPayload['transactions']).length,
+      transactionsCount:
+          _normalizeRows(normalizedPayload['transactions']).length,
       budgetsCount: _normalizeRows(normalizedPayload['budgets']).length,
       goalsCount: _normalizeRows(normalizedPayload['goals']).length,
       recurringTransactionsCount: _normalizeRows(
         normalizedPayload['recurring_transactions'],
       ).length,
       hasTransactionFormPreferences:
-          _readMap(normalizedPayload['transaction_form_preferences']).isNotEmpty,
+          _readMap(normalizedPayload['transaction_form_preferences'])
+              .isNotEmpty,
     );
 
     return BackupValidationResultEntity(
