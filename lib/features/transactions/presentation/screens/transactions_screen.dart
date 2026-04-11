@@ -574,15 +574,19 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.background,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddTransactionSheet,
-        backgroundColor: AppTheme.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_rounded),
-        label: Text(
-          'Nueva',
-          style: GoogleFonts.manrope(
-            fontWeight: FontWeight.w700,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: FloatingActionButton.extended(
+          onPressed: _openAddTransactionSheet,
+          backgroundColor: AppTheme.primary,
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.add_rounded),
+          label: Text(
+            'Nueva',
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),
@@ -594,7 +598,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
             : RefreshIndicator(
                 onRefresh: refreshTransactions,
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 132),
                   children: [
                     Row(
                       children: [

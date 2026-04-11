@@ -1,4 +1,5 @@
 import '../../../../core/formatters/app_formatters.dart';
+import '../../../accounts/data/local/accounts_local_datasource.dart';
 import '../../../transactions/data/local/transaction_local_datasource.dart';
 import '../../../transactions/data/models/transaction_model.dart';
 
@@ -20,7 +21,7 @@ class DashboardExpenseCategorySummary {
 
 class DashboardSummaryData {
   const DashboardSummaryData({
-    required this.totalBalance,
+    required this.consolidatedBalance,
     required this.totalIncome,
     required this.totalExpense,
     required this.recentTransactions,
@@ -32,7 +33,7 @@ class DashboardSummaryData {
     required this.hasTransactionsInMonth,
   });
 
-  final double totalBalance;
+  final double consolidatedBalance;
   final double totalIncome;
   final double totalExpense;
   final List<TransactionModel> recentTransactions;
@@ -46,14 +47,24 @@ class DashboardSummaryData {
 }
 
 class DashboardLocalDataSource {
-  const DashboardLocalDataSource(this._transactionLocalDataSource);
+  const DashboardLocalDataSource(
+    this._transactionLocalDataSource,
+    this._accountsLocalDataSource,
+  );
 
   final TransactionLocalDataSource _transactionLocalDataSource;
+  final AccountsLocalDataSource _accountsLocalDataSource;
 
   Future<DashboardSummaryData> getSummary({
     DateTime? month,
   }) async {
     final transactions = await _transactionLocalDataSource.getTransactions();
+    final accountBalances = await _accountsLocalDataSource.getAccountBalances();
+
+    final consolidatedBalance = accountBalances.fold<double>(
+      0,
+      (sum, item) => sum + item.currentBalance,
+    );
 
     double totalIncome = 0;
     double totalExpense = 0;
@@ -126,7 +137,7 @@ class DashboardLocalDataSource {
       ..sort((a, b) => b.amount.compareTo(a.amount));
 
     return DashboardSummaryData(
-      totalBalance: totalIncome - totalExpense,
+      consolidatedBalance: consolidatedBalance,
       totalIncome: totalIncome,
       totalExpense: totalExpense,
       recentTransactions: monthTransactions.take(5).toList(),

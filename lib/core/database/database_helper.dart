@@ -10,7 +10,7 @@ class DatabaseHelper {
   static Database? _database;
 
   static const String _databaseName = 'finaper.db';
-  static const int _databaseVersion = 8;
+  static const int _databaseVersion = 9;
 
   static const String defaultAccountId = 'acc-cash-main';
   static const String defaultAccountName = 'Cuenta principal';
@@ -130,6 +130,15 @@ class DatabaseHelper {
         await _createTransactionFormPreferencesTable(db);
       }
 
+      if (oldVersion < 9) {
+        await _addColumnIfMissing(
+          db,
+          'accounts',
+          'initial_balance',
+          'REAL NOT NULL DEFAULT 0',
+        );
+      }
+
       await _createIndexes(db);
     } catch (e, s) {
       debugPrint('Database migration error: $e');
@@ -146,6 +155,7 @@ class DatabaseHelper {
         type TEXT NOT NULL,
         icon_code INTEGER NOT NULL,
         color_value INTEGER NOT NULL,
+        initial_balance REAL NOT NULL DEFAULT 0,
         is_archived INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL
       )
@@ -325,6 +335,7 @@ class DatabaseHelper {
         'type': 'cash',
         'icon_code': Icons.account_balance_wallet_rounded.codePoint,
         'color_value': Colors.blue.toARGB32(),
+        'initial_balance': 0.0,
         'is_archived': 0,
         'created_at': now,
       },
@@ -334,6 +345,7 @@ class DatabaseHelper {
         'type': 'savings',
         'icon_code': Icons.savings_rounded.codePoint,
         'color_value': Colors.green.toARGB32(),
+        'initial_balance': 0.0,
         'is_archived': 0,
         'created_at': now,
       },
