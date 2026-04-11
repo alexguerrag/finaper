@@ -10,6 +10,8 @@ import '../domain/usecases/copy_export_file_path.dart';
 import '../domain/usecases/export_backup_json.dart';
 import '../domain/usecases/export_transactions_csv.dart';
 import '../domain/usecases/open_export_file.dart';
+import '../domain/usecases/pick_backup_restore_preview.dart';
+import '../domain/usecases/restore_backup_json.dart';
 import '../domain/usecases/share_export_file.dart';
 import '../presentation/controllers/export_file_actions_controller.dart';
 
@@ -18,6 +20,8 @@ class ExportModule implements AppModule {
   late final ExportBackupRepository exportBackupRepository;
   late final ExportBackupJson exportBackupJson;
   late final ExportTransactionsCsv exportTransactionsCsv;
+  late final PickBackupRestorePreview pickBackupRestorePreview;
+  late final RestoreBackupJson restoreBackupJson;
 
   late final ExportFileActionsLocalDataSource exportFileActionsLocalDataSource;
   late final ExportFileActionsRepository exportFileActionsRepository;
@@ -39,6 +43,8 @@ class ExportModule implements AppModule {
         ExportBackupRepositoryImpl(exportBackupLocalDataSource);
     exportBackupJson = ExportBackupJson(exportBackupRepository);
     exportTransactionsCsv = ExportTransactionsCsv(exportBackupRepository);
+    pickBackupRestorePreview = PickBackupRestorePreview(exportBackupRepository);
+    restoreBackupJson = RestoreBackupJson(exportBackupRepository);
 
     exportFileActionsLocalDataSource =
         const ExportFileActionsLocalDataSourceImpl();

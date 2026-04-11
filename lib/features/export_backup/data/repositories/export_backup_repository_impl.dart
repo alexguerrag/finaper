@@ -1,3 +1,4 @@
+import '../../domain/entities/backup_validation_result_entity.dart';
 import '../../domain/entities/export_file_entity.dart';
 import '../../domain/repositories/export_backup_repository.dart';
 import '../local/export_backup_local_datasource.dart';
@@ -15,5 +16,15 @@ class ExportBackupRepositoryImpl implements ExportBackupRepository {
   @override
   Future<ExportFileEntity> exportTransactionsCsv() {
     return _localDataSource.exportTransactionsCsv();
+  }
+
+  @override
+  Future<BackupValidationResultEntity?> pickBackupRestorePreview() {
+    return _localDataSource.pickBackupRestorePreview();
+  }
+
+  @override
+  Future<void> restoreBackupJson(Map<String, dynamic> payload) {
+    return _localDataSource.restoreBackupJson(payload);
   }
 }

@@ -11,6 +11,8 @@ void main() {
     expect(module.exportBackupRepository, isNotNull);
     expect(module.exportBackupJson, isNotNull);
     expect(module.exportTransactionsCsv, isNotNull);
+    expect(module.pickBackupRestorePreview, isNotNull);
+    expect(module.restoreBackupJson, isNotNull);
     expect(module.exportFileActionsLocalDataSource, isNotNull);
     expect(module.exportFileActionsRepository, isNotNull);
     expect(module.shareExportFile, isNotNull);
