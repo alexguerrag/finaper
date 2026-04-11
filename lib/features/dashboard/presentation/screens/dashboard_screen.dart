@@ -235,13 +235,13 @@ class DashboardScreenState extends State<DashboardScreen> {
               children: [
                 DashboardFinancialSnapshotWidget(
                   monthLabel: summary?.monthLabel ?? '',
+                  consolidatedBalance: summary?.consolidatedBalance ?? 0,
                   netFlow: summary?.monthNetFlow ?? 0,
                   income: summary?.monthIncome ?? 0,
                   expense: summary?.monthExpense ?? 0,
                   canGoToNextMonth: _canGoToNextMonth,
                   onPreviousMonth: _goToPreviousMonth,
                   onNextMonth: _goToNextMonth,
-                  onOpenTransactions: _goToTransactions,
                 ),
                 const SizedBox(height: 16),
                 DashboardTopExpenseCategoriesWidget(

@@ -1,3 +1,4 @@
+import '../../domain/entities/account_balance_entity.dart';
 import '../../domain/entities/account_entity.dart';
 import '../../domain/repositories/accounts_repository.dart';
 import '../local/accounts_local_datasource.dart';
@@ -18,8 +19,24 @@ class AccountsRepositoryImpl implements AccountsRepository {
   }
 
   @override
+  Future<List<AccountBalanceEntity>> getAccountBalances({
+    bool includeArchived = false,
+  }) {
+    return _localDataSource.getAccountBalances(
+      includeArchived: includeArchived,
+    );
+  }
+
+  @override
   Future<AccountEntity> createAccount(AccountEntity account) {
     return _localDataSource.createAccount(
+      AccountModel.fromEntity(account),
+    );
+  }
+
+  @override
+  Future<AccountEntity> updateAccount(AccountEntity account) {
+    return _localDataSource.updateAccount(
       AccountModel.fromEntity(account),
     );
   }

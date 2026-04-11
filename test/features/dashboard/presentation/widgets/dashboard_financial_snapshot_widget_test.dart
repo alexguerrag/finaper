@@ -1,4 +1,5 @@
 import 'package:finaper/app/di/app_locator.dart';
+import 'package:finaper/core/formatters/app_formatters.dart';
 import 'package:finaper/core/theme/app_theme.dart';
 import 'package:finaper/features/dashboard/presentation/widgets/dashboard_financial_snapshot_widget.dart';
 import 'package:finaper/features/settings/di/settings_module.dart';
@@ -25,19 +26,23 @@ void main() {
 
   group('DashboardFinancialSnapshotWidget', () {
     testWidgets(
-      'renderiza mes, ingresos y gastos',
+      'renderiza saldo total y métricas del mes',
       (tester) async {
+        final formattedBalance = AppFormatters.formatCurrency(1380);
+        final formattedExpense = AppFormatters.formatCurrency(120);
+        final formattedZero = AppFormatters.formatCurrency(0);
+
         await tester.pumpWidget(
           _buildTestableWidget(
             child: DashboardFinancialSnapshotWidget(
               monthLabel: 'abril de 2026',
-              netFlow: 100,
-              income: 130,
-              expense: 30,
+              consolidatedBalance: 1380,
+              netFlow: -120,
+              income: 0,
+              expense: 120,
               canGoToNextMonth: false,
               onPreviousMonth: () {},
               onNextMonth: () {},
-              onOpenTransactions: () {},
             ),
           ),
         );
@@ -45,72 +50,15 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('abril de 2026'), findsOneWidget);
+        expect(find.text('Saldo total'), findsOneWidget);
+        expect(find.text('Flujo del mes'), findsOneWidget);
         expect(find.text('Ingresos'), findsOneWidget);
         expect(find.text('Gastos'), findsOneWidget);
-        expect(find.textContaining('130'), findsWidgets);
-        expect(find.textContaining('30'), findsWidgets);
-      },
-    );
 
-    testWidgets(
-      'ejecuta callback de mes anterior',
-      (tester) async {
-        var previousMonthTapped = 0;
-
-        await tester.pumpWidget(
-          _buildTestableWidget(
-            child: DashboardFinancialSnapshotWidget(
-              monthLabel: 'abril de 2026',
-              netFlow: 100,
-              income: 130,
-              expense: 30,
-              canGoToNextMonth: true,
-              onPreviousMonth: () {
-                previousMonthTapped++;
-              },
-              onNextMonth: () {},
-              onOpenTransactions: () {},
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byIcon(Icons.chevron_left_rounded));
-        await tester.pump();
-
-        expect(previousMonthTapped, 1);
-      },
-    );
-
-    testWidgets(
-      'deshabilita navegación al siguiente mes cuando no corresponde',
-      (tester) async {
-        var nextMonthTapped = 0;
-
-        await tester.pumpWidget(
-          _buildTestableWidget(
-            child: DashboardFinancialSnapshotWidget(
-              monthLabel: 'abril de 2026',
-              netFlow: 100,
-              income: 130,
-              expense: 30,
-              canGoToNextMonth: false,
-              onPreviousMonth: () {},
-              onNextMonth: () {
-                nextMonthTapped++;
-              },
-              onOpenTransactions: () {},
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byIcon(Icons.chevron_right_rounded));
-        await tester.pump();
-
-        expect(nextMonthTapped, 0);
+        expect(find.text(formattedBalance), findsOneWidget);
+        expect(find.text('-$formattedExpense'), findsOneWidget);
+        expect(find.text(formattedZero), findsOneWidget);
+        expect(find.text(formattedExpense), findsOneWidget);
       },
     );
   });

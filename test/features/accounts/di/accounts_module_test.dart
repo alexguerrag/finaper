@@ -10,6 +10,8 @@ void main() {
     expect(module.localDataSource, isNotNull);
     expect(module.repository, isNotNull);
     expect(module.getAccounts, isNotNull);
+    expect(module.getAccountBalances, isNotNull);
     expect(module.createAccount, isNotNull);
+    expect(module.updateAccount, isNotNull);
   });
 }

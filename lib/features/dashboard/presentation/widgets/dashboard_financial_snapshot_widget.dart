@@ -8,31 +8,28 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
   const DashboardFinancialSnapshotWidget({
     super.key,
     required this.monthLabel,
+    required this.consolidatedBalance,
     required this.netFlow,
     required this.income,
     required this.expense,
     required this.canGoToNextMonth,
     required this.onPreviousMonth,
     required this.onNextMonth,
-    required this.onOpenTransactions,
   });
 
   final String monthLabel;
+  final double consolidatedBalance;
   final double netFlow;
   final double income;
   final double expense;
   final bool canGoToNextMonth;
   final VoidCallback onPreviousMonth;
   final VoidCallback onNextMonth;
-  final VoidCallback onOpenTransactions;
 
   @override
   Widget build(BuildContext context) {
     final isPositiveFlow = netFlow >= 0;
-    final netFlowColor = isPositiveFlow ? AppTheme.income : AppTheme.expense;
-    final netFlowPrefix = isPositiveFlow ? '' : '-';
-    final netFlowText =
-        '$netFlowPrefix${AppFormatters.formatCurrency(netFlow.abs())}';
+    final flowColor = isPositiveFlow ? AppTheme.income : AppTheme.expense;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
@@ -54,18 +51,35 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Text(
-            netFlowText,
+            'Saldo total',
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.onSurfaceMuted,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            AppFormatters.formatCurrency(consolidatedBalance),
             style: GoogleFonts.manrope(
               fontSize: 36,
               fontWeight: FontWeight.w800,
               height: 1,
               letterSpacing: -0.8,
-              color: netFlowColor,
+              color: AppTheme.onSurface,
             ),
           ),
           const SizedBox(height: 18),
           Row(
             children: [
+              Expanded(
+                child: _SnapshotMetricItem(
+                  label: 'Flujo del mes',
+                  value: _formatSignedCurrency(netFlow),
+                  color: flowColor,
+                ),
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: _SnapshotMetricItem(
                   label: 'Ingresos',
@@ -86,6 +100,13 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatSignedCurrency(double value) {
+    final formatted = AppFormatters.formatCurrency(value.abs());
+    if (value > 0) return '+$formatted';
+    if (value < 0) return '-$formatted';
+    return AppFormatters.formatCurrency(0);
   }
 }
 
@@ -183,7 +204,7 @@ class _SnapshotMetricItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(18),
@@ -196,8 +217,10 @@ class _SnapshotMetricItem extends StatelessWidget {
         children: [
           Text(
             label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.manrope(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
               color: AppTheme.onSurfaceMuted,
             ),
@@ -205,8 +228,10 @@ class _SnapshotMetricItem extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.manrope(
-              fontSize: 16,
+              fontSize: 15,
               fontWeight: FontWeight.w800,
               color: color,
             ),

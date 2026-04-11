@@ -10,6 +10,7 @@ class AccountModel extends AccountEntity {
     required super.type,
     required super.iconCode,
     required super.color,
+    required super.initialBalance,
     required super.isArchived,
     required super.createdAt,
   });
@@ -24,6 +25,7 @@ class AccountModel extends AccountEntity {
       color: map['color_value'] != null
           ? Color(map['color_value'] as int).withValues(alpha: 1.0)
           : Colors.blue.withValues(alpha: 1.0),
+      initialBalance: (map['initial_balance'] as num? ?? 0).toDouble(),
       isArchived: (map['is_archived'] as int? ?? 0) == 1,
       createdAt: DateTime.tryParse(map['created_at']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
@@ -37,6 +39,7 @@ class AccountModel extends AccountEntity {
       type: entity.type,
       iconCode: entity.iconCode,
       color: entity.color.withValues(alpha: 1.0),
+      initialBalance: entity.initialBalance,
       isArchived: entity.isArchived,
       createdAt: entity.createdAt,
     );
@@ -49,6 +52,7 @@ class AccountModel extends AccountEntity {
       'type': type.value,
       'icon_code': iconCode,
       'color_value': color.toARGB32(),
+      'initial_balance': initialBalance,
       'is_archived': isArchived ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
     };

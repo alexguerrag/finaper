@@ -4,9 +4,17 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/enums/account_type.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/account_model.dart';
+import '../../domain/entities/account_entity.dart';
 
 class AddAccountSheet extends StatefulWidget {
-  const AddAccountSheet({super.key});
+  const AddAccountSheet({
+    super.key,
+    this.initialAccount,
+  });
+
+  final AccountEntity? initialAccount;
+
+  bool get isEditing => initialAccount != null;
 
   @override
   State<AddAccountSheet> createState() => _AddAccountSheetState();
@@ -14,14 +22,37 @@ class AddAccountSheet extends StatefulWidget {
 
 class _AddAccountSheetState extends State<AddAccountSheet> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _initialBalanceController;
 
-  AccountType _selectedType = AccountType.cash;
+  late AccountType _selectedType;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialAccount;
+    _nameController = TextEditingController(
+      text: initial?.name ?? '',
+    );
+    _initialBalanceController = TextEditingController(
+      text: _formatInitialBalance(initial?.initialBalance ?? 0),
+    );
+    _selectedType = initial?.type ?? AccountType.cash;
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _initialBalanceController.dispose();
     super.dispose();
+  }
+
+  String _formatInitialBalance(double value) {
+    final asText = value.toStringAsFixed(2);
+    if (asText.endsWith('.00')) {
+      return value.toStringAsFixed(0);
+    }
+    return asText;
   }
 
   IconData _iconForType(AccountType type) {
@@ -54,17 +85,38 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
     }
   }
 
+  double _parseInitialBalance() {
+    final normalized =
+        _initialBalanceController.text.trim().replaceAll(',', '.');
+    return double.tryParse(normalized) ?? 0;
+  }
+
+  void _normalizeInitialBalanceInput(String value) {
+    final normalized = value.replaceAll(',', '.');
+    if (normalized == value) return;
+
+    _initialBalanceController.value = _initialBalanceController.value.copyWith(
+      text: normalized,
+      selection: TextSelection.collapsed(
+        offset: normalized.length,
+      ),
+    );
+  }
+
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
+    final initial = widget.initialAccount;
+
     final account = AccountModel(
-      id: 'acc-${DateTime.now().millisecondsSinceEpoch}',
+      id: initial?.id ?? 'acc-${DateTime.now().millisecondsSinceEpoch}',
       name: _nameController.text.trim(),
       type: _selectedType,
       iconCode: _iconForType(_selectedType).codePoint,
       color: _colorForType(_selectedType).withValues(alpha: 1.0),
-      isArchived: false,
-      createdAt: DateTime.now(),
+      initialBalance: _parseInitialBalance(),
+      isArchived: initial?.isArchived ?? false,
+      createdAt: initial?.createdAt ?? DateTime.now(),
     );
 
     Navigator.of(context).pop(account);
@@ -102,7 +154,7 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Nueva cuenta',
+                    widget.isEditing ? 'Editar cuenta' : 'Nueva cuenta',
                     style: GoogleFonts.manrope(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
@@ -125,6 +177,36 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
                       }
                       return null;
                     },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _initialBalanceController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Saldo inicial',
+                      hintText: '0',
+                      prefixText: '\$ ',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return null;
+                      }
+
+                      final normalized = value.trim().replaceAll(',', '.');
+                      final parsed = double.tryParse(normalized);
+
+                      if (parsed == null) {
+                        return 'Escribe un saldo válido';
+                      }
+
+                      if (parsed < 0) {
+                        return 'Por ahora el saldo inicial no puede ser negativo';
+                      }
+
+                      return null;
+                    },
+                    onChanged: _normalizeInitialBalanceInput,
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<AccountType>(
@@ -161,7 +243,7 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
                         ),
                       ),
                       child: Text(
-                        'Guardar cuenta',
+                        widget.isEditing ? 'Guardar cambios' : 'Guardar cuenta',
                         style: GoogleFonts.manrope(
                           fontWeight: FontWeight.w700,
                         ),
