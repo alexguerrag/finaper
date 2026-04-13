@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
+import 'transaction_entry_type.dart';
+
 class TransactionEntity extends Equatable {
   const TransactionEntity({
     this.id,
@@ -14,6 +16,10 @@ class TransactionEntity extends Equatable {
     required this.date,
     required this.note,
     this.color,
+    this.entryType = TransactionEntryType.standard,
+    this.transferGroupId,
+    this.counterpartyAccountId,
+    this.counterpartyAccountName,
   });
 
   final String? id;
@@ -28,6 +34,13 @@ class TransactionEntity extends Equatable {
   final String note;
   final Color? color;
 
+  final TransactionEntryType entryType;
+  final String? transferGroupId;
+  final String? counterpartyAccountId;
+  final String? counterpartyAccountName;
+
+  bool get isTransfer => entryType.isTransfer;
+
   @override
   List<Object?> get props => [
         id,
@@ -41,5 +54,9 @@ class TransactionEntity extends Equatable {
         date,
         note,
         color,
+        entryType,
+        transferGroupId,
+        counterpartyAccountId,
+        counterpartyAccountName,
       ];
 }

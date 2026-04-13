@@ -10,7 +10,7 @@ void main() {
   "exported_at": "2026-04-11T13:00:00.000",
   "app": {
     "name": "Finaper",
-    "database_version": 9,
+    "database_version": 10,
     "backup_format_version": 1,
     "format": "json-backup"
   },
@@ -82,6 +82,10 @@ void main() {
       "date": "2026-04-11T09:00:00.000",
       "note": null,
       "color_value": 2,
+      "entry_type": "standard",
+      "transfer_group_id": null,
+      "counterparty_account_id": null,
+      "counterparty_account_name": null,
       "generated_from_recurring_id": null
     }
   ],
@@ -97,7 +101,7 @@ void main() {
     );
 
     expect(result.preview.fileName, 'backup.json');
-    expect(result.preview.databaseVersion, 9);
+    expect(result.preview.databaseVersion, 10);
     expect(result.preview.backupFormatVersion, 1);
     expect(result.preview.accountsCount, 1);
     expect(result.preview.categoriesCount, 2);
@@ -170,7 +174,7 @@ void main() {
 {
   "app": {
     "name": "OtraApp",
-    "database_version": 9,
+    "database_version": 10,
     "backup_format_version": 1,
     "format": "json-backup"
   },
@@ -202,7 +206,7 @@ void main() {
     final payload = <String, dynamic>{
       'app': {
         'name': 'Finaper',
-        'database_version': 9,
+        'database_version': 10,
         'backup_format_version': 1,
         'format': 'json-backup',
       },

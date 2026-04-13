@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../app/routes/app_routes.dart';
 import '../../../../core/enums/account_type.dart';
 import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -43,6 +44,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
       (sum, item) => sum + item.currentBalance,
     );
   }
+
+  bool get _canTransfer => _accountBalances.length >= 2;
 
   Future<void> _loadAccountBalances() async {
     try {
@@ -150,6 +153,28 @@ class _AccountsScreenState extends State<AccountsScreen> {
     }
   }
 
+  Future<void> _openTransferFlow() async {
+    if (!_canTransfer) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Necesitas al menos dos cuentas activas para transferir.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final didCreateTransfer = await Navigator.of(context).pushNamed(
+      AppRoutes.accountTransfer,
+    );
+
+    if (didCreateTransfer == true) {
+      await _loadAccountBalances();
+    }
+  }
+
   String _formatSignedCurrency(double value) {
     final formatted = AppFormatters.formatCurrency(value.abs());
 
@@ -195,6 +220,25 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 label: const Text('Nueva'),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          FilledButton.tonalIcon(
+            onPressed: _canTransfer ? _openTransferFlow : null,
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            icon: const Icon(Icons.swap_horiz_rounded),
+            label: Text(
+              _canTransfer
+                  ? 'Transferir entre cuentas'
+                  : 'Necesitas 2 cuentas para transferir',
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           Container(

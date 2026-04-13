@@ -21,10 +21,36 @@ class TransactionDetailsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final amountColor =
-        transaction.isIncome ? AppTheme.income : AppTheme.expense;
+    final isTransfer = transaction.isTransfer;
+    final amountColor = isTransfer
+        ? AppTheme.primary
+        : (transaction.isIncome ? AppTheme.income : AppTheme.expense);
     final iconColor = transaction.color ?? amountColor;
     final note = transaction.note.trim();
+
+    final typeLabel = isTransfer
+        ? 'Transferencia'
+        : (transaction.isIncome ? 'Ingreso' : 'Gasto');
+
+    final typeIcon = isTransfer
+        ? Icons.swap_horiz_rounded
+        : (transaction.isIncome
+            ? Icons.arrow_downward_rounded
+            : Icons.arrow_upward_rounded);
+
+    final primaryAccountLabel =
+        transaction.entryType.storageValue == 'transfer_out'
+            ? 'Cuenta origen'
+            : transaction.entryType.storageValue == 'transfer_in'
+                ? 'Cuenta destino'
+                : 'Cuenta';
+
+    final counterpartyLabel =
+        transaction.entryType.storageValue == 'transfer_out'
+            ? 'Cuenta destino'
+            : transaction.entryType.storageValue == 'transfer_in'
+                ? 'Cuenta origen'
+                : 'Cuenta relacionada';
 
     return SafeArea(
       top: false,
@@ -61,9 +87,7 @@ class TransactionDetailsSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(18),
                     ),
                     child: Icon(
-                      transaction.isIncome
-                          ? Icons.arrow_downward_rounded
-                          : Icons.arrow_upward_rounded,
+                      typeIcon,
                       color: iconColor,
                     ),
                   ),
@@ -85,7 +109,7 @@ class TransactionDetailsSheet extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            transaction.isIncome ? 'Ingreso' : 'Gasto',
+                            typeLabel,
                             style: GoogleFonts.manrope(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
@@ -161,9 +185,19 @@ class TransactionDetailsSheet extends StatelessWidget {
               const SizedBox(height: 12),
               _InfoRow(
                 icon: Icons.account_balance_wallet_rounded,
-                label: 'Cuenta',
+                label: primaryAccountLabel,
                 value: transaction.accountName,
               ),
+              if (isTransfer &&
+                  (transaction.counterpartyAccountName?.trim().isNotEmpty ??
+                      false)) ...[
+                const SizedBox(height: 12),
+                _InfoRow(
+                  icon: Icons.swap_horiz_rounded,
+                  label: counterpartyLabel,
+                  value: transaction.counterpartyAccountName!.trim(),
+                ),
+              ],
               const SizedBox(height: 12),
               _InfoRow(
                 icon: Icons.calendar_today_rounded,
@@ -251,7 +285,9 @@ class TransactionDetailsSheet extends StatelessWidget {
                   ),
                   icon: const Icon(Icons.delete_rounded),
                   label: Text(
-                    'Eliminar transacción',
+                    isTransfer
+                        ? 'Eliminar transferencia'
+                        : 'Eliminar transacción',
                     style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
                   ),
                 ),

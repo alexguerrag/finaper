@@ -7,10 +7,12 @@ import '../../data/models/transaction_model.dart';
 import '../../di/transactions_registry.dart';
 import '../../domain/usecases/add_transaction.dart';
 import '../../domain/usecases/delete_transaction.dart';
+import '../../domain/usecases/delete_transaction_group.dart';
 import '../../domain/usecases/get_all_transactions.dart';
 import '../../domain/usecases/update_transaction.dart';
 import '../widgets/transaction_details_sheet.dart';
 import '../widgets/transaction_filters_sheet.dart';
+import 'account_transfer_screen.dart';
 import 'add_transaction_sheet.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -25,6 +27,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   late final AddTransaction _addTransaction;
   late final UpdateTransaction _updateTransaction;
   late final DeleteTransaction _deleteTransaction;
+  late final DeleteTransactionGroup _deleteTransactionGroup;
 
   bool _isLoading = true;
   String _searchQuery = '';
@@ -47,6 +50,8 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     _addTransaction = TransactionsRegistry.module.addTransaction;
     _updateTransaction = TransactionsRegistry.module.updateTransaction;
     _deleteTransaction = TransactionsRegistry.module.deleteTransaction;
+    _deleteTransactionGroup =
+        TransactionsRegistry.module.deleteTransactionGroup;
     _loadTransactions();
   }
 
@@ -116,6 +121,41 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Future<void> _openEditTransactionSheet(TransactionModel transaction) async {
+    if (transaction.isTransfer) {
+      final didUpdate = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => AccountTransferScreen(
+            initialTransferGroupId: transaction.transferGroupId,
+            initialFromAccountId:
+                transaction.entryType.storageValue == 'transfer_out'
+                    ? transaction.accountId
+                    : transaction.counterpartyAccountId,
+            initialFromAccountName:
+                transaction.entryType.storageValue == 'transfer_out'
+                    ? transaction.accountName
+                    : transaction.counterpartyAccountName,
+            initialToAccountId:
+                transaction.entryType.storageValue == 'transfer_in'
+                    ? transaction.accountId
+                    : transaction.counterpartyAccountId,
+            initialToAccountName:
+                transaction.entryType.storageValue == 'transfer_in'
+                    ? transaction.accountName
+                    : transaction.counterpartyAccountName,
+            initialAmount: transaction.amount,
+            initialDate: transaction.date,
+            initialDescription: transaction.description,
+            initialNote: transaction.note,
+          ),
+        ),
+      );
+
+      if (didUpdate == true) {
+        await refreshTransactions();
+      }
+      return;
+    }
+
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -223,7 +263,10 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 
   Future<void> _confirmDeleteTransaction(TransactionModel transaction) async {
     final transactionId = transaction.id;
-    if (transactionId == null || transactionId.isEmpty) {
+    final transferGroupId = transaction.transferGroupId?.trim();
+
+    if ((transactionId == null || transactionId.isEmpty) &&
+        (transferGroupId == null || transferGroupId.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
@@ -238,20 +281,24 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       return;
     }
 
+    final isTransfer = transaction.isTransfer;
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: AppTheme.surfaceElevated,
           title: Text(
-            'Eliminar transacción',
+            isTransfer ? 'Eliminar transferencia' : 'Eliminar transacción',
             style: GoogleFonts.manrope(
               fontWeight: FontWeight.w800,
               color: AppTheme.onSurface,
             ),
           ),
           content: Text(
-            '¿Seguro que quieres eliminar "${transaction.description}"?',
+            isTransfer
+                ? '¿Seguro que quieres eliminar esta transferencia completa? Se eliminarán ambas patas del movimiento.'
+                : '¿Seguro que quieres eliminar "${transaction.description}"?',
             style: GoogleFonts.manrope(
               color: AppTheme.onSurfaceMuted,
             ),
@@ -289,7 +336,12 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     if (confirm != true) return;
 
     try {
-      await _deleteTransaction(transactionId);
+      if (isTransfer) {
+        await _deleteTransactionGroup(transferGroupId!);
+      } else {
+        await _deleteTransaction(transactionId!);
+      }
+
       await refreshTransactions();
 
       if (!mounted) return;
@@ -298,7 +350,9 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         SnackBar(
           behavior: SnackBarBehavior.floating,
           content: Text(
-            'Transacción eliminada correctamente.',
+            isTransfer
+                ? 'Transferencia eliminada correctamente.'
+                : 'Transacción eliminada correctamente.',
             style: GoogleFonts.manrope(
               fontWeight: FontWeight.w600,
             ),
@@ -315,7 +369,9 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         SnackBar(
           behavior: SnackBarBehavior.floating,
           content: Text(
-            'No se pudo eliminar la transacción.',
+            isTransfer
+                ? 'No se pudo eliminar la transferencia.'
+                : 'No se pudo eliminar la transacción.',
             style: GoogleFonts.manrope(
               fontWeight: FontWeight.w600,
             ),
@@ -1244,9 +1300,11 @@ class _TransactionCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
-                    item.isIncome
-                        ? Icons.arrow_downward_rounded
-                        : Icons.arrow_upward_rounded,
+                    item.isTransfer
+                        ? Icons.swap_horiz_rounded
+                        : item.isIncome
+                            ? Icons.arrow_downward_rounded
+                            : Icons.arrow_upward_rounded,
                     color: iconColor,
                   ),
                 ),
@@ -1267,6 +1325,11 @@ class _TransactionCard extends StatelessWidget {
                         spacing: 8,
                         runSpacing: 8,
                         children: [
+                          if (item.isTransfer)
+                            const _MetaBadge(
+                              icon: Icons.swap_horiz_rounded,
+                              label: 'Transferencia',
+                            ),
                           _MetaBadge(
                             icon: Icons.category_rounded,
                             label: item.category,
