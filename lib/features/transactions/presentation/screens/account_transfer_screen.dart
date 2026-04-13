@@ -97,12 +97,9 @@ class _AccountTransferScreenState extends State<AccountTransferScreen> {
       }
 
       if (accounts.length > 1 && (initialTo == null || initialTo.isEmpty)) {
-        initialTo = accounts
-            .firstWhere(
-              (account) => account.id != initialFrom,
-              orElse: () => accounts[1],
-            )
-            .id;
+        final alternatives =
+            accounts.where((account) => account.id != initialFrom).toList();
+        initialTo = alternatives.isNotEmpty ? alternatives.first.id : null;
       }
 
       setState(() {
