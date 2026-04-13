@@ -1244,9 +1244,11 @@ class _TransactionCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
-                    item.isIncome
-                        ? Icons.arrow_downward_rounded
-                        : Icons.arrow_upward_rounded,
+                    item.isTransfer
+                        ? Icons.swap_horiz_rounded
+                        : item.isIncome
+                            ? Icons.arrow_downward_rounded
+                            : Icons.arrow_upward_rounded,
                     color: iconColor,
                   ),
                 ),
@@ -1267,6 +1269,11 @@ class _TransactionCard extends StatelessWidget {
                         spacing: 8,
                         runSpacing: 8,
                         children: [
+                          if (item.isTransfer)
+                            const _MetaBadge(
+                              icon: Icons.swap_horiz_rounded,
+                              label: 'Transferencia',
+                            ),
                           _MetaBadge(
                             icon: Icons.category_rounded,
                             label: item.category,

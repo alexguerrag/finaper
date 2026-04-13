@@ -407,7 +407,8 @@ class _AccountTransferScreenState extends State<AccountTransferScreen> {
                               return 'Ingresa un monto';
                             }
 
-                            final normalized = value.trim().replaceAll(',', '.');
+                            final normalized =
+                                value.trim().replaceAll(',', '.');
                             final parsed = double.tryParse(normalized);
                             if (parsed == null) {
                               return 'Escribe un monto válido';
