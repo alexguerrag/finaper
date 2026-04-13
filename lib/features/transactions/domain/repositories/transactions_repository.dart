@@ -6,6 +6,8 @@ abstract class TransactionsRepository {
   Future<TransactionEntity> add(TransactionEntity transaction);
   Future<TransactionEntity> update(TransactionEntity transaction);
   Future<void> delete(String id);
+  Future<void> deleteByTransferGroup(String transferGroupId);
   Future<List<TransactionEntity>> createTransfer(
-      AccountTransferEntity transfer);
+    AccountTransferEntity transfer,
+  );
 }

@@ -33,6 +33,11 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
   }
 
   @override
+  Future<void> deleteByTransferGroup(String transferGroupId) async {
+    await localDataSource.deleteTransactionsByTransferGroup(transferGroupId);
+  }
+
+  @override
   Future<List<TransactionEntity>> createTransfer(
     AccountTransferEntity transfer,
   ) async {

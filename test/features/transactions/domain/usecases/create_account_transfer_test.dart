@@ -52,6 +52,11 @@ class _FakeTransactionsRepository implements TransactionsRepository {
   }
 
   @override
+  Future<void> deleteByTransferGroup(String transferGroupId) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<List<TransactionEntity>> getAll() {
     throw UnimplementedError();
   }

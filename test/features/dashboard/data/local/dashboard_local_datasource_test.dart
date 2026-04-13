@@ -246,6 +246,11 @@ class _FakeTransactionLocalDataSource implements TransactionLocalDataSource {
   }
 
   @override
+  Future<void> deleteTransactionsByTransferGroup(String transferGroupId) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<List<TransactionModel>> createTransfer(
       AccountTransferEntity transfer) {
     throw UnimplementedError();

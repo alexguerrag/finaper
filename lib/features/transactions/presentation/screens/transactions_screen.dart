@@ -7,6 +7,7 @@ import '../../data/models/transaction_model.dart';
 import '../../di/transactions_registry.dart';
 import '../../domain/usecases/add_transaction.dart';
 import '../../domain/usecases/delete_transaction.dart';
+import '../../domain/usecases/delete_transaction_group.dart';
 import '../../domain/usecases/get_all_transactions.dart';
 import '../../domain/usecases/update_transaction.dart';
 import '../widgets/transaction_details_sheet.dart';
@@ -25,6 +26,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   late final AddTransaction _addTransaction;
   late final UpdateTransaction _updateTransaction;
   late final DeleteTransaction _deleteTransaction;
+  late final DeleteTransactionGroup _deleteTransactionGroup;
 
   bool _isLoading = true;
   String _searchQuery = '';
@@ -47,6 +49,8 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     _addTransaction = TransactionsRegistry.module.addTransaction;
     _updateTransaction = TransactionsRegistry.module.updateTransaction;
     _deleteTransaction = TransactionsRegistry.module.deleteTransaction;
+    _deleteTransactionGroup =
+        TransactionsRegistry.module.deleteTransactionGroup;
     _loadTransactions();
   }
 
@@ -116,6 +120,21 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Future<void> _openEditTransactionSheet(TransactionModel transaction) async {
+    if (transaction.isTransfer) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            'La edición de transferencias llegará en el siguiente bloque. Por ahora puedes eliminarla completa y volver a crearla.',
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -223,7 +242,10 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 
   Future<void> _confirmDeleteTransaction(TransactionModel transaction) async {
     final transactionId = transaction.id;
-    if (transactionId == null || transactionId.isEmpty) {
+    final transferGroupId = transaction.transferGroupId?.trim();
+
+    if ((transactionId == null || transactionId.isEmpty) &&
+        (transferGroupId == null || transferGroupId.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
@@ -238,20 +260,24 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       return;
     }
 
+    final isTransfer = transaction.isTransfer;
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: AppTheme.surfaceElevated,
           title: Text(
-            'Eliminar transacción',
+            isTransfer ? 'Eliminar transferencia' : 'Eliminar transacción',
             style: GoogleFonts.manrope(
               fontWeight: FontWeight.w800,
               color: AppTheme.onSurface,
             ),
           ),
           content: Text(
-            '¿Seguro que quieres eliminar "${transaction.description}"?',
+            isTransfer
+                ? '¿Seguro que quieres eliminar esta transferencia completa? Se eliminarán ambas patas del movimiento.'
+                : '¿Seguro que quieres eliminar "${transaction.description}"?',
             style: GoogleFonts.manrope(
               color: AppTheme.onSurfaceMuted,
             ),
@@ -289,7 +315,12 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     if (confirm != true) return;
 
     try {
-      await _deleteTransaction(transactionId);
+      if (isTransfer) {
+        await _deleteTransactionGroup(transferGroupId!);
+      } else {
+        await _deleteTransaction(transactionId!);
+      }
+
       await refreshTransactions();
 
       if (!mounted) return;
@@ -298,7 +329,9 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         SnackBar(
           behavior: SnackBarBehavior.floating,
           content: Text(
-            'Transacción eliminada correctamente.',
+            isTransfer
+                ? 'Transferencia eliminada correctamente.'
+                : 'Transacción eliminada correctamente.',
             style: GoogleFonts.manrope(
               fontWeight: FontWeight.w600,
             ),
@@ -315,7 +348,9 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         SnackBar(
           behavior: SnackBarBehavior.floating,
           content: Text(
-            'No se pudo eliminar la transacción.',
+            isTransfer
+                ? 'No se pudo eliminar la transferencia.'
+                : 'No se pudo eliminar la transacción.',
             style: GoogleFonts.manrope(
               fontWeight: FontWeight.w600,
             ),

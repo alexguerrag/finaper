@@ -11,6 +11,7 @@ abstract class TransactionLocalDataSource {
   Future<TransactionModel> insertTransaction(TransactionModel transaction);
   Future<TransactionModel> updateTransaction(TransactionModel transaction);
   Future<void> deleteTransaction(String id);
+  Future<void> deleteTransactionsByTransferGroup(String transferGroupId);
   Future<List<TransactionModel>> createTransfer(AccountTransferEntity transfer);
 }
 
@@ -94,6 +95,30 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
       );
     } catch (e, s) {
       debugPrint('deleteTransaction datasource error: $e');
+      debugPrintStack(stackTrace: s);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteTransactionsByTransferGroup(String transferGroupId) async {
+    try {
+      final normalized = transferGroupId.trim();
+      if (normalized.isEmpty) {
+        throw const FormatException(
+          'El grupo de transferencia no es válido.',
+        );
+      }
+
+      final db = await dbHelper.database;
+
+      await db.delete(
+        'transactions',
+        where: 'transfer_group_id = ?',
+        whereArgs: [normalized],
+      );
+    } catch (e, s) {
+      debugPrint('deleteTransactionsByTransferGroup datasource error: $e');
       debugPrintStack(stackTrace: s);
       rethrow;
     }
