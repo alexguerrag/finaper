@@ -70,6 +70,10 @@ class DashboardLocalDataSource {
     double totalExpense = 0;
 
     for (final transaction in transactions) {
+      if (transaction.isTransfer) {
+        continue;
+      }
+
       if (transaction.isIncome) {
         totalIncome += transaction.amount;
       } else {
@@ -95,6 +99,10 @@ class DashboardLocalDataSource {
           !date.isBefore(selectedMonth) && date.isBefore(nextMonth);
 
       if (!isInSelectedMonth) {
+        continue;
+      }
+
+      if (transaction.isTransfer) {
         continue;
       }
 

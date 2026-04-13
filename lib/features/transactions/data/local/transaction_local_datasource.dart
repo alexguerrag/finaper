@@ -1,7 +1,9 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../../../core/database/database_helper.dart';
+import '../../domain/entities/account_transfer_entity.dart';
+import '../../domain/entities/transaction_entry_type.dart';
 import '../models/transaction_model.dart';
 
 abstract class TransactionLocalDataSource {
@@ -9,6 +11,7 @@ abstract class TransactionLocalDataSource {
   Future<TransactionModel> insertTransaction(TransactionModel transaction);
   Future<TransactionModel> updateTransaction(TransactionModel transaction);
   Future<void> deleteTransaction(String id);
+  Future<List<TransactionModel>> createTransfer(AccountTransferEntity transfer);
 }
 
 class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
@@ -91,6 +94,91 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
       );
     } catch (e, s) {
       debugPrint('deleteTransaction datasource error: $e');
+      debugPrintStack(stackTrace: s);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<TransactionModel>> createTransfer(
+    AccountTransferEntity transfer,
+  ) async {
+    try {
+      final normalizedDescription = transfer.description.trim();
+      final normalizedNote = transfer.note.trim();
+
+      if (transfer.fromAccountId == transfer.toAccountId) {
+        throw const FormatException(
+          'La cuenta de origen y destino deben ser distintas.',
+        );
+      }
+
+      if (transfer.amount <= 0) {
+        throw const FormatException(
+          'El monto de la transferencia debe ser mayor a cero.',
+        );
+      }
+
+      final db = await dbHelper.database;
+      final transferGroupId =
+          'trf_${DateTime.now().microsecondsSinceEpoch.toString()}';
+
+      final outgoing = TransactionModel(
+        id: '${transferGroupId}_out',
+        accountId: transfer.fromAccountId,
+        accountName: transfer.fromAccountName,
+        description: normalizedDescription.isNotEmpty
+            ? normalizedDescription
+            : 'Transferencia a ${transfer.toAccountName}',
+        categoryId: DatabaseHelper.transferExpenseCategoryId,
+        category: DatabaseHelper.transferExpenseCategoryName,
+        amount: transfer.amount,
+        isIncome: false,
+        date: transfer.date,
+        note: normalizedNote,
+        color: Colors.blueGrey.withValues(alpha: 1.0),
+        entryType: TransactionEntryType.transferOut,
+        transferGroupId: transferGroupId,
+        counterpartyAccountId: transfer.toAccountId,
+        counterpartyAccountName: transfer.toAccountName,
+      );
+
+      final incoming = TransactionModel(
+        id: '${transferGroupId}_in',
+        accountId: transfer.toAccountId,
+        accountName: transfer.toAccountName,
+        description: normalizedDescription.isNotEmpty
+            ? normalizedDescription
+            : 'Transferencia desde ${transfer.fromAccountName}',
+        categoryId: DatabaseHelper.transferIncomeCategoryId,
+        category: DatabaseHelper.transferIncomeCategoryName,
+        amount: transfer.amount,
+        isIncome: true,
+        date: transfer.date,
+        note: normalizedNote,
+        color: Colors.blueGrey.withValues(alpha: 1.0),
+        entryType: TransactionEntryType.transferIn,
+        transferGroupId: transferGroupId,
+        counterpartyAccountId: transfer.fromAccountId,
+        counterpartyAccountName: transfer.fromAccountName,
+      );
+
+      await db.transaction((txn) async {
+        await txn.insert(
+          'transactions',
+          outgoing.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        await txn.insert(
+          'transactions',
+          incoming.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      });
+
+      return [outgoing, incoming];
+    } catch (e, s) {
+      debugPrint('createTransfer datasource error: $e');
       debugPrintStack(stackTrace: s);
       rethrow;
     }

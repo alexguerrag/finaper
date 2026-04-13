@@ -6,6 +6,8 @@ import 'package:finaper/features/accounts/domain/entities/account_entity.dart';
 import 'package:finaper/features/dashboard/data/local/dashboard_local_datasource.dart';
 import 'package:finaper/features/transactions/data/local/transaction_local_datasource.dart';
 import 'package:finaper/features/transactions/data/models/transaction_model.dart';
+import 'package:finaper/features/transactions/domain/entities/account_transfer_entity.dart';
+import 'package:finaper/features/transactions/domain/entities/transaction_entry_type.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -172,6 +174,51 @@ void main() {
         expect(secondCategory.percentage, closeTo(0.3333, 0.001));
       },
     );
+
+    test(
+      'excluye transferencias de ingresos, gastos y categorias del dashboard',
+      () async {
+        transactionLocalDataSource.transactions = [
+          _incomeTransaction(
+            id: 'tx-1',
+            amount: 1000,
+            categoryId: 'salary',
+            category: 'Salario',
+            date: DateTime(2026, 4, 2),
+          ),
+          _expenseTransaction(
+            id: 'tx-2',
+            amount: 200,
+            categoryId: 'food',
+            category: 'Alimentación',
+            date: DateTime(2026, 4, 3),
+          ),
+          _transferOutTransaction(
+            id: 'tx-3',
+            amount: 300,
+            date: DateTime(2026, 4, 4),
+          ),
+          _transferInTransaction(
+            id: 'tx-4',
+            amount: 300,
+            date: DateTime(2026, 4, 4),
+          ),
+        ];
+
+        final summary = await dashboardLocalDataSource.getSummary(
+          month: DateTime(2026, 4, 1),
+        );
+
+        expect(summary.totalIncome, 1000);
+        expect(summary.totalExpense, 200);
+        expect(summary.monthIncome, 1000);
+        expect(summary.monthExpense, 200);
+        expect(summary.monthNetFlow, 800);
+        expect(summary.recentTransactions, hasLength(2));
+        expect(summary.topExpenseCategories, hasLength(1));
+        expect(summary.topExpenseCategories.first.categoryId, 'food');
+      },
+    );
   });
 }
 
@@ -195,6 +242,12 @@ class _FakeTransactionLocalDataSource implements TransactionLocalDataSource {
 
   @override
   Future<void> deleteTransaction(String id) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<TransactionModel>> createTransfer(
+      AccountTransferEntity transfer) {
     throw UnimplementedError();
   }
 }
@@ -270,5 +323,53 @@ TransactionModel _expenseTransaction({
     date: date,
     note: '',
     color: color ?? Colors.red.withValues(alpha: 1.0),
+  );
+}
+
+TransactionModel _transferOutTransaction({
+  required String id,
+  required double amount,
+  required DateTime date,
+}) {
+  return TransactionModel(
+    id: id,
+    description: 'Transferencia a ahorros',
+    accountId: 'acc-main',
+    accountName: 'Cuenta principal',
+    categoryId: 'cat-exp-transfer',
+    category: 'Transferencia enviada',
+    amount: amount,
+    isIncome: false,
+    date: date,
+    note: '',
+    color: Colors.blueGrey.withValues(alpha: 1.0),
+    entryType: TransactionEntryType.transferOut,
+    transferGroupId: 'grp-1',
+    counterpartyAccountId: 'acc-savings',
+    counterpartyAccountName: 'Ahorros',
+  );
+}
+
+TransactionModel _transferInTransaction({
+  required String id,
+  required double amount,
+  required DateTime date,
+}) {
+  return TransactionModel(
+    id: id,
+    description: 'Transferencia desde cuenta principal',
+    accountId: 'acc-savings',
+    accountName: 'Ahorros',
+    categoryId: 'cat-inc-transfer',
+    category: 'Transferencia recibida',
+    amount: amount,
+    isIncome: true,
+    date: date,
+    note: '',
+    color: Colors.blueGrey.withValues(alpha: 1.0),
+    entryType: TransactionEntryType.transferIn,
+    transferGroupId: 'grp-1',
+    counterpartyAccountId: 'acc-main',
+    counterpartyAccountName: 'Cuenta principal',
   );
 }

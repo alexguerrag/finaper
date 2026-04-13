@@ -7,6 +7,7 @@ import '../data/repositories/transactions_repository_impl.dart';
 import '../domain/repositories/transaction_form_preferences_repository.dart';
 import '../domain/repositories/transactions_repository.dart';
 import '../domain/usecases/add_transaction.dart';
+import '../domain/usecases/create_account_transfer.dart';
 import '../domain/usecases/delete_transaction.dart';
 import '../domain/usecases/get_all_transactions.dart';
 import '../domain/usecases/get_transaction_form_preferences.dart';
@@ -20,6 +21,7 @@ class TransactionsModule implements AppModule {
   late final AddTransaction addTransaction;
   late final UpdateTransaction updateTransaction;
   late final DeleteTransaction deleteTransaction;
+  late final CreateAccountTransfer createAccountTransfer;
 
   late final TransactionFormPreferencesLocalDataSource
       preferencesLocalDataSource;
@@ -40,6 +42,7 @@ class TransactionsModule implements AppModule {
     addTransaction = AddTransaction(repository);
     updateTransaction = UpdateTransaction(repository);
     deleteTransaction = DeleteTransaction(repository);
+    createAccountTransfer = CreateAccountTransfer(repository);
 
     preferencesLocalDataSource =
         TransactionFormPreferencesLocalDataSourceImpl(_databaseHelper);

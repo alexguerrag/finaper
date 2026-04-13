@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/transaction_entity.dart';
+import '../../domain/entities/transaction_entry_type.dart';
 
 class TransactionModel extends TransactionEntity {
   const TransactionModel({
@@ -15,6 +16,10 @@ class TransactionModel extends TransactionEntity {
     required super.date,
     required super.note,
     super.color,
+    super.entryType = TransactionEntryType.standard,
+    super.transferGroupId,
+    super.counterpartyAccountId,
+    super.counterpartyAccountName,
   });
 
   factory TransactionModel.fromMap(Map<String, dynamic> map) {
@@ -37,6 +42,12 @@ class TransactionModel extends TransactionEntity {
           : (isIncome
               ? Colors.green.withValues(alpha: 1.0)
               : Colors.red.withValues(alpha: 1.0)),
+      entryType: TransactionEntryType.fromStorage(
+        map['entry_type']?.toString(),
+      ),
+      transferGroupId: map['transfer_group_id']?.toString(),
+      counterpartyAccountId: map['counterparty_account_id']?.toString(),
+      counterpartyAccountName: map['counterparty_account_name']?.toString(),
     );
   }
 
@@ -53,6 +64,10 @@ class TransactionModel extends TransactionEntity {
       date: entity.date,
       note: entity.note,
       color: entity.color?.withValues(alpha: 1.0),
+      entryType: entity.entryType,
+      transferGroupId: entity.transferGroupId,
+      counterpartyAccountId: entity.counterpartyAccountId,
+      counterpartyAccountName: entity.counterpartyAccountName,
     );
   }
 
@@ -70,6 +85,10 @@ class TransactionModel extends TransactionEntity {
       'note': note,
       'color_value': color?.toARGB32() ??
           (isIncome ? Colors.green.toARGB32() : Colors.red.toARGB32()),
+      'entry_type': entryType.storageValue,
+      'transfer_group_id': transferGroupId,
+      'counterparty_account_id': counterpartyAccountId,
+      'counterparty_account_name': counterpartyAccountName,
     };
   }
 }

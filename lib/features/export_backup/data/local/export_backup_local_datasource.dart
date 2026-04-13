@@ -25,7 +25,7 @@ abstract class ExportBackupLocalDataSource {
 class ExportBackupLocalDataSourceImpl implements ExportBackupLocalDataSource {
   const ExportBackupLocalDataSourceImpl(this._databaseHelper);
 
-  static const int _currentDatabaseVersion = 9;
+  static const int _currentDatabaseVersion = 10;
   static const int _currentBackupFormatVersion = 1;
 
   final DatabaseHelper _databaseHelper;
@@ -149,6 +149,10 @@ class ExportBackupLocalDataSourceImpl implements ExportBackupLocalDataSource {
           'account_id',
           'amount',
           'is_income',
+          'entry_type',
+          'transfer_group_id',
+          'counterparty_account_id',
+          'counterparty_account_name',
           'note',
           'generated_from_recurring_id',
         ].join(','),
@@ -166,6 +170,10 @@ class ExportBackupLocalDataSourceImpl implements ExportBackupLocalDataSource {
             _csv(row['account_id']),
             _csv(row['amount']),
             _csv(row['is_income']),
+            _csv(row['entry_type']),
+            _csv(row['transfer_group_id']),
+            _csv(row['counterparty_account_id']),
+            _csv(row['counterparty_account_name']),
             _csv(row['note']),
             _csv(row['generated_from_recurring_id']),
           ].join(','),

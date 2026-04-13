@@ -10,12 +10,17 @@ class DatabaseHelper {
   static Database? _database;
 
   static const String _databaseName = 'finaper.db';
-  static const int _databaseVersion = 9;
+  static const int _databaseVersion = 10;
 
   static const String defaultAccountId = 'acc-cash-main';
   static const String defaultAccountName = 'Cuenta principal';
   static const String defaultExpenseCategoryId = 'cat-exp-other';
   static const String defaultIncomeCategoryId = 'cat-inc-other';
+
+  static const String transferExpenseCategoryId = 'cat-exp-transfer';
+  static const String transferExpenseCategoryName = 'Transferencia enviada';
+  static const String transferIncomeCategoryId = 'cat-inc-transfer';
+  static const String transferIncomeCategoryName = 'Transferencia recibida';
 
   Future<Database> get database async {
     if (_database != null) {
@@ -139,6 +144,40 @@ class DatabaseHelper {
         );
       }
 
+      if (oldVersion < 10) {
+        await _addColumnIfMissing(
+          db,
+          'transactions',
+          'entry_type',
+          "TEXT NOT NULL DEFAULT 'standard'",
+        );
+        await _addColumnIfMissing(
+          db,
+          'transactions',
+          'transfer_group_id',
+          'TEXT',
+        );
+        await _addColumnIfMissing(
+          db,
+          'transactions',
+          'counterparty_account_id',
+          'TEXT',
+        );
+        await _addColumnIfMissing(
+          db,
+          'transactions',
+          'counterparty_account_name',
+          'TEXT',
+        );
+
+        await db.rawUpdate('''
+          UPDATE transactions
+          SET entry_type = 'standard'
+          WHERE entry_type IS NULL OR entry_type = ''
+        ''');
+      }
+
+      await _seedCategories(db);
       await _createIndexes(db);
     } catch (e, s) {
       debugPrint('Database migration error: $e');
@@ -190,6 +229,10 @@ class DatabaseHelper {
         date TEXT NOT NULL,
         note TEXT,
         color_value INTEGER NOT NULL,
+        entry_type TEXT NOT NULL DEFAULT 'standard',
+        transfer_group_id TEXT,
+        counterparty_account_id TEXT,
+        counterparty_account_name TEXT,
         generated_from_recurring_id TEXT,
         FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE RESTRICT,
         FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE RESTRICT
@@ -298,6 +341,12 @@ class DatabaseHelper {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_transactions_generated_from_recurring_id ON transactions(generated_from_recurring_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_transactions_entry_type ON transactions(entry_type)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_transactions_transfer_group_id ON transactions(transfer_group_id)',
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_categories_kind_name ON categories(kind, name)',
@@ -448,6 +497,15 @@ class DatabaseHelper {
         'created_at': now,
       },
       {
+        'id': transferExpenseCategoryId,
+        'name': transferExpenseCategoryName,
+        'kind': 'expense',
+        'icon_code': Icons.swap_horiz_rounded.codePoint,
+        'color_value': Colors.blueGrey.toARGB32(),
+        'is_system': 1,
+        'created_at': now,
+      },
+      {
         'id': defaultExpenseCategoryId,
         'name': 'Otros',
         'kind': 'expense',
@@ -498,6 +556,15 @@ class DatabaseHelper {
         'kind': 'income',
         'icon_code': Icons.card_giftcard_rounded.codePoint,
         'color_value': Colors.amber.toARGB32(),
+        'is_system': 1,
+        'created_at': now,
+      },
+      {
+        'id': transferIncomeCategoryId,
+        'name': transferIncomeCategoryName,
+        'kind': 'income',
+        'icon_code': Icons.swap_horiz_rounded.codePoint,
+        'color_value': Colors.blueGrey.toARGB32(),
         'is_system': 1,
         'created_at': now,
       },

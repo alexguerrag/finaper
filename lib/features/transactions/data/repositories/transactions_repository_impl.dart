@@ -1,3 +1,4 @@
+import '../../domain/entities/account_transfer_entity.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../../domain/repositories/transactions_repository.dart';
 import '../local/transaction_local_datasource.dart';
@@ -11,7 +12,6 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
   @override
   Future<List<TransactionEntity>> getAll() async {
     final models = await localDataSource.getTransactions();
-    // Mapeo explícito de Model (Data) a Entity (Domain)
     return models.map((model) => model as TransactionEntity).toList();
   }
 
@@ -28,8 +28,15 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
   }
 
   @override
-  // Cambiado de int a String para coincidir con nuestro modelo de datos
   Future<void> delete(String id) async {
     await localDataSource.deleteTransaction(id);
+  }
+
+  @override
+  Future<List<TransactionEntity>> createTransfer(
+    AccountTransferEntity transfer,
+  ) async {
+    final models = await localDataSource.createTransfer(transfer);
+    return models.map((model) => model as TransactionEntity).toList();
   }
 }
