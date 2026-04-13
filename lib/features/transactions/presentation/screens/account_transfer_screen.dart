@@ -7,9 +7,35 @@ import '../../../accounts/domain/entities/account_entity.dart';
 import '../../di/transactions_registry.dart';
 import '../../domain/entities/account_transfer_entity.dart';
 import '../../domain/usecases/create_account_transfer.dart';
+import '../../domain/usecases/update_account_transfer.dart';
 
 class AccountTransferScreen extends StatefulWidget {
-  const AccountTransferScreen({super.key});
+  const AccountTransferScreen({
+    super.key,
+    this.initialTransferGroupId,
+    this.initialFromAccountId,
+    this.initialFromAccountName,
+    this.initialToAccountId,
+    this.initialToAccountName,
+    this.initialAmount,
+    this.initialDate,
+    this.initialDescription,
+    this.initialNote,
+  });
+
+  final String? initialTransferGroupId;
+  final String? initialFromAccountId;
+  final String? initialFromAccountName;
+  final String? initialToAccountId;
+  final String? initialToAccountName;
+  final double? initialAmount;
+  final DateTime? initialDate;
+  final String? initialDescription;
+  final String? initialNote;
+
+  bool get isEditMode =>
+      initialTransferGroupId != null &&
+      initialTransferGroupId!.trim().isNotEmpty;
 
   @override
   State<AccountTransferScreen> createState() => _AccountTransferScreenState();
@@ -22,6 +48,7 @@ class _AccountTransferScreenState extends State<AccountTransferScreen> {
   final TextEditingController _noteController = TextEditingController();
 
   late final CreateAccountTransfer _createAccountTransfer;
+  late final UpdateAccountTransfer _updateAccountTransfer;
 
   bool _isLoading = true;
   bool _isSaving = false;
@@ -32,10 +59,19 @@ class _AccountTransferScreenState extends State<AccountTransferScreen> {
   String? _toAccountId;
   DateTime _selectedDate = DateTime.now();
 
+  bool get _isEditMode => widget.isEditMode;
+
   @override
   void initState() {
     super.initState();
     _createAccountTransfer = TransactionsRegistry.module.createAccountTransfer;
+    _updateAccountTransfer = TransactionsRegistry.module.updateAccountTransfer;
+    _selectedDate = widget.initialDate ?? DateTime.now();
+    _descriptionController.text = widget.initialDescription ?? '';
+    _noteController.text = widget.initialNote ?? '';
+    if (widget.initialAmount != null) {
+      _amountController.text = widget.initialAmount!.toStringAsFixed(2);
+    }
     _loadAccounts();
   }
 
@@ -53,14 +89,20 @@ class _AccountTransferScreenState extends State<AccountTransferScreen> {
 
       if (!mounted) return;
 
-      String? initialFrom;
-      String? initialTo;
+      String? initialFrom = widget.initialFromAccountId;
+      String? initialTo = widget.initialToAccountId;
 
-      if (accounts.isNotEmpty) {
+      if (accounts.isNotEmpty && (initialFrom == null || initialFrom.isEmpty)) {
         initialFrom = accounts.first.id;
-        if (accounts.length > 1) {
-          initialTo = accounts[1].id;
-        }
+      }
+
+      if (accounts.length > 1 && (initialTo == null || initialTo.isEmpty)) {
+        initialTo = accounts
+            .firstWhere(
+              (account) => account.id != initialFrom,
+              orElse: () => accounts[1],
+            )
+            .id;
       }
 
       setState(() {
@@ -189,25 +231,34 @@ class _AccountTransferScreenState extends State<AccountTransferScreen> {
     });
 
     try {
-      await _createAccountTransfer(
-        AccountTransferEntity(
-          fromAccountId: fromAccount.id,
-          fromAccountName: fromAccount.name,
-          toAccountId: toAccount.id,
-          toAccountName: toAccount.name,
-          amount: amount,
-          date: _selectedDate,
-          note: _noteController.text.trim(),
-          description: _descriptionController.text.trim(),
-        ),
+      final transfer = AccountTransferEntity(
+        fromAccountId: fromAccount.id,
+        fromAccountName: fromAccount.name,
+        toAccountId: toAccount.id,
+        toAccountName: toAccount.name,
+        amount: amount,
+        date: _selectedDate,
+        note: _noteController.text.trim(),
+        description: _descriptionController.text.trim(),
       );
+
+      if (_isEditMode) {
+        await _updateAccountTransfer(
+          transferGroupId: widget.initialTransferGroupId!.trim(),
+          transfer: transfer,
+        );
+      } else {
+        await _createAccountTransfer(transfer);
+      }
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Transferencia registrada correctamente.',
+            _isEditMode
+                ? 'Transferencia actualizada correctamente.'
+                : 'Transferencia registrada correctamente.',
             style: GoogleFonts.manrope(),
           ),
         ),
@@ -237,7 +288,9 @@ class _AccountTransferScreenState extends State<AccountTransferScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'No se pudo registrar la transferencia.',
+            _isEditMode
+                ? 'No se pudo actualizar la transferencia.'
+                : 'No se pudo registrar la transferencia.',
             style: GoogleFonts.manrope(),
           ),
         ),
@@ -259,7 +312,7 @@ class _AccountTransferScreenState extends State<AccountTransferScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          'Transferir entre cuentas',
+          _isEditMode ? 'Editar transferencia' : 'Transferir entre cuentas',
           style: GoogleFonts.manrope(
             fontWeight: FontWeight.w800,
             color: AppTheme.onSurface,
@@ -313,7 +366,9 @@ class _AccountTransferScreenState extends State<AccountTransferScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Movimiento interno',
+                                _isEditMode
+                                    ? 'Editar movimiento interno'
+                                    : 'Movimiento interno',
                                 style: GoogleFonts.manrope(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
@@ -356,11 +411,12 @@ class _AccountTransferScreenState extends State<AccountTransferScreen> {
                             setState(() {
                               _fromAccountId = value;
                               if (_toAccountId == value) {
-                                final alternative = _accounts
+                                final alternatives = _accounts
                                     .where((account) => account.id != value)
-                                    .cast<AccountEntity?>()
-                                    .firstOrNull;
-                                _toAccountId = alternative?.id;
+                                    .toList();
+                                _toAccountId = alternatives.isNotEmpty
+                                    ? alternatives.first.id
+                                    : null;
                               }
                             });
                           },
@@ -503,8 +559,12 @@ class _AccountTransferScreenState extends State<AccountTransferScreen> {
                               : const Icon(Icons.swap_horiz_rounded),
                           label: Text(
                             _isSaving
-                                ? 'Registrando transferencia...'
-                                : 'Registrar transferencia',
+                                ? (_isEditMode
+                                    ? 'Actualizando transferencia...'
+                                    : 'Registrando transferencia...')
+                                : (_isEditMode
+                                    ? 'Guardar cambios'
+                                    : 'Registrar transferencia'),
                             style: GoogleFonts.manrope(
                               fontWeight: FontWeight.w800,
                             ),

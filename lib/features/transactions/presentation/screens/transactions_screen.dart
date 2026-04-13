@@ -12,6 +12,7 @@ import '../../domain/usecases/get_all_transactions.dart';
 import '../../domain/usecases/update_transaction.dart';
 import '../widgets/transaction_details_sheet.dart';
 import '../widgets/transaction_filters_sheet.dart';
+import 'account_transfer_screen.dart';
 import 'add_transaction_sheet.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -121,17 +122,37 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 
   Future<void> _openEditTransactionSheet(TransactionModel transaction) async {
     if (transaction.isTransfer) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: Text(
-            'La edición de transferencias llegará en el siguiente bloque. Por ahora puedes eliminarla completa y volver a crearla.',
-            style: GoogleFonts.manrope(
-              fontWeight: FontWeight.w600,
-            ),
+      final didUpdate = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => AccountTransferScreen(
+            initialTransferGroupId: transaction.transferGroupId,
+            initialFromAccountId:
+                transaction.entryType.storageValue == 'transfer_out'
+                    ? transaction.accountId
+                    : transaction.counterpartyAccountId,
+            initialFromAccountName:
+                transaction.entryType.storageValue == 'transfer_out'
+                    ? transaction.accountName
+                    : transaction.counterpartyAccountName,
+            initialToAccountId:
+                transaction.entryType.storageValue == 'transfer_in'
+                    ? transaction.accountId
+                    : transaction.counterpartyAccountId,
+            initialToAccountName:
+                transaction.entryType.storageValue == 'transfer_in'
+                    ? transaction.accountName
+                    : transaction.counterpartyAccountName,
+            initialAmount: transaction.amount,
+            initialDate: transaction.date,
+            initialDescription: transaction.description,
+            initialNote: transaction.note,
           ),
         ),
       );
+
+      if (didUpdate == true) {
+        await refreshTransactions();
+      }
       return;
     }
 

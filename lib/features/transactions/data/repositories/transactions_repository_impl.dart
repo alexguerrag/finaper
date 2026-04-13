@@ -44,4 +44,15 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
     final models = await localDataSource.createTransfer(transfer);
     return models.map((model) => model as TransactionEntity).toList();
   }
+
+  @override
+  Future<void> updateTransfer({
+    required String transferGroupId,
+    required AccountTransferEntity transfer,
+  }) async {
+    await localDataSource.updateTransfer(
+      transferGroupId: transferGroupId,
+      transfer: transfer,
+    );
+  }
 }

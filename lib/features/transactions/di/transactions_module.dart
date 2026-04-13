@@ -13,6 +13,7 @@ import '../domain/usecases/delete_transaction_group.dart';
 import '../domain/usecases/get_all_transactions.dart';
 import '../domain/usecases/get_transaction_form_preferences.dart';
 import '../domain/usecases/save_transaction_form_preferences.dart';
+import '../domain/usecases/update_account_transfer.dart';
 import '../domain/usecases/update_transaction.dart';
 
 class TransactionsModule implements AppModule {
@@ -24,6 +25,7 @@ class TransactionsModule implements AppModule {
   late final DeleteTransaction deleteTransaction;
   late final DeleteTransactionGroup deleteTransactionGroup;
   late final CreateAccountTransfer createAccountTransfer;
+  late final UpdateAccountTransfer updateAccountTransfer;
 
   late final TransactionFormPreferencesLocalDataSource
       preferencesLocalDataSource;
@@ -46,6 +48,7 @@ class TransactionsModule implements AppModule {
     deleteTransaction = DeleteTransaction(repository);
     deleteTransactionGroup = DeleteTransactionGroup(repository);
     createAccountTransfer = CreateAccountTransfer(repository);
+    updateAccountTransfer = UpdateAccountTransfer(repository);
 
     preferencesLocalDataSource =
         TransactionFormPreferencesLocalDataSourceImpl(_databaseHelper);

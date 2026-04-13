@@ -255,6 +255,14 @@ class _FakeTransactionLocalDataSource implements TransactionLocalDataSource {
       AccountTransferEntity transfer) {
     throw UnimplementedError();
   }
+
+  @override
+  Future<void> updateTransfer({
+    required String transferGroupId,
+    required AccountTransferEntity transfer,
+  }) {
+    throw UnimplementedError();
+  }
 }
 
 class _FakeAccountsLocalDataSource implements AccountsLocalDataSource {

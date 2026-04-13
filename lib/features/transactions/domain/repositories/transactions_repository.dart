@@ -10,4 +10,8 @@ abstract class TransactionsRepository {
   Future<List<TransactionEntity>> createTransfer(
     AccountTransferEntity transfer,
   );
+  Future<void> updateTransfer({
+    required String transferGroupId,
+    required AccountTransferEntity transfer,
+  });
 }

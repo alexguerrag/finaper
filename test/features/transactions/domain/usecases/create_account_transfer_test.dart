@@ -41,7 +41,8 @@ class _FakeTransactionsRepository implements TransactionsRepository {
 
   @override
   Future<List<TransactionEntity>> createTransfer(
-      AccountTransferEntity transfer) async {
+    AccountTransferEntity transfer,
+  ) async {
     lastTransfer = transfer;
     return response;
   }
@@ -63,6 +64,14 @@ class _FakeTransactionsRepository implements TransactionsRepository {
 
   @override
   Future<TransactionEntity> update(TransactionEntity transaction) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateTransfer({
+    required String transferGroupId,
+    required AccountTransferEntity transfer,
+  }) {
     throw UnimplementedError();
   }
 }
