@@ -14,6 +14,7 @@ class TransactionEntity extends Equatable {
     required this.amount,
     required this.isIncome,
     required this.date,
+    required this.createdAt,
     required this.note,
     this.color,
     this.entryType = TransactionEntryType.standard,
@@ -30,7 +31,12 @@ class TransactionEntity extends Equatable {
   final String category;
   final double amount;
   final bool isIncome;
+
+  /// Fecha financiera del movimiento (solo fecha, sin hora).
   final DateTime date;
+
+  /// Momento real de creación del registro. Usado como desempate en ordenamiento.
+  final DateTime createdAt;
   final String note;
   final Color? color;
 
@@ -52,6 +58,7 @@ class TransactionEntity extends Equatable {
         amount,
         isIncome,
         date,
+        createdAt,
         note,
         color,
         entryType,

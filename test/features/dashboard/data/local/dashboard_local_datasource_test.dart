@@ -311,6 +311,7 @@ TransactionModel _incomeTransaction({
     amount: amount,
     isIncome: true,
     date: date,
+    createdAt: date,
     note: '',
     color: color ?? Colors.green.withValues(alpha: 1.0),
   );
@@ -334,6 +335,7 @@ TransactionModel _expenseTransaction({
     amount: amount,
     isIncome: false,
     date: date,
+    createdAt: date,
     note: '',
     color: color ?? Colors.red.withValues(alpha: 1.0),
   );
@@ -354,6 +356,7 @@ TransactionModel _transferOutTransaction({
     amount: amount,
     isIncome: false,
     date: date,
+    createdAt: date,
     note: '',
     color: Colors.blueGrey.withValues(alpha: 1.0),
     entryType: TransactionEntryType.transferOut,
@@ -378,6 +381,7 @@ TransactionModel _transferInTransaction({
     amount: amount,
     isIncome: true,
     date: date,
+    createdAt: date,
     note: '',
     color: Colors.blueGrey.withValues(alpha: 1.0),
     entryType: TransactionEntryType.transferIn,

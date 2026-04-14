@@ -30,7 +30,7 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
       final db = await dbHelper.database;
       final maps = await db.query(
         'transactions',
-        orderBy: 'date DESC',
+        orderBy: 'date DESC, created_at DESC',
       );
 
       return List<TransactionModel>.generate(
@@ -149,9 +149,11 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
       }
 
       final db = await dbHelper.database;
-      final transferGroupId =
-          'trf_${DateTime.now().microsecondsSinceEpoch.toString()}';
+      final now = DateTime.now();
+      final transferGroupId = 'trf_${now.microsecondsSinceEpoch.toString()}';
 
+      // Ambas patas comparten el mismo createdAt para que aparezcan juntas
+      // en el ordenamiento y se perciban como un único evento atómico.
       final outgoing = TransactionModel(
         id: '${transferGroupId}_out',
         accountId: transfer.fromAccountId,
@@ -164,6 +166,7 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
         amount: transfer.amount,
         isIncome: false,
         date: transfer.date,
+        createdAt: now,
         note: normalizedNote,
         color: Colors.blueGrey.withValues(alpha: 1.0),
         entryType: TransactionEntryType.transferOut,
@@ -184,6 +187,7 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
         amount: transfer.amount,
         isIncome: true,
         date: transfer.date,
+        createdAt: now,
         note: normalizedNote,
         color: Colors.blueGrey.withValues(alpha: 1.0),
         entryType: TransactionEntryType.transferIn,
@@ -273,6 +277,8 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
         );
       }
 
+      // Preservar createdAt original de cada pata: la edición no altera
+      // el momento en que se creó la transferencia.
       final updatedOutgoing = TransactionModel(
         id: outgoing.id,
         accountId: transfer.fromAccountId,
@@ -285,6 +291,7 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
         amount: transfer.amount,
         isIncome: false,
         date: transfer.date,
+        createdAt: outgoing.createdAt,
         note: normalizedNote,
         color: Colors.blueGrey.withValues(alpha: 1.0),
         entryType: TransactionEntryType.transferOut,
@@ -305,6 +312,7 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
         amount: transfer.amount,
         isIncome: true,
         date: transfer.date,
+        createdAt: incoming.createdAt,
         note: normalizedNote,
         color: Colors.blueGrey.withValues(alpha: 1.0),
         entryType: TransactionEntryType.transferIn,
