@@ -10,7 +10,7 @@ class DatabaseHelper {
   static Database? _database;
 
   static const String _databaseName = 'finaper.db';
-  static const int _databaseVersion = 10;
+  static const int _databaseVersion = 11;
 
   static const String defaultAccountId = 'acc-cash-main';
   static const String defaultAccountName = 'Cuenta principal';
@@ -177,6 +177,24 @@ class DatabaseHelper {
         ''');
       }
 
+      if (oldVersion < 11) {
+        await _addColumnIfMissing(
+          db,
+          'transactions',
+          'created_at',
+          "TEXT NOT NULL DEFAULT ''",
+        );
+
+        // Backfill seguro: para filas existentes usamos `date` como valor
+        // de createdAt. Es la mejor aproximación disponible y preserva el
+        // orden relativo original.
+        await db.rawUpdate('''
+          UPDATE transactions
+          SET created_at = date
+          WHERE created_at IS NULL OR created_at = ''
+        ''');
+      }
+
       await _seedCategories(db);
       await _createIndexes(db);
     } catch (e, s) {
@@ -227,6 +245,7 @@ class DatabaseHelper {
         amount REAL NOT NULL,
         is_income INTEGER NOT NULL,
         date TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT '',
         note TEXT,
         color_value INTEGER NOT NULL,
         entry_type TEXT NOT NULL DEFAULT 'standard',
@@ -329,6 +348,9 @@ class DatabaseHelper {
   Future<void> _createIndexes(Database db) async {
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date DESC)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_transactions_date_created_at ON transactions(date DESC, created_at DESC)',
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(is_income)',
@@ -697,7 +719,7 @@ class DatabaseHelper {
       final db = await database;
       return await db.query(
         'transactions',
-        orderBy: 'date DESC',
+        orderBy: 'date DESC, created_at DESC',
       );
     } catch (e, s) {
       debugPrint('queryAllTransactions error: $e');

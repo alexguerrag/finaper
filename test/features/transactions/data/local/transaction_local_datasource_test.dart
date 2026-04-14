@@ -140,6 +140,7 @@ void main() {
           amount: 12000,
           isIncome: false,
           date: DateTime(2026, 4, 12),
+          createdAt: DateTime(2026, 4, 12),
           note: '',
           entryType: TransactionEntryType.transferOut,
           transferGroupId: 'broken-group',
@@ -226,6 +227,8 @@ class _InMemoryTransactionLocalDataSource
     final description = transfer.description.trim();
     final note = transfer.note.trim();
 
+    final now = DateTime.now();
+
     final outgoing = TransactionModel(
       id: '${groupId}_out',
       accountId: transfer.fromAccountId,
@@ -238,6 +241,7 @@ class _InMemoryTransactionLocalDataSource
       amount: transfer.amount,
       isIncome: false,
       date: transfer.date,
+      createdAt: now,
       note: note,
       entryType: TransactionEntryType.transferOut,
       transferGroupId: groupId,
@@ -257,6 +261,7 @@ class _InMemoryTransactionLocalDataSource
       amount: transfer.amount,
       isIncome: true,
       date: transfer.date,
+      createdAt: now,
       note: note,
       entryType: TransactionEntryType.transferIn,
       transferGroupId: groupId,
@@ -316,6 +321,7 @@ class _InMemoryTransactionLocalDataSource
       amount: transfer.amount,
       isIncome: false,
       date: transfer.date,
+      createdAt: currentOutgoing.createdAt,
       note: note,
       entryType: TransactionEntryType.transferOut,
       transferGroupId: transferGroupId,
@@ -335,6 +341,7 @@ class _InMemoryTransactionLocalDataSource
       amount: transfer.amount,
       isIncome: true,
       date: transfer.date,
+      createdAt: currentIncoming.createdAt,
       note: note,
       entryType: TransactionEntryType.transferIn,
       transferGroupId: transferGroupId,

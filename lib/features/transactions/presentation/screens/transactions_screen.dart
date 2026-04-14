@@ -211,8 +211,9 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 
   Future<void> _duplicateTransaction(TransactionModel transaction) async {
     try {
+      final now = DateTime.now();
       final duplicated = TransactionModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: now.millisecondsSinceEpoch.toString(),
         accountId: transaction.accountId,
         accountName: transaction.accountName,
         description: transaction.description,
@@ -220,7 +221,8 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         category: transaction.category,
         amount: transaction.amount,
         isIncome: transaction.isIncome,
-        date: DateTime.now(),
+        date: now,
+        createdAt: now,
         note: transaction.note,
         color: transaction.color,
       );
@@ -471,10 +473,18 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 
     switch (_listFilterState.sortOption) {
       case TransactionSortOption.newestFirst:
-        sorted.sort((a, b) => b.date.compareTo(a.date));
+        sorted.sort((a, b) {
+          final dateCmp = b.date.compareTo(a.date);
+          if (dateCmp != 0) return dateCmp;
+          return b.createdAt.compareTo(a.createdAt);
+        });
         break;
       case TransactionSortOption.oldestFirst:
-        sorted.sort((a, b) => a.date.compareTo(b.date));
+        sorted.sort((a, b) {
+          final dateCmp = a.date.compareTo(b.date);
+          if (dateCmp != 0) return dateCmp;
+          return a.createdAt.compareTo(b.createdAt);
+        });
         break;
       case TransactionSortOption.highestAmount:
         sorted.sort((a, b) => b.amount.compareTo(a.amount));

@@ -14,6 +14,7 @@ class TransactionModel extends TransactionEntity {
     required super.amount,
     required super.isIncome,
     required super.date,
+    required super.createdAt,
     required super.note,
     super.color,
     super.entryType = TransactionEntryType.standard,
@@ -24,6 +25,12 @@ class TransactionModel extends TransactionEntity {
 
   factory TransactionModel.fromMap(Map<String, dynamic> map) {
     final isIncome = (map['is_income'] as int? ?? 0) == 1;
+    final date =
+        DateTime.tryParse(map['date']?.toString() ?? '') ?? DateTime.now();
+
+    // Backfill seguro: si created_at no existe (filas previas a v11), usa date.
+    final createdAt =
+        DateTime.tryParse(map['created_at']?.toString() ?? '') ?? date;
 
     return TransactionModel(
       id: map['id']?.toString(),
@@ -35,7 +42,8 @@ class TransactionModel extends TransactionEntity {
       category: map['category']?.toString() ?? 'Otros',
       amount: (map['amount'] as num? ?? 0).toDouble(),
       isIncome: isIncome,
-      date: DateTime.tryParse(map['date']?.toString() ?? '') ?? DateTime.now(),
+      date: date,
+      createdAt: createdAt,
       note: map['note']?.toString() ?? '',
       color: map['color_value'] != null
           ? Color(map['color_value'] as int).withValues(alpha: 1.0)
@@ -62,6 +70,7 @@ class TransactionModel extends TransactionEntity {
       amount: entity.amount,
       isIncome: entity.isIncome,
       date: entity.date,
+      createdAt: entity.createdAt,
       note: entity.note,
       color: entity.color?.withValues(alpha: 1.0),
       entryType: entity.entryType,
@@ -82,6 +91,7 @@ class TransactionModel extends TransactionEntity {
       'amount': amount,
       'is_income': isIncome ? 1 : 0,
       'date': date.toIso8601String(),
+      'created_at': createdAt.toIso8601String(),
       'note': note,
       'color_value': color?.toARGB32() ??
           (isIncome ? Colors.green.toARGB32() : Colors.red.toARGB32()),

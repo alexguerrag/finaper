@@ -434,6 +434,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       amount: amount,
       isIncome: _isIncome,
       date: _selectedDate,
+      // Alta: createdAt = ahora. Edición: preservar el original.
+      createdAt: widget.initialTransaction?.createdAt ?? DateTime.now(),
       note: _noteController.text.trim(),
       color: category.color,
     );
