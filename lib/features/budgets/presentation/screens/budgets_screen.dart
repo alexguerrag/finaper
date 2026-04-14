@@ -23,10 +23,19 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   late final UpsertBudget _upsertBudget;
 
   bool _isLoading = true;
+  bool _isCopyingPreviousMonth = false;
+
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   List<BudgetEntity> _budgets = <BudgetEntity>[];
 
   String get _monthKey => budgetMonthKeyFromDate(_selectedMonth);
+
+  DateTime get _previousMonth => DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month - 1,
+      );
+
+  String get _previousMonthKey => budgetMonthKeyFromDate(_previousMonth);
 
   @override
   void initState() {
@@ -127,6 +136,87 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     }
   }
 
+  Future<void> _copyBudgetsFromPreviousMonth() async {
+    if (_isCopyingPreviousMonth || _isLoading) return;
+
+    setState(() {
+      _isCopyingPreviousMonth = true;
+    });
+
+    try {
+      final previousBudgets = await _getBudgetsByMonth(
+        monthKey: _previousMonthKey,
+      );
+
+      if (previousBudgets.isEmpty) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'No hay presupuestos en ${_monthLabel(_previousMonth)} para copiar.',
+              style: GoogleFonts.manrope(),
+            ),
+          ),
+        );
+        return;
+      }
+
+      for (final budget in previousBudgets) {
+        final now = DateTime.now();
+
+        await _upsertBudget(
+          BudgetModel(
+            id: 'budget-${budget.categoryId}-$_monthKey',
+            categoryId: budget.categoryId,
+            categoryName: budget.categoryName,
+            monthKey: _monthKey,
+            amountLimit: budget.amountLimit,
+            spentAmount: 0,
+            color: budget.color,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+      }
+
+      if (!mounted) return;
+
+      await _loadBudgets();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Presupuestos copiados desde ${_monthLabel(_previousMonth)}.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    } catch (e, s) {
+      debugPrint('BudgetsScreen copy previous month error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudieron copiar los presupuestos del mes anterior.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCopyingPreviousMonth = false;
+        });
+      }
+    }
+  }
+
   String _monthLabel(DateTime date) {
     return AppFormatters.formatMonthYear(date);
   }
@@ -146,6 +236,20 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       0,
       (sum, budget) => sum + budget.spentAmount,
     );
+
+    final totalBalance = totalLimit - totalSpent;
+    final isMonthExceeded = totalBalance < 0;
+
+    final exceededCount = _budgets.where((budget) => budget.isExceeded).length;
+    final riskCount = _budgets.where((budget) {
+      return !budget.isExceeded && budget.progress >= 0.8;
+    }).length;
+    final healthyCount = _budgets.where((budget) {
+      return budget.progress < 0.8;
+    }).length;
+
+    final monthProgress = totalLimit > 0 ? (totalSpent / totalLimit) : 0.0;
+    final headlineColor = isMonthExceeded ? AppTheme.expense : AppTheme.primary;
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -170,15 +274,16 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           padding: const EdgeInsets.all(16),
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: AppTheme.surface,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(22),
                 border: Border.all(
                   color: Colors.white.withValues(alpha: 0.06),
                 ),
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
@@ -192,7 +297,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                           textAlign: TextAlign.center,
                           style: GoogleFonts.manrope(
                             fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
                             color: AppTheme.onSurface,
                           ),
                         ),
@@ -204,6 +309,27 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
+                  Text(
+                    isMonthExceeded
+                        ? 'Vas ${_formatCurrency(totalBalance.abs())} por encima del límite total del mes.'
+                        : 'Te quedan ${_formatCurrency(totalBalance)} dentro del límite total del mes.',
+                    style: GoogleFonts.manrope(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: headlineColor,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      minHeight: 10,
+                      value: monthProgress.clamp(0.0, 1.0),
+                      backgroundColor: Colors.white.withValues(alpha: 0.08),
+                      valueColor: AlwaysStoppedAnimation<Color>(headlineColor),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
                   Row(
                     children: [
                       Expanded(
@@ -213,11 +339,39 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                           color: AppTheme.primary,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: _BudgetMetric(
                           label: 'Consumido',
                           value: totalSpent,
+                          color: AppTheme.expense,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _BudgetStatusMetric(
+                          label: 'Bien',
+                          value: healthyCount,
+                          color: AppTheme.success,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _BudgetStatusMetric(
+                          label: 'En riesgo',
+                          value: riskCount,
+                          color: AppTheme.warning,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _BudgetStatusMetric(
+                          label: 'Excedidos',
+                          value: exceededCount,
                           color: AppTheme.expense,
                         ),
                       ),
@@ -240,6 +394,9 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                 decoration: BoxDecoration(
                   color: AppTheme.surface,
                   borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -253,18 +410,70 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                       'Todavía no hay presupuestos para este mes.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.manrope(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                         color: AppTheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Crea tu primer presupuesto mensual por categoría.',
+                      'Puedes crear tus categorías principales o copiar la base del mes anterior para avanzar más rápido.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.manrope(
                         fontSize: 12,
+                        height: 1.35,
                         color: AppTheme.onSurfaceMuted,
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _isCopyingPreviousMonth
+                                ? null
+                                : _copyBudgetsFromPreviousMonth,
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                              side: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.10),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            icon: _isCopyingPreviousMonth
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.content_copy_rounded),
+                            label: Text(
+                              _isCopyingPreviousMonth
+                                  ? 'Copiando...'
+                                  : 'Copiar mes anterior',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: _openAddBudgetSheet,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppTheme.primary,
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size.fromHeight(48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            icon: const Icon(Icons.add_rounded),
+                            label: const Text('Crear'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -275,6 +484,18 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   final progress = budget.progress.clamp(0.0, 1.2);
                   final displayColor =
                       budget.isExceeded ? AppTheme.expense : budget.color;
+
+                  final statusLabel = budget.isExceeded
+                      ? 'Límite superado'
+                      : budget.progress >= 0.8
+                          ? 'En zona de cuidado'
+                          : 'Dentro del límite';
+
+                  final statusColor = budget.isExceeded
+                      ? AppTheme.expense
+                      : budget.progress >= 0.8
+                          ? AppTheme.warning
+                          : AppTheme.onSurfaceMuted;
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -301,7 +522,9 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                               child: Icon(
                                 budget.isExceeded
                                     ? Icons.warning_amber_rounded
-                                    : Icons.pie_chart_rounded,
+                                    : budget.progress >= 0.8
+                                        ? Icons.timelapse_rounded
+                                        : Icons.pie_chart_rounded,
                                 color: displayColor,
                               ),
                             ),
@@ -313,20 +536,17 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                   Text(
                                     budget.categoryName,
                                     style: GoogleFonts.manrope(
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w800,
                                       color: AppTheme.onSurface,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    budget.isExceeded
-                                        ? 'Límite superado'
-                                        : 'Dentro del límite',
+                                    statusLabel,
                                     style: GoogleFonts.manrope(
                                       fontSize: 12,
-                                      color: budget.isExceeded
-                                          ? AppTheme.expense
-                                          : AppTheme.onSurfaceMuted,
+                                      fontWeight: FontWeight.w700,
+                                      color: statusColor,
                                     ),
                                   ),
                                 ],
@@ -355,28 +575,38 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         ),
                         const SizedBox(height: 10),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Gastado: ${_formatCurrency(budget.spentAmount)}',
-                              style: GoogleFonts.manrope(
-                                fontSize: 12,
-                                color: AppTheme.onSurfaceMuted,
+                            Expanded(
+                              child: Text(
+                                'Gastado: ${_formatCurrency(budget.spentAmount)}',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 12,
+                                  color: AppTheme.onSurfaceMuted,
+                                ),
                               ),
                             ),
                             Text(
-                              budget.isExceeded
-                                  ? 'Exceso: ${_formatCurrency(budget.spentAmount - budget.amountLimit)}'
-                                  : 'Disponible: ${_formatCurrency(budget.remainingAmount)}',
+                              '${(budget.progress * 100).clamp(0, 999).toStringAsFixed(0)}%',
                               style: GoogleFonts.manrope(
                                 fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: budget.isExceeded
-                                    ? AppTheme.expense
-                                    : displayColor,
+                                fontWeight: FontWeight.w800,
+                                color: displayColor,
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          budget.isExceeded
+                              ? 'Exceso: ${_formatCurrency(budget.spentAmount - budget.amountLimit)}'
+                              : 'Disponible: ${_formatCurrency(budget.remainingAmount)}',
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: budget.isExceeded
+                                ? AppTheme.expense
+                                : displayColor,
+                          ),
                         ),
                       ],
                     ),
@@ -407,7 +637,7 @@ class _BudgetMetric extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
@@ -424,6 +654,55 @@ class _BudgetMetric extends StatelessWidget {
             style: GoogleFonts.manrope(
               fontWeight: FontWeight.w800,
               color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BudgetStatusMetric extends StatelessWidget {
+  const _BudgetStatusMetric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final int value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            '$value',
+            style: GoogleFonts.manrope(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.onSurfaceMuted,
             ),
           ),
         ],
