@@ -51,8 +51,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
 
       setState(() {
         _categories = categories;
-        _selectedCategoryId =
-            categories.isNotEmpty ? categories.first.id : null;
+        _selectedCategoryId = null;
         _isLoading = false;
       });
     } catch (e, s) {
@@ -146,6 +145,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final hasCategories = _categories.isNotEmpty;
 
     return SafeArea(
       top: false,
@@ -191,44 +191,77 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Mes: ${widget.monthKey}. Si ya existe uno para esa categoría, se actualizará.',
+                          'Mes: ${widget.monthKey}. Elige primero la categoría correcta para evitar asignarlo al lugar equivocado.',
                           style: GoogleFonts.manrope(
                             fontSize: 12,
                             color: AppTheme.onSurfaceMuted,
                           ),
                         ),
                         const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          initialValue: _selectedCategoryId,
-                          decoration: const InputDecoration(
-                            labelText: 'Categoría de gasto',
+                        if (!hasCategories)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.04),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.08),
+                              ),
+                            ),
+                            child: Text(
+                              'No hay categorías de gasto disponibles.',
+                              style: GoogleFonts.manrope(
+                                fontSize: 12,
+                                color: AppTheme.onSurfaceMuted,
+                              ),
+                            ),
+                          )
+                        else
+                          DropdownButtonFormField<String>(
+                            initialValue: _selectedCategoryId,
+                            decoration: const InputDecoration(
+                              labelText: 'Categoría de gasto',
+                              hintText: 'Selecciona una categoría',
+                            ),
+                            items: _categories
+                                .map(
+                                  (category) => DropdownMenuItem<String>(
+                                    value: category.id,
+                                    child: Text(category.name),
+                                  ),
+                                )
+                                .toList(),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Selecciona una categoría';
+                              }
+                              return null;
+                            },
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedCategoryId = value;
+                              });
+                            },
                           ),
-                          items: _categories
-                              .map(
-                                (category) => DropdownMenuItem<String>(
-                                  value: category.id,
-                                  child: Text(category.name),
-                                ),
-                              )
-                              .toList(),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Selecciona una categoría';
-                            }
-                            return null;
-                          },
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedCategoryId = value;
-                            });
-                          },
-                        ),
+                        if (hasCategories && _selectedCategoryId != null) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            'Categoría seleccionada: ${_categories.firstWhere((item) => item.id == _selectedCategoryId).name}',
+                            style: GoogleFonts.manrope(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: _amountController,
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
+                          enabled: hasCategories,
                           decoration: const InputDecoration(
                             labelText: 'Límite mensual',
                             hintText: 'Ej. 500.00',
@@ -269,7 +302,8 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                         SizedBox(
                           width: double.infinity,
                           child: FilledButton(
-                            onPressed: _isSaving ? null : _submit,
+                            onPressed:
+                                _isSaving || !hasCategories ? null : _submit,
                             style: FilledButton.styleFrom(
                               backgroundColor: AppTheme.primary,
                               foregroundColor: Colors.white,

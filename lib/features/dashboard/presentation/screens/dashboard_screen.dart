@@ -6,6 +6,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../data/local/dashboard_local_datasource.dart';
 import '../../di/dashboard_registry.dart';
 import '../widgets/budget_alert_banner_widget.dart';
+import '../widgets/dashboard_budget_summary_widget.dart';
 import '../widgets/dashboard_financial_snapshot_widget.dart';
 import '../widgets/dashboard_top_expense_categories_widget.dart';
 import '../widgets/recent_transactions_widget.dart';
@@ -79,6 +80,7 @@ class DashboardScreenState extends State<DashboardScreen> {
       _selectedMonth =
           DateTime(_selectedMonth.year, _selectedMonth.month - 1, 1);
       _isLoading = true;
+      _refreshVersion++;
     });
 
     await _loadSummary();
@@ -93,6 +95,7 @@ class DashboardScreenState extends State<DashboardScreen> {
       _selectedMonth =
           DateTime(_selectedMonth.year, _selectedMonth.month + 1, 1);
       _isLoading = true;
+      _refreshVersion++;
     });
 
     await _loadSummary();
@@ -244,13 +247,20 @@ class DashboardScreenState extends State<DashboardScreen> {
                   onNextMonth: _goToNextMonth,
                 ),
                 const SizedBox(height: 16),
-                DashboardTopExpenseCategoriesWidget(
-                  categories: summary?.topExpenseCategories ?? const [],
+                DashboardBudgetSummaryWidget(
+                  month: _selectedMonth,
+                  refreshToken: _refreshVersion,
+                  onManagePressed: _goToBudgets,
                 ),
                 const SizedBox(height: 16),
                 BudgetAlertBannerWidget(
+                  month: _selectedMonth,
                   refreshToken: _refreshVersion,
                   onManagePressed: _goToBudgets,
+                ),
+                const SizedBox(height: 16),
+                DashboardTopExpenseCategoriesWidget(
+                  categories: summary?.topExpenseCategories ?? const [],
                 ),
                 const SizedBox(height: 16),
                 RecentTransactionsWidget(

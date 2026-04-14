@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../../../core/database/database_helper.dart';
+import '../../../transactions/domain/entities/transaction_entry_type.dart';
 import '../models/budget_model.dart';
 
 abstract class BudgetsLocalDataSource {
@@ -138,11 +139,13 @@ class BudgetsLocalDataSourceImpl implements BudgetsLocalDataSource {
       FROM transactions
       WHERE category_id = ?
         AND is_income = 0
+        AND entry_type = ?
         AND date >= ?
         AND date < ?
       ''',
       [
         categoryId,
+        TransactionEntryType.standard.storageValue,
         range.start.toIso8601String(),
         range.end.toIso8601String(),
       ],

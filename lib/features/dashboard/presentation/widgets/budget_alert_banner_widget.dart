@@ -10,10 +10,12 @@ import '../../../budgets/domain/utils/budget_month_key.dart';
 class BudgetAlertBannerWidget extends StatefulWidget {
   const BudgetAlertBannerWidget({
     super.key,
+    required this.month,
     required this.refreshToken,
     this.onManagePressed,
   });
 
+  final DateTime month;
   final int refreshToken;
   final VoidCallback? onManagePressed;
 
@@ -40,7 +42,11 @@ class _BudgetAlertBannerWidgetState extends State<BudgetAlertBannerWidget> {
   void didUpdateWidget(covariant BudgetAlertBannerWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.refreshToken != widget.refreshToken) {
+    final oldMonthKey = budgetMonthKeyFromDate(oldWidget.month);
+    final newMonthKey = budgetMonthKeyFromDate(widget.month);
+
+    if (oldWidget.refreshToken != widget.refreshToken ||
+        oldMonthKey != newMonthKey) {
       _dismissed = false;
       _loadAlert();
     }
@@ -48,7 +54,7 @@ class _BudgetAlertBannerWidgetState extends State<BudgetAlertBannerWidget> {
 
   Future<void> _loadAlert() async {
     try {
-      final monthKey = budgetMonthKeyFromDate(DateTime.now());
+      final monthKey = budgetMonthKeyFromDate(widget.month);
       final budgets = await _getBudgetsByMonth(monthKey: monthKey);
 
       budgets.sort((a, b) => b.progress.compareTo(a.progress));
