@@ -6,6 +6,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../data/models/budget_model.dart';
 import '../../di/budgets_registry.dart';
 import '../../domain/entities/budget_entity.dart';
+import '../../domain/usecases/delete_budget.dart';
 import '../../domain/usecases/get_budgets_by_month.dart';
 import '../../domain/usecases/upsert_budget.dart';
 import '../../domain/utils/budget_month_key.dart';
@@ -21,6 +22,7 @@ class BudgetsScreen extends StatefulWidget {
 class _BudgetsScreenState extends State<BudgetsScreen> {
   late final GetBudgetsByMonth _getBudgetsByMonth;
   late final UpsertBudget _upsertBudget;
+  late final DeleteBudget _deleteBudget;
 
   bool _isLoading = true;
   bool _isCopyingPreviousMonth = false;
@@ -42,6 +44,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     super.initState();
     _getBudgetsByMonth = BudgetsRegistry.module.getBudgetsByMonth;
     _upsertBudget = BudgetsRegistry.module.upsertBudget;
+    _deleteBudget = BudgetsRegistry.module.deleteBudget;
     _loadBudgets();
   }
 
@@ -214,6 +217,75 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           _isCopyingPreviousMonth = false;
         });
       }
+    }
+  }
+
+  Future<void> _confirmDeleteBudget(BudgetEntity budget) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surfaceElevated,
+        title: Text(
+          'Eliminar presupuesto',
+          style: GoogleFonts.manrope(
+            fontWeight: FontWeight.w800,
+            color: AppTheme.onSurface,
+          ),
+        ),
+        content: Text(
+          '¿Seguro que quieres eliminar el presupuesto de "${budget.categoryName}"? Esta acción no se puede deshacer.',
+          style: GoogleFonts.manrope(color: AppTheme.onSurfaceMuted),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Cancelar', style: GoogleFonts.manrope()),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.expense,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(
+              'Eliminar',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await _deleteBudget(budget.id);
+      await _loadBudgets();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Presupuesto eliminado.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    } catch (e, s) {
+      debugPrint('Delete budget error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo eliminar el presupuesto.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
     }
   }
 
@@ -558,6 +630,39 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                 fontWeight: FontWeight.w800,
                                 color: AppTheme.onSurface,
                               ),
+                            ),
+                            PopupMenuButton<String>(
+                              icon: const Icon(
+                                Icons.more_vert_rounded,
+                                size: 18,
+                                color: AppTheme.onSurfaceMuted,
+                              ),
+                              onSelected: (value) {
+                                if (value == 'delete') {
+                                  _confirmDeleteBudget(budget);
+                                }
+                              },
+                              itemBuilder: (_) => [
+                                PopupMenuItem<String>(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.delete_outline_rounded,
+                                        size: 18,
+                                        color: AppTheme.expense,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Eliminar',
+                                        style: GoogleFonts.manrope(
+                                          color: AppTheme.expense,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

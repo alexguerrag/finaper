@@ -11,6 +11,8 @@ abstract class CategoriesLocalDataSource {
   });
 
   Future<CategoryModel> createCategory(CategoryModel category);
+
+  Future<CategoryModel> updateCategory(CategoryModel category);
 }
 
 class CategoriesLocalDataSourceImpl implements CategoriesLocalDataSource {
@@ -54,6 +56,26 @@ class CategoriesLocalDataSourceImpl implements CategoriesLocalDataSource {
       return category;
     } catch (e, s) {
       debugPrint('createCategory error: $e');
+      debugPrintStack(stackTrace: s);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CategoryModel> updateCategory(CategoryModel category) async {
+    try {
+      final db = await _databaseHelper.database;
+
+      await db.update(
+        'categories',
+        category.toMap(),
+        where: 'id = ?',
+        whereArgs: [category.id],
+      );
+
+      return category;
+    } catch (e, s) {
+      debugPrint('updateCategory error: $e');
       debugPrintStack(stackTrace: s);
       rethrow;
     }
