@@ -7,6 +7,7 @@ import '../../data/models/goal_model.dart';
 import '../../di/goals_registry.dart';
 import '../../domain/entities/goal_entity.dart';
 import '../../domain/usecases/create_goal.dart';
+import '../../domain/usecases/delete_goal.dart';
 import '../../domain/usecases/get_goals.dart';
 import '../../domain/usecases/update_goal.dart';
 import '../widgets/add_goal_sheet.dart';
@@ -23,6 +24,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   late final GetGoals _getGoals;
   late final CreateGoal _createGoal;
   late final UpdateGoal _updateGoal;
+  late final DeleteGoal _deleteGoal;
 
   bool _isLoading = true;
   _GoalFilter _filter = _GoalFilter.active;
@@ -34,6 +36,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
     _getGoals = GoalsRegistry.module.getGoals;
     _createGoal = GoalsRegistry.module.createGoal;
     _updateGoal = GoalsRegistry.module.updateGoal;
+    _deleteGoal = GoalsRegistry.module.deleteGoal;
     _loadGoals();
   }
 
@@ -143,6 +146,75 @@ class _GoalsScreenState extends State<GoalsScreen> {
         SnackBar(
           content: Text(
             'No se pudo actualizar la meta.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmDeleteGoal(GoalEntity goal) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surfaceElevated,
+        title: Text(
+          'Eliminar meta',
+          style: GoogleFonts.manrope(
+            fontWeight: FontWeight.w800,
+            color: AppTheme.onSurface,
+          ),
+        ),
+        content: Text(
+          '¿Seguro que quieres eliminar "${goal.name}"? Esta acción no se puede deshacer.',
+          style: GoogleFonts.manrope(color: AppTheme.onSurfaceMuted),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Cancelar', style: GoogleFonts.manrope()),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.expense,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(
+              'Eliminar',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await _deleteGoal(goal.id);
+      await _loadGoals();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Meta eliminada.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    } catch (e, s) {
+      debugPrint('Delete goal error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo eliminar la meta.',
             style: GoogleFonts.manrope(),
           ),
         ),
@@ -359,6 +431,40 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                             ),
                                           ),
                                         ),
+                                      PopupMenuButton<String>(
+                                        icon: const Icon(
+                                          Icons.more_vert_rounded,
+                                          size: 18,
+                                          color: AppTheme.onSurfaceMuted,
+                                        ),
+                                        onSelected: (value) {
+                                          if (value == 'delete') {
+                                            _confirmDeleteGoal(goal);
+                                          }
+                                        },
+                                        itemBuilder: (_) => [
+                                          PopupMenuItem<String>(
+                                            value: 'delete',
+                                            child: Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons
+                                                      .delete_outline_rounded,
+                                                  size: 18,
+                                                  color: AppTheme.expense,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  'Eliminar',
+                                                  style: GoogleFonts.manrope(
+                                                    color: AppTheme.expense,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ],
                                   ),
                                   const SizedBox(height: 4),

@@ -4,6 +4,7 @@ import '../data/local/goals_local_datasource.dart';
 import '../data/repositories/goals_repository_impl.dart';
 import '../domain/repositories/goals_repository.dart';
 import '../domain/usecases/create_goal.dart';
+import '../domain/usecases/delete_goal.dart';
 import '../domain/usecases/get_goals.dart';
 import '../domain/usecases/update_goal.dart';
 
@@ -13,6 +14,7 @@ class GoalsModule implements AppModule {
   late final GetGoals getGoals;
   late final CreateGoal createGoal;
   late final UpdateGoal updateGoal;
+  late final DeleteGoal deleteGoal;
 
   final DatabaseHelper _databaseHelper;
 
@@ -26,5 +28,6 @@ class GoalsModule implements AppModule {
     getGoals = GetGoals(repository);
     createGoal = CreateGoal(repository);
     updateGoal = UpdateGoal(repository);
+    deleteGoal = DeleteGoal(repository);
   }
 }

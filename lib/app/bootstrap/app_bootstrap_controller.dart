@@ -75,6 +75,26 @@ class AppBootstrapController extends ChangeNotifier {
 
       await settingsModule.controller.load();
 
+      // Auto-sync de transacciones recurrentes al inicio.
+      // Es no-fatal: si falla no bloquea la app.
+      try {
+        final synced =
+            await recurringTransactionsModule.syncDueRecurringTransactions();
+        if (synced > 0) {
+          AppLogger.info(
+            'bootstrap',
+            'Auto-synced $synced recurring transaction(s)',
+          );
+        }
+      } catch (syncError, syncStack) {
+        AppLogger.error(
+          'bootstrap',
+          'Recurring sync failed at startup (non-fatal)',
+          error: syncError,
+          stackTrace: syncStack,
+        );
+      }
+
       _status = BootstrapStatus.ready;
       AppLogger.info('bootstrap', 'Application modules ready');
     } catch (error, stackTrace) {

@@ -40,4 +40,9 @@ class RecurringTransactionsRepositoryImpl
   Future<int> syncDueRecurringTransactions() {
     return _localDataSource.syncDueRecurringTransactions();
   }
+
+  @override
+  Future<void> deleteRecurringTransaction(String id) {
+    return _localDataSource.deleteRecurringTransaction(id);
+  }
 }

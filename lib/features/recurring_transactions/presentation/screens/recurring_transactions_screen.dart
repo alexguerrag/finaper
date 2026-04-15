@@ -8,6 +8,7 @@ import '../../data/models/recurring_transaction_model.dart';
 import '../../di/recurring_transactions_registry.dart';
 import '../../domain/entities/recurring_transaction_entity.dart';
 import '../../domain/usecases/create_recurring_transaction.dart';
+import '../../domain/usecases/delete_recurring_transaction.dart';
 import '../../domain/usecases/get_recurring_transactions.dart';
 import '../../domain/usecases/sync_due_recurring_transactions.dart';
 import '../../domain/usecases/update_recurring_transaction.dart';
@@ -26,6 +27,7 @@ class _RecurringTransactionsScreenState
   late final GetRecurringTransactions _getRecurringTransactions;
   late final CreateRecurringTransaction _createRecurringTransaction;
   late final UpdateRecurringTransaction _updateRecurringTransaction;
+  late final DeleteRecurringTransaction _deleteRecurringTransaction;
   late final SyncDueRecurringTransactions _syncDueRecurringTransactions;
 
   bool _isLoading = true;
@@ -41,6 +43,8 @@ class _RecurringTransactionsScreenState
         RecurringTransactionsRegistry.module.createRecurringTransaction;
     _updateRecurringTransaction =
         RecurringTransactionsRegistry.module.updateRecurringTransaction;
+    _deleteRecurringTransaction =
+        RecurringTransactionsRegistry.module.deleteRecurringTransaction;
     _syncDueRecurringTransactions =
         RecurringTransactionsRegistry.module.syncDueRecurringTransactions;
     _loadRecurringTransactions();
@@ -174,6 +178,98 @@ class _RecurringTransactionsScreenState
         SnackBar(
           content: Text(
             'No se pudieron procesar las recurrentes.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmDeleteRecurring(
+    RecurringTransactionEntity recurring,
+  ) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surfaceElevated,
+        title: Text(
+          'Eliminar recurrente',
+          style: GoogleFonts.manrope(
+            fontWeight: FontWeight.w800,
+            color: AppTheme.onSurface,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '¿Seguro que quieres eliminar "${recurring.description}"?',
+              style: GoogleFonts.manrope(color: AppTheme.onSurface),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.expense.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Las transacciones ya generadas NO se eliminarán. Solo se detiene la generación futura.',
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  color: AppTheme.expense,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Cancelar', style: GoogleFonts.manrope()),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.expense,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(
+              'Eliminar',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await _deleteRecurringTransaction(recurring.id);
+      await _loadRecurringTransactions();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Recurrente eliminada.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    } catch (e, s) {
+      debugPrint('Delete recurring transaction error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo eliminar la recurrente.',
             style: GoogleFonts.manrope(),
           ),
         ),
@@ -395,6 +491,39 @@ class _RecurringTransactionsScreenState
                             onChanged: (value) {
                               _toggleActive(item, value);
                             },
+                          ),
+                          PopupMenuButton<String>(
+                            icon: const Icon(
+                              Icons.more_vert_rounded,
+                              size: 18,
+                              color: AppTheme.onSurfaceMuted,
+                            ),
+                            onSelected: (value) {
+                              if (value == 'delete') {
+                                _confirmDeleteRecurring(item);
+                              }
+                            },
+                            itemBuilder: (_) => [
+                              PopupMenuItem<String>(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.delete_outline_rounded,
+                                      size: 18,
+                                      color: AppTheme.expense,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Eliminar',
+                                      style: GoogleFonts.manrope(
+                                        color: AppTheme.expense,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

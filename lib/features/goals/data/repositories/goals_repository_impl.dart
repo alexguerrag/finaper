@@ -30,4 +30,9 @@ class GoalsRepositoryImpl implements GoalsRepository {
       GoalModel.fromEntity(goal),
     );
   }
+
+  @override
+  Future<void> deleteGoal(String id) {
+    return _localDataSource.deleteGoal(id);
+  }
 }

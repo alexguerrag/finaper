@@ -5,7 +5,7 @@ import '../../domain/entities/backup_validation_result_entity.dart';
 
 class BackupPayloadCodec {
   const BackupPayloadCodec({
-    this.currentDatabaseVersion = 10,
+    this.currentDatabaseVersion = 11,
     this.currentBackupFormatVersion = 1,
   });
 
