@@ -57,6 +57,7 @@ class DashboardLocalDataSource {
 
   Future<DashboardSummaryData> getSummary({
     DateTime? month,
+    String localeCode = 'es_CL',
   }) async {
     final transactions = await _transactionLocalDataSource.getTransactions();
     final accountBalances = await _accountsLocalDataSource.getAccountBalances();
@@ -154,7 +155,7 @@ class DashboardLocalDataSource {
       monthNetFlow: monthIncome - monthExpense,
       monthLabel: AppFormatters.formatMonthYearWith(
         value: selectedMonth,
-        localeCode: 'es_CL',
+        localeCode: localeCode,
       ),
       topExpenseCategories: topExpenseCategories.take(4).toList(),
       hasTransactionsInMonth: monthTransactions.isNotEmpty,

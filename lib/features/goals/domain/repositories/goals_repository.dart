@@ -8,4 +8,6 @@ abstract class GoalsRepository {
   Future<GoalEntity> createGoal(GoalEntity goal);
 
   Future<GoalEntity> updateGoal(GoalEntity goal);
+
+  Future<void> deleteGoal(String id);
 }

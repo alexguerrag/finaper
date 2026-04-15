@@ -19,6 +19,8 @@ abstract class RecurringTransactionsLocalDataSource {
   );
 
   Future<int> syncDueRecurringTransactions();
+
+  Future<void> deleteRecurringTransaction(String id);
 }
 
 class RecurringTransactionsLocalDataSourceImpl
@@ -87,6 +89,23 @@ class RecurringTransactionsLocalDataSourceImpl
       return recurringTransaction;
     } catch (e, s) {
       debugPrint('updateRecurringTransaction error: $e');
+      debugPrintStack(stackTrace: s);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteRecurringTransaction(String id) async {
+    try {
+      final db = await _databaseHelper.database;
+
+      await db.delete(
+        'recurring_transactions',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    } catch (e, s) {
+      debugPrint('deleteRecurringTransaction error: $e');
       debugPrintStack(stackTrace: s);
       rethrow;
     }

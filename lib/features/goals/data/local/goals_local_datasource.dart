@@ -12,6 +12,8 @@ abstract class GoalsLocalDataSource {
   Future<GoalModel> createGoal(GoalModel goal);
 
   Future<GoalModel> updateGoal(GoalModel goal);
+
+  Future<void> deleteGoal(String id);
 }
 
 class GoalsLocalDataSourceImpl implements GoalsLocalDataSource {
@@ -75,6 +77,23 @@ class GoalsLocalDataSourceImpl implements GoalsLocalDataSource {
       return goal;
     } catch (e, s) {
       debugPrint('updateGoal error: $e');
+      debugPrintStack(stackTrace: s);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteGoal(String id) async {
+    try {
+      final db = await _databaseHelper.database;
+
+      await db.delete(
+        'goals',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    } catch (e, s) {
+      debugPrint('deleteGoal error: $e');
       debugPrintStack(stackTrace: s);
       rethrow;
     }

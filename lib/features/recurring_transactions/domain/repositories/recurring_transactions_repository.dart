@@ -14,4 +14,6 @@ abstract class RecurringTransactionsRepository {
   );
 
   Future<int> syncDueRecurringTransactions();
+
+  Future<void> deleteRecurringTransaction(String id);
 }

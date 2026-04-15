@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../settings/di/settings_registry.dart';
 import '../../data/local/dashboard_local_datasource.dart';
 import '../../di/dashboard_registry.dart';
 import '../widgets/budget_alert_banner_widget.dart';
@@ -53,8 +54,11 @@ class DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _loadSummary() async {
     try {
+      final localeCode =
+          SettingsRegistry.module.controller.resolvedLocaleCode;
       final summary = await _dashboardLocalDataSource.getSummary(
         month: _selectedMonth,
+        localeCode: localeCode,
       );
 
       if (!mounted) return;

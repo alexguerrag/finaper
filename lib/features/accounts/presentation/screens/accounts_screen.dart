@@ -27,6 +27,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
   late final UpdateAccount _updateAccount;
 
   bool _isLoading = true;
+  bool _showArchived = false;
   List<AccountBalanceEntity> _accountBalances = <AccountBalanceEntity>[];
 
   @override
@@ -38,18 +39,24 @@ class _AccountsScreenState extends State<AccountsScreen> {
     _loadAccountBalances();
   }
 
+  List<AccountBalanceEntity> get _activeBalances =>
+      _accountBalances.where((b) => !b.account.isArchived).toList();
+
+  List<AccountBalanceEntity> get _archivedBalances =>
+      _accountBalances.where((b) => b.account.isArchived).toList();
+
   double get _consolidatedBalance {
-    return _accountBalances.fold<double>(
+    return _activeBalances.fold<double>(
       0,
       (sum, item) => sum + item.currentBalance,
     );
   }
 
-  bool get _canTransfer => _accountBalances.length >= 2;
+  bool get _canTransfer => _activeBalances.length >= 2;
 
   Future<void> _loadAccountBalances() async {
     try {
-      final balances = await _getAccountBalances();
+      final balances = await _getAccountBalances(includeArchived: true);
 
       if (!mounted) return;
 
@@ -175,6 +182,101 @@ class _AccountsScreenState extends State<AccountsScreen> {
     }
   }
 
+  Future<void> _confirmArchiveAccount(AccountEntity account) async {
+    final isArchived = account.isArchived;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surfaceElevated,
+        title: Text(
+          isArchived ? 'Desarchivar cuenta' : 'Archivar cuenta',
+          style: GoogleFonts.manrope(
+            fontWeight: FontWeight.w800,
+            color: AppTheme.onSurface,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isArchived
+                  ? '¿Quieres restaurar "${account.name}" como cuenta activa?'
+                  : '¿Quieres archivar "${account.name}"?',
+              style: GoogleFonts.manrope(color: AppTheme.onSurface),
+            ),
+            if (!isArchived) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  'El historial de transacciones se conserva. La cuenta solo deja de aparecer en las vistas activas.',
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    color: AppTheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Cancelar', style: GoogleFonts.manrope()),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(
+              isArchived ? 'Restaurar' : 'Archivar',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await _updateAccount(
+        account.copyWith(isArchived: !isArchived),
+      );
+      await _loadAccountBalances();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isArchived
+                ? 'Cuenta restaurada correctamente.'
+                : 'Cuenta archivada correctamente.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    } catch (e, s) {
+      debugPrint('Archive account error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo actualizar la cuenta.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    }
+  }
+
   String _formatSignedCurrency(double value) {
     final formatted = AppFormatters.formatCurrency(value.abs());
 
@@ -275,7 +377,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          if (_accountBalances.isEmpty)
+          if (_activeBalances.isEmpty)
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -283,164 +385,242 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Text(
-                'Todavía no hay cuentas creadas.',
+                'Todavía no hay cuentas activas.',
                 style: GoogleFonts.manrope(
                   color: AppTheme.onSurfaceMuted,
                 ),
               ),
             )
           else
-            ..._accountBalances.map(
-              (item) {
-                final account = item.account;
-                final isPositiveFlow = item.netFlow >= 0;
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surface,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.06),
+            ..._activeBalances.map(
+              (item) => _buildAccountCard(item, isArchived: false),
+            ),
+          if (_archivedBalances.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () => setState(() => _showArchived = !_showArchived),
+              child: Row(
+                children: [
+                  Icon(
+                    _showArchived
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    size: 18,
+                    color: AppTheme.onSurfaceMuted,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _showArchived
+                        ? 'Ocultar archivadas (${_archivedBalances.length})'
+                        : 'Mostrar archivadas (${_archivedBalances.length})',
+                    style: GoogleFonts.manrope(
+                      fontSize: 13,
+                      color: AppTheme.onSurfaceMuted,
                     ),
                   ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(18),
-                      onTap: () {
-                        _openEditSheet(account);
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
+                ],
+              ),
+            ),
+            if (_showArchived) ...[
+              const SizedBox(height: 8),
+              ..._archivedBalances.map(
+                (item) => _buildAccountCard(item, isArchived: true),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccountCard(AccountBalanceEntity item, {required bool isArchived}) {
+    final account = item.account;
+    final isPositiveFlow = item.netFlow >= 0;
+
+    return Opacity(
+      opacity: isArchived ? 0.55 : 1.0,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.06),
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: () => _openEditSheet(account),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: account.color.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(
+                          IconData(
+                            account.iconCode,
+                            fontFamily: 'MaterialIcons',
+                          ),
+                          color: account.color,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
+                            Text(
+                              account.name,
+                              style: GoogleFonts.manrope(
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              account.type.label,
+                              style: GoogleFonts.manrope(
+                                fontSize: 12,
+                                color: AppTheme.onSurfaceMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            AppFormatters.formatCurrency(item.currentBalance),
+                            style: GoogleFonts.manrope(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Saldo actual',
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              color: AppTheme.onSurfaceMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                      PopupMenuButton<String>(
+                        icon: const Icon(
+                          Icons.more_vert_rounded,
+                          size: 18,
+                          color: AppTheme.onSurfaceMuted,
+                        ),
+                        onSelected: (value) {
+                          if (value == 'edit') {
+                            _openEditSheet(account);
+                          } else if (value == 'archive') {
+                            _confirmArchiveAccount(account);
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          PopupMenuItem<String>(
+                            value: 'edit',
+                            child: Row(
                               children: [
-                                Container(
-                                  width: 46,
-                                  height: 46,
-                                  decoration: BoxDecoration(
-                                    color:
-                                        account.color.withValues(alpha: 0.16),
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: Icon(
-                                    IconData(
-                                      account.iconCode,
-                                      fontFamily: 'MaterialIcons',
-                                    ),
-                                    color: account.color,
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        account.name,
-                                        style: GoogleFonts.manrope(
-                                          fontWeight: FontWeight.w700,
-                                          color: AppTheme.onSurface,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        account.type.label,
-                                        style: GoogleFonts.manrope(
-                                          fontSize: 12,
-                                          color: AppTheme.onSurfaceMuted,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      AppFormatters.formatCurrency(
-                                        item.currentBalance,
-                                      ),
-                                      style: GoogleFonts.manrope(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w800,
-                                        color: AppTheme.onSurface,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Saldo actual',
-                                      style: GoogleFonts.manrope(
-                                        fontSize: 11,
-                                        color: AppTheme.onSurfaceMuted,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(width: 8),
                                 const Icon(
                                   Icons.edit_rounded,
                                   size: 18,
                                   color: AppTheme.onSurfaceMuted,
                                 ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Editar',
+                                  style: GoogleFonts.manrope(),
+                                ),
                               ],
                             ),
-                            const SizedBox(height: 14),
-                            Row(
+                          ),
+                          PopupMenuItem<String>(
+                            value: 'archive',
+                            child: Row(
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    'Saldo inicial ${AppFormatters.formatCurrency(account.initialBalance)}',
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 12,
-                                      color: AppTheme.onSurfaceMuted,
-                                    ),
-                                  ),
+                                Icon(
+                                  isArchived
+                                      ? Icons.unarchive_rounded
+                                      : Icons.archive_rounded,
+                                  size: 18,
+                                  color: AppTheme.onSurfaceMuted,
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: (isPositiveFlow
-                                            ? AppTheme.income
-                                            : AppTheme.expense)
-                                        .withValues(alpha: 0.14),
-                                    borderRadius: BorderRadius.circular(999),
-                                    border: Border.all(
-                                      color: (isPositiveFlow
-                                              ? AppTheme.income
-                                              : AppTheme.expense)
-                                          .withValues(alpha: 0.28),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Flujo ${_formatSignedCurrency(item.netFlow)}',
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: isPositiveFlow
-                                          ? AppTheme.income
-                                          : AppTheme.expense,
-                                    ),
-                                  ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  isArchived ? 'Desarchivar' : 'Archivar',
+                                  style: GoogleFonts.manrope(),
                                 ),
                               ],
                             ),
-                          ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Saldo inicial ${AppFormatters.formatCurrency(account.initialBalance)}',
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            color: AppTheme.onSurfaceMuted,
+                          ),
                         ),
                       ),
-                    ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: (isPositiveFlow
+                                  ? AppTheme.income
+                                  : AppTheme.expense)
+                              .withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: (isPositiveFlow
+                                    ? AppTheme.income
+                                    : AppTheme.expense)
+                                .withValues(alpha: 0.28),
+                          ),
+                        ),
+                        child: Text(
+                          'Flujo ${_formatSignedCurrency(item.netFlow)}',
+                          style: GoogleFonts.manrope(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: isPositiveFlow
+                                ? AppTheme.income
+                                : AppTheme.expense,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              },
+                ],
+              ),
             ),
-        ],
+          ),
+        ),
       ),
     );
   }
