@@ -28,3 +28,6 @@ env.json
 
 # Python helpers
 .venv/
+
+# Claude / local assistant workspace
+.claude/
