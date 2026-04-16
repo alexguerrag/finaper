@@ -3,6 +3,24 @@ import '../../../accounts/data/local/accounts_local_datasource.dart';
 import '../../../transactions/data/local/transaction_local_datasource.dart';
 import '../../../transactions/data/models/transaction_model.dart';
 
+class MonthlyTrendPoint {
+  const MonthlyTrendPoint({
+    required this.monthKey,
+    required this.label,
+    required this.income,
+    required this.expense,
+  });
+
+  /// 'YYYY-MM' — used for ordering
+  final String monthKey;
+
+  /// Short display label, e.g. 'Ene', 'Feb'
+  final String label;
+
+  final double income;
+  final double expense;
+}
+
 class DashboardExpenseCategorySummary {
   const DashboardExpenseCategorySummary({
     required this.categoryId,
@@ -31,6 +49,7 @@ class DashboardSummaryData {
     required this.monthLabel,
     required this.topExpenseCategories,
     required this.hasTransactionsInMonth,
+    required this.monthlyTrend,
   });
 
   final double consolidatedBalance;
@@ -44,6 +63,7 @@ class DashboardSummaryData {
   final String monthLabel;
   final List<DashboardExpenseCategorySummary> topExpenseCategories;
   final bool hasTransactionsInMonth;
+  final List<MonthlyTrendPoint> monthlyTrend;
 }
 
 class DashboardLocalDataSource {
@@ -145,6 +165,12 @@ class DashboardLocalDataSource {
         .toList()
       ..sort((a, b) => b.amount.compareTo(a.amount));
 
+    final monthlyTrend = _buildMonthlyTrend(
+      transactions: transactions,
+      months: 6,
+      localeCode: localeCode,
+    );
+
     return DashboardSummaryData(
       consolidatedBalance: consolidatedBalance,
       totalIncome: totalIncome,
@@ -159,7 +185,108 @@ class DashboardLocalDataSource {
       ),
       topExpenseCategories: topExpenseCategories.take(4).toList(),
       hasTransactionsInMonth: monthTransactions.isNotEmpty,
+      monthlyTrend: monthlyTrend,
     );
+  }
+
+  List<MonthlyTrendPoint> _buildMonthlyTrend({
+    required List<TransactionModel> transactions,
+    required int months,
+    required String localeCode,
+  }) {
+    final now = DateTime.now();
+    // Build slots for the last [months] months, oldest first
+    final slots = List.generate(months, (i) {
+      final d = DateTime(now.year, now.month - (months - 1 - i), 1);
+      return DateTime(d.year, d.month, 1);
+    });
+
+    final Map<String, ({double income, double expense})> buckets = {
+      for (final s in slots) _monthKey(s): (income: 0.0, expense: 0.0),
+    };
+
+    for (final tx in transactions) {
+      if (tx.isTransfer) continue;
+      final key = _monthKey(tx.date);
+      if (!buckets.containsKey(key)) continue;
+      final current = buckets[key]!;
+      if (tx.isIncome) {
+        buckets[key] =
+            (income: current.income + tx.amount, expense: current.expense);
+      } else {
+        buckets[key] =
+            (income: current.income, expense: current.expense + tx.amount);
+      }
+    }
+
+    return slots.map((s) {
+      final key = _monthKey(s);
+      final bucket = buckets[key]!;
+      return MonthlyTrendPoint(
+        monthKey: key,
+        label: _shortMonthLabel(s.month, localeCode),
+        income: bucket.income,
+        expense: bucket.expense,
+      );
+    }).toList();
+  }
+
+  String _monthKey(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}';
+
+  static const List<String> _shortMonthsEs = [
+    'Ene',
+    'Feb',
+    'Mar',
+    'Abr',
+    'May',
+    'Jun',
+    'Jul',
+    'Ago',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dic',
+  ];
+
+  static const List<String> _shortMonthsEn = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  static const List<String> _shortMonthsPt = [
+    'Jan',
+    'Fev',
+    'Mar',
+    'Abr',
+    'Mai',
+    'Jun',
+    'Jul',
+    'Ago',
+    'Set',
+    'Out',
+    'Nov',
+    'Dez',
+  ];
+
+  String _shortMonthLabel(int month, String localeCode) {
+    final lang = localeCode.split('_').first.toLowerCase();
+    final list = switch (lang) {
+      'en' => _shortMonthsEn,
+      'pt' => _shortMonthsPt,
+      _ => _shortMonthsEs,
+    };
+    return list[month - 1];
   }
 
   DateTime _monthStart(DateTime value) {

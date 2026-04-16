@@ -22,7 +22,7 @@ void main() {
       await tester.pumpWidget(const FinaperApp());
       await tester.pumpAndSettle();
 
-      expect(find.text('Finaper'), findsOneWidget);
+      expect(find.text('Bienvenido a Finaper'), findsOneWidget);
     });
   });
 }

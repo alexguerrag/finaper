@@ -1,5 +1,3 @@
-// C:\dev\projects\finaper\lib\features\dashboard\presentation\widgets\trend_chart_widget.dart
-
 import 'dart:ui';
 
 import 'package:fl_chart/fl_chart.dart';
@@ -7,9 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../data/local/dashboard_local_datasource.dart';
 
 class TrendChartWidget extends StatefulWidget {
-  const TrendChartWidget({super.key});
+  const TrendChartWidget({
+    super.key,
+    required this.data,
+  });
+
+  /// Ordered oldest → newest, up to 6 points.
+  final List<MonthlyTrendPoint> data;
 
   @override
   State<TrendChartWidget> createState() => _TrendChartWidgetState();
@@ -19,17 +24,6 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _anim;
-
-  static const List<String> _months = [
-    'Oct',
-    'Nov',
-    'Dic',
-    'Ene',
-    'Feb',
-    'Mar',
-  ];
-  static const List<double> _income = [4200, 4650, 5100, 4820, 4980, 4820];
-  static const List<double> _expenses = [2800, 3100, 3850, 2640, 2210, 1972];
 
   @override
   void initState() {
@@ -43,10 +37,20 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
   }
 
   @override
+  void didUpdateWidget(TrendChartWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.data != widget.data) {
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
+
+  bool get _hasData => widget.data.any((p) => p.income > 0 || p.expense > 0);
 
   @override
   Widget build(BuildContext context) {
@@ -102,13 +106,24 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
               const SizedBox(height: 20),
               SizedBox(
                 height: 180,
-                child: AnimatedBuilder(
-                  animation: _anim,
-                  builder: (context, child) => LineChart(
-                    _buildChartData(_anim.value),
-                    duration: Duration.zero,
-                  ),
-                ),
+                child: _hasData
+                    ? AnimatedBuilder(
+                        animation: _anim,
+                        builder: (context, child) => LineChart(
+                          _buildChartData(_anim.value),
+                          duration: Duration.zero,
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          'Sin movimientos en los últimos 6 meses',
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            color: AppTheme.onSurfaceMuted,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
               ),
             ],
           ),
@@ -118,11 +133,17 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
   }
 
   LineChartData _buildChartData(double animValue) {
+    final data = widget.data;
+    final allValues = data.expand((p) => [p.income, p.expense]);
+    final maxVal = allValues.fold<double>(0, (m, v) => v > m ? v : m);
+    final chartMax = maxVal <= 0 ? 1000.0 : (maxVal * 1.25).ceilToDouble();
+    final interval = (chartMax / 3).ceilToDouble();
+
     return LineChartData(
       gridData: FlGridData(
         show: true,
         drawVerticalLine: false,
-        horizontalInterval: 1000,
+        horizontalInterval: interval,
         getDrawingHorizontalLine: (_) => FlLine(
           color: Colors.white.withValues(alpha: 0.08),
           strokeWidth: 1,
@@ -133,10 +154,10 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            reservedSize: 40,
-            interval: 2000,
+            reservedSize: 44,
+            interval: interval,
             getTitlesWidget: (val, __) => Text(
-              '\$${(val / 1000).toStringAsFixed(0)}k',
+              _formatAxisValue(val),
               style: GoogleFonts.manrope(
                 fontSize: 10,
                 color: AppTheme.onSurfaceMuted,
@@ -147,20 +168,20 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
         rightTitles: const AxisTitles(
           sideTitles: SideTitles(showTitles: false),
         ),
-        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        topTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: 24,
             getTitlesWidget: (val, __) {
               final i = val.toInt();
-              if (i < 0 || i >= _months.length) {
-                return const SizedBox.shrink();
-              }
+              if (i < 0 || i >= data.length) return const SizedBox.shrink();
               return Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
-                  _months[i],
+                  data[i].label,
                   style: GoogleFonts.manrope(
                     fontSize: 10,
                     color: AppTheme.onSurfaceMuted,
@@ -173,71 +194,25 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
       ),
       borderData: FlBorderData(show: false),
       minX: 0,
-      maxX: 5,
+      maxX: (data.length - 1).toDouble(),
       minY: 0,
-      maxY: 6000,
+      maxY: chartMax,
       lineBarsData: [
-        LineChartBarData(
+        _buildLine(
           spots: List.generate(
-            _income.length,
-            (i) => FlSpot(i.toDouble(), _income[i] * animValue),
+            data.length,
+            (i) => FlSpot(i.toDouble(), data[i].income * animValue),
           ),
-          isCurved: true,
-          curveSmoothness: 0.3,
           color: AppTheme.income,
-          barWidth: 2.5,
-          isStrokeCapRound: true,
-          dotData: FlDotData(
-            show: true,
-            getDotPainter: (spot, _, __, index) => FlDotCirclePainter(
-              radius: index == _income.length - 1 ? 4 : 0,
-              color: AppTheme.income,
-              strokeWidth: 2,
-              strokeColor: AppTheme.background,
-            ),
-          ),
-          belowBarData: BarAreaData(
-            show: true,
-            gradient: LinearGradient(
-              colors: [
-                AppTheme.income.withValues(alpha: 0.18),
-                AppTheme.income.withValues(alpha: 0.0),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
+          lastIndex: data.length - 1,
         ),
-        LineChartBarData(
+        _buildLine(
           spots: List.generate(
-            _expenses.length,
-            (i) => FlSpot(i.toDouble(), _expenses[i] * animValue),
+            data.length,
+            (i) => FlSpot(i.toDouble(), data[i].expense * animValue),
           ),
-          isCurved: true,
-          curveSmoothness: 0.3,
           color: AppTheme.expense,
-          barWidth: 2.5,
-          isStrokeCapRound: true,
-          dotData: FlDotData(
-            show: true,
-            getDotPainter: (spot, _, __, index) => FlDotCirclePainter(
-              radius: index == _expenses.length - 1 ? 4 : 0,
-              color: AppTheme.expense,
-              strokeWidth: 2,
-              strokeColor: AppTheme.background,
-            ),
-          ),
-          belowBarData: BarAreaData(
-            show: true,
-            gradient: LinearGradient(
-              colors: [
-                AppTheme.expense.withValues(alpha: 0.14),
-                AppTheme.expense.withValues(alpha: 0.0),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
+          lastIndex: data.length - 1,
         ),
       ],
       lineTouchData: LineTouchData(
@@ -245,7 +220,7 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
           getTooltipItems: (spots) => spots.map((s) {
             final isIncome = s.barIndex == 0;
             return LineTooltipItem(
-              '\$${s.y.toStringAsFixed(0)}',
+              _formatTooltipValue(s.y),
               GoogleFonts.manrope(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -256,6 +231,62 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
         ),
       ),
     );
+  }
+
+  LineChartBarData _buildLine({
+    required List<FlSpot> spots,
+    required Color color,
+    required int lastIndex,
+  }) {
+    return LineChartBarData(
+      spots: spots,
+      isCurved: true,
+      curveSmoothness: 0.3,
+      color: color,
+      barWidth: 2.5,
+      isStrokeCapRound: true,
+      dotData: FlDotData(
+        show: true,
+        getDotPainter: (spot, _, __, index) => FlDotCirclePainter(
+          radius: index == lastIndex ? 4 : 0,
+          color: color,
+          strokeWidth: 2,
+          strokeColor: AppTheme.background,
+        ),
+      ),
+      belowBarData: BarAreaData(
+        show: true,
+        gradient: LinearGradient(
+          colors: [
+            color.withValues(alpha: 0.15),
+            color.withValues(alpha: 0.0),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+    );
+  }
+
+  /// Format axis numbers: ≥1000 → '1k', '2.5k'; <1000 → as-is.
+  String _formatAxisValue(double val) {
+    if (val >= 1000) {
+      final k = val / 1000;
+      return k == k.truncateToDouble()
+          ? '${k.toInt()}k'
+          : '${k.toStringAsFixed(1)}k';
+    }
+    return val.toInt().toString();
+  }
+
+  String _formatTooltipValue(double val) {
+    if (val >= 1000) {
+      final k = val / 1000;
+      return k == k.truncateToDouble()
+          ? '\$${k.toInt()}k'
+          : '\$${k.toStringAsFixed(1)}k';
+    }
+    return '\$${val.toStringAsFixed(0)}';
   }
 }
 

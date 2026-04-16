@@ -6,6 +6,7 @@ class AppSettingsEntity extends Equatable {
     required this.currencyCode,
     required this.localeCode,
     required this.useSystemLocale,
+    required this.hasCompletedOnboarding,
     required this.updatedAt,
   });
 
@@ -17,6 +18,7 @@ class AppSettingsEntity extends Equatable {
   final String currencyCode;
   final String localeCode;
   final bool useSystemLocale;
+  final bool hasCompletedOnboarding;
   final DateTime updatedAt;
 
   factory AppSettingsEntity.defaults() {
@@ -25,6 +27,7 @@ class AppSettingsEntity extends Equatable {
       currencyCode: defaultCurrencyCode,
       localeCode: defaultLocaleCode,
       useSystemLocale: true,
+      hasCompletedOnboarding: false,
       updatedAt: DateTime.now(),
     );
   }
@@ -34,6 +37,7 @@ class AppSettingsEntity extends Equatable {
     String? currencyCode,
     String? localeCode,
     bool? useSystemLocale,
+    bool? hasCompletedOnboarding,
     DateTime? updatedAt,
   }) {
     return AppSettingsEntity(
@@ -41,6 +45,8 @@ class AppSettingsEntity extends Equatable {
       currencyCode: currencyCode ?? this.currencyCode,
       localeCode: localeCode ?? this.localeCode,
       useSystemLocale: useSystemLocale ?? this.useSystemLocale,
+      hasCompletedOnboarding:
+          hasCompletedOnboarding ?? this.hasCompletedOnboarding,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
@@ -51,6 +57,7 @@ class AppSettingsEntity extends Equatable {
         currencyCode,
         localeCode,
         useSystemLocale,
+        hasCompletedOnboarding,
         updatedAt,
       ];
 }

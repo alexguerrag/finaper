@@ -11,6 +11,7 @@ import '../widgets/dashboard_budget_summary_widget.dart';
 import '../widgets/dashboard_financial_snapshot_widget.dart';
 import '../widgets/dashboard_top_expense_categories_widget.dart';
 import '../widgets/recent_transactions_widget.dart';
+import '../widgets/trend_chart_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -264,6 +265,10 @@ class DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 16),
                 DashboardTopExpenseCategoriesWidget(
                   categories: summary?.topExpenseCategories ?? const [],
+                ),
+                const SizedBox(height: 16),
+                TrendChartWidget(
+                  data: summary?.monthlyTrend ?? const [],
                 ),
                 const SizedBox(height: 16),
                 RecentTransactionsWidget(

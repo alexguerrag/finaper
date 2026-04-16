@@ -139,6 +139,53 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     }
   }
 
+  Future<void> _openEditBudgetSheet(BudgetEntity budget) async {
+    final result = await showModalBottomSheet<BudgetModel>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => AddBudgetSheet(
+        monthKey: _monthKey,
+        initialBudget: budget,
+      ),
+    );
+
+    if (result == null) return;
+
+    try {
+      await _upsertBudget(result);
+
+      if (!mounted) return;
+
+      await _loadBudgets();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Presupuesto actualizado correctamente.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    } catch (e, s) {
+      debugPrint('BudgetsScreen edit error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo actualizar el presupuesto.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    }
+  }
+
   Future<void> _copyBudgetsFromPreviousMonth() async {
     if (_isCopyingPreviousMonth || _isLoading) return;
 
@@ -638,11 +685,32 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                 color: AppTheme.onSurfaceMuted,
                               ),
                               onSelected: (value) {
-                                if (value == 'delete') {
+                                if (value == 'edit') {
+                                  _openEditBudgetSheet(budget);
+                                } else if (value == 'delete') {
                                   _confirmDeleteBudget(budget);
                                 }
                               },
                               itemBuilder: (_) => [
+                                PopupMenuItem<String>(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.edit_outlined,
+                                        size: 18,
+                                        color: AppTheme.onSurface,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Editar',
+                                        style: GoogleFonts.manrope(
+                                          color: AppTheme.onSurface,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                                 PopupMenuItem<String>(
                                   value: 'delete',
                                   child: Row(

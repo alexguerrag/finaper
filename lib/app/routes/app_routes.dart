@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../features/auth/presentation/screens/sign_up_login_screen.dart';
 import '../../features/budgets/presentation/screens/budgets_screen.dart';
 import '../../features/catalogs/presentation/screens/catalogs_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/goals/presentation/screens/goals_screen.dart';
+import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/recurring_transactions/presentation/screens/recurring_transactions_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/shell/presentation/pages/main_shell_page.dart';
@@ -24,7 +24,7 @@ class AppRoutes {
   static const String settings = '/settings';
 
   static Map<String, WidgetBuilder> get routes => {
-        initial: (_) => const SignUpLoginScreen(),
+        initial: (_) => const OnboardingScreen(),
         shell: (_) => const MainShellPage(),
         dashboard: (_) => const DashboardScreen(),
         transactions: (_) => const TransactionsScreen(),
