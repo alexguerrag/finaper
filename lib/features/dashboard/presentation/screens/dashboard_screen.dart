@@ -265,6 +265,7 @@ class DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 16),
                 DashboardTopExpenseCategoriesWidget(
                   categories: summary?.topExpenseCategories ?? const [],
+                  totalExpense: summary?.monthExpense ?? 0,
                 ),
                 const SizedBox(height: 16),
                 TrendChartWidget(

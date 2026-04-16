@@ -32,6 +32,7 @@ void main() {
           _buildTestableWidget(
             child: const DashboardTopExpenseCategoriesWidget(
               categories: [],
+              totalExpense: 0,
             ),
           ),
         );
@@ -49,6 +50,7 @@ void main() {
         await tester.pumpWidget(
           _buildTestableWidget(
             child: const DashboardTopExpenseCategoriesWidget(
+              totalExpense: 30,
               categories: [
                 DashboardExpenseCategorySummary(
                   categoryId: 'health',
@@ -92,6 +94,7 @@ void main() {
         await tester.pumpWidget(
           _buildTestableWidget(
             child: const DashboardTopExpenseCategoriesWidget(
+              totalExpense: 80,
               categories: [
                 DashboardExpenseCategorySummary(
                   categoryId: 'transport',

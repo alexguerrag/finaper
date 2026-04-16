@@ -9,9 +9,14 @@ class DashboardTopExpenseCategoriesWidget extends StatelessWidget {
   const DashboardTopExpenseCategoriesWidget({
     super.key,
     required this.categories,
+    required this.totalExpense,
   });
 
   final List<DashboardExpenseCategorySummary> categories;
+
+  /// Real month expense total — may be higher than the sum of [categories]
+  /// when there are more than 4 expense categories.
+  final double totalExpense;
 
   @override
   Widget build(BuildContext context) {
@@ -52,10 +57,6 @@ class DashboardTopExpenseCategoriesWidget extends StatelessWidget {
 
     final sorted = [...categories]
       ..sort((a, b) => b.amount.compareTo(a.amount));
-    final totalAmount = sorted.fold<double>(
-      0,
-      (sum, category) => sum + category.amount,
-    );
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -78,7 +79,7 @@ class DashboardTopExpenseCategoriesWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          _ExpenseTotalHeader(totalAmount: totalAmount),
+          _ExpenseTotalHeader(totalAmount: totalExpense),
           const SizedBox(height: 16),
           ...sorted.map(
             (category) => Padding(
