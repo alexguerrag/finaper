@@ -3,9 +3,15 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/goal_model.dart';
+import '../../domain/entities/goal_entity.dart';
 
 class AddGoalSheet extends StatefulWidget {
-  const AddGoalSheet({super.key});
+  const AddGoalSheet({
+    super.key,
+    this.initialGoal,
+  });
+
+  final GoalEntity? initialGoal;
 
   @override
   State<AddGoalSheet> createState() => _AddGoalSheetState();
@@ -56,10 +62,26 @@ class _AddGoalSheetState extends State<AddGoalSheet> {
     ),
   ];
 
+  bool get _isEditing => widget.initialGoal != null;
+
   @override
   void initState() {
     super.initState();
-    _selectedPreset = _presets.first;
+
+    final initial = widget.initialGoal;
+
+    if (initial != null) {
+      _nameController.text = initial.name;
+      _targetAmountController.text = initial.targetAmount.toString();
+      _currentAmountController.text = initial.currentAmount.toString();
+      _targetDate = initial.targetDate;
+      _selectedPreset = _presets.firstWhere(
+        (p) => p.icon.codePoint == initial.iconCode,
+        orElse: () => _presets.first,
+      );
+    } else {
+      _selectedPreset = _presets.first;
+    }
   }
 
   @override
@@ -113,8 +135,10 @@ class _AddGoalSheetState extends State<AddGoalSheet> {
     final now = DateTime.now();
     final isCompleted = currentAmount >= targetAmount;
 
+    final initial = widget.initialGoal;
+
     final goal = GoalModel(
-      id: 'goal-${now.millisecondsSinceEpoch}',
+      id: initial != null ? initial.id : 'goal-${now.millisecondsSinceEpoch}',
       name: _nameController.text.trim(),
       targetAmount: targetAmount,
       currentAmount: currentAmount,
@@ -122,7 +146,7 @@ class _AddGoalSheetState extends State<AddGoalSheet> {
       color: _selectedPreset.color.withValues(alpha: 1.0),
       iconCode: _selectedPreset.icon.codePoint,
       isCompleted: isCompleted,
-      createdAt: now,
+      createdAt: initial != null ? initial.createdAt : now,
       updatedAt: now,
     );
 
@@ -167,7 +191,7 @@ class _AddGoalSheetState extends State<AddGoalSheet> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Nueva meta',
+                    _isEditing ? 'Editar meta' : 'Nueva meta',
                     style: GoogleFonts.manrope(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
@@ -349,7 +373,7 @@ class _AddGoalSheetState extends State<AddGoalSheet> {
                         ),
                       ),
                       child: Text(
-                        'Guardar meta',
+                        _isEditing ? 'Guardar cambios' : 'Guardar meta',
                         style: GoogleFonts.manrope(
                           fontWeight: FontWeight.w700,
                         ),

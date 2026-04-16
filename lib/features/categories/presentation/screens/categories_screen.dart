@@ -8,6 +8,7 @@ import '../../di/categories_registry.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/usecases/create_category.dart';
 import '../../domain/usecases/get_categories_by_kind.dart';
+import '../../domain/usecases/update_category.dart';
 import '../widgets/add_category_sheet.dart';
 
 class CategoriesScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class CategoriesScreen extends StatefulWidget {
 class _CategoriesScreenState extends State<CategoriesScreen> {
   late final GetCategoriesByKind _getCategoriesByKind;
   late final CreateCategory _createCategory;
+  late final UpdateCategory _updateCategory;
 
   bool _isLoading = true;
   CategoryKind _selectedKind = CategoryKind.expense;
@@ -30,6 +32,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     super.initState();
     _getCategoriesByKind = CategoriesRegistry.module.getCategoriesByKind;
     _createCategory = CategoriesRegistry.module.createCategory;
+    _updateCategory = CategoriesRegistry.module.updateCategory;
     _loadCategories();
   }
 
@@ -101,6 +104,50 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         SnackBar(
           content: Text(
             'No se pudo crear la categoría.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _openEditSheet(CategoryEntity category) async {
+    final result = await showModalBottomSheet<CategoryModel>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => AddCategorySheet(
+        initialKind: category.kind,
+        initialCategory: category,
+      ),
+    );
+
+    if (result == null) return;
+
+    try {
+      await _updateCategory(result);
+      await _loadCategories();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Categoría actualizada correctamente.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    } catch (e, s) {
+      debugPrint('Update category error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo actualizar la categoría.',
             style: GoogleFonts.manrope(),
           ),
         ),
@@ -235,6 +282,40 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         ],
                       ),
                     ),
+                    if (!category.isSystem)
+                      PopupMenuButton<String>(
+                        icon: const Icon(
+                          Icons.more_vert_rounded,
+                          size: 18,
+                          color: AppTheme.onSurfaceMuted,
+                        ),
+                        onSelected: (value) {
+                          if (value == 'edit') {
+                            _openEditSheet(category);
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          PopupMenuItem<String>(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.edit_outlined,
+                                  size: 18,
+                                  color: AppTheme.onSurface,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Editar',
+                                  style: GoogleFonts.manrope(
+                                    color: AppTheme.onSurface,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),

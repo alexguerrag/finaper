@@ -11,6 +11,8 @@ abstract class BudgetsLocalDataSource {
   });
 
   Future<BudgetModel> upsertBudget(BudgetModel budget);
+
+  Future<void> deleteBudget(String id);
 }
 
 class BudgetsLocalDataSourceImpl implements BudgetsLocalDataSource {
@@ -124,6 +126,12 @@ class BudgetsLocalDataSourceImpl implements BudgetsLocalDataSource {
       debugPrintStack(stackTrace: s);
       rethrow;
     }
+  }
+
+  @override
+  Future<void> deleteBudget(String id) async {
+    final db = await _databaseHelper.database;
+    await db.delete('budgets', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<double> _getSpentAmountForCategoryMonth(

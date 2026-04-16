@@ -24,4 +24,11 @@ class CategoriesRepositoryImpl implements CategoriesRepository {
       CategoryModel.fromEntity(category),
     );
   }
+
+  @override
+  Future<CategoryEntity> updateCategory(CategoryEntity category) {
+    return _localDataSource.updateCategory(
+      CategoryModel.fromEntity(category),
+    );
+  }
 }

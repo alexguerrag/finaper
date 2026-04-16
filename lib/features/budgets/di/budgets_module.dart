@@ -3,6 +3,7 @@ import '../../../core/database/database_helper.dart';
 import '../data/local/budgets_local_datasource.dart';
 import '../data/repositories/budgets_repository_impl.dart';
 import '../domain/repositories/budgets_repository.dart';
+import '../domain/usecases/delete_budget.dart';
 import '../domain/usecases/get_budgets_by_month.dart';
 import '../domain/usecases/upsert_budget.dart';
 
@@ -11,6 +12,7 @@ class BudgetsModule implements AppModule {
   late final BudgetsRepository repository;
   late final GetBudgetsByMonth getBudgetsByMonth;
   late final UpsertBudget upsertBudget;
+  late final DeleteBudget deleteBudget;
 
   final DatabaseHelper _databaseHelper;
 
@@ -23,5 +25,6 @@ class BudgetsModule implements AppModule {
     repository = BudgetsRepositoryImpl(localDataSource);
     getBudgetsByMonth = GetBudgetsByMonth(repository);
     upsertBudget = UpsertBudget(repository);
+    deleteBudget = DeleteBudget(repository);
   }
 }

@@ -9,9 +9,15 @@ import '../../../accounts/domain/entities/account_entity.dart';
 import '../../../categories/di/categories_registry.dart';
 import '../../../categories/domain/entities/category_entity.dart';
 import '../../data/models/recurring_transaction_model.dart';
+import '../../domain/entities/recurring_transaction_entity.dart';
 
 class AddRecurringTransactionSheet extends StatefulWidget {
-  const AddRecurringTransactionSheet({super.key});
+  const AddRecurringTransactionSheet({
+    super.key,
+    this.initialRecurring,
+  });
+
+  final RecurringTransactionEntity? initialRecurring;
 
   @override
   State<AddRecurringTransactionSheet> createState() =>
@@ -42,9 +48,24 @@ class _AddRecurringTransactionSheetState
   String? _selectedAccountId;
   String? _selectedCategoryId;
 
+  bool get _isEditing => widget.initialRecurring != null;
+
   @override
   void initState() {
     super.initState();
+
+    final initial = widget.initialRecurring;
+    if (initial != null) {
+      _isIncome = initial.isIncome;
+      _descriptionController.text = initial.description;
+      _amountController.text = initial.amount.toString();
+      _noteController.text = initial.note;
+      _intervalController.text = initial.intervalValue.toString();
+      _startDate = initial.startDate;
+      _endDate = initial.endDate;
+      _frequency = initial.frequency;
+    }
+
     _bootstrap();
   }
 
@@ -70,12 +91,26 @@ class _AddRecurringTransactionSheetState
 
       if (!mounted) return;
 
+      final initial = widget.initialRecurring;
+
       setState(() {
         _accounts = accounts;
         _categories = categories;
-        _selectedAccountId = accounts.isNotEmpty ? accounts.first.id : null;
-        _selectedCategoryId =
-            categories.isNotEmpty ? categories.first.id : null;
+
+        if (initial != null) {
+          _selectedAccountId = accounts.any((a) => a.id == initial.accountId)
+              ? initial.accountId
+              : (accounts.isNotEmpty ? accounts.first.id : null);
+          _selectedCategoryId =
+              categories.any((c) => c.id == initial.categoryId)
+                  ? initial.categoryId
+                  : (categories.isNotEmpty ? categories.first.id : null);
+        } else {
+          _selectedAccountId = accounts.isNotEmpty ? accounts.first.id : null;
+          _selectedCategoryId =
+              categories.isNotEmpty ? categories.first.id : null;
+        }
+
         _isLoading = false;
       });
     } catch (e, s) {
@@ -220,8 +255,10 @@ class _AddRecurringTransactionSheetState
     final intervalValue = int.parse(_intervalController.text.trim());
     final now = DateTime.now();
 
+    final initial = widget.initialRecurring;
+
     final model = RecurringTransactionModel(
-      id: 'rec-${now.millisecondsSinceEpoch}',
+      id: initial != null ? initial.id : 'rec-${now.millisecondsSinceEpoch}',
       accountId: account.id,
       accountName: account.name,
       description: _descriptionController.text.trim(),
@@ -235,10 +272,11 @@ class _AddRecurringTransactionSheetState
       intervalValue: intervalValue,
       startDate: _startDate,
       endDate: _endDate,
-      nextRunDate: _startDate,
-      lastGeneratedDate: null,
-      isActive: true,
-      createdAt: now,
+      // Preserve sync state on edit — do NOT reset nextRunDate or lastGeneratedDate
+      nextRunDate: initial != null ? initial.nextRunDate : _startDate,
+      lastGeneratedDate: initial?.lastGeneratedDate,
+      isActive: initial != null ? initial.isActive : true,
+      createdAt: initial != null ? initial.createdAt : now,
       updatedAt: now,
     );
 
@@ -288,7 +326,7 @@ class _AddRecurringTransactionSheetState
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          'Nueva recurrente',
+                          _isEditing ? 'Editar recurrente' : 'Nueva recurrente',
                           style: GoogleFonts.manrope(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
@@ -343,6 +381,8 @@ class _AddRecurringTransactionSheetState
                         ),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
+                          key: ValueKey(
+                              'rec-account-${_selectedAccountId ?? 'empty'}'),
                           initialValue: _selectedAccountId,
                           decoration: const InputDecoration(
                             labelText: 'Cuenta',
@@ -457,6 +497,7 @@ class _AddRecurringTransactionSheetState
                         ),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<RecurrenceFrequency>(
+                          key: ValueKey('rec-freq-${_frequency.name}'),
                           initialValue: _frequency,
                           decoration: const InputDecoration(
                             labelText: 'Frecuencia',
@@ -604,7 +645,9 @@ class _AddRecurringTransactionSheetState
                               ),
                             ),
                             child: Text(
-                              'Guardar recurrente',
+                              _isEditing
+                                  ? 'Guardar cambios'
+                                  : 'Guardar recurrente',
                               style: GoogleFonts.manrope(
                                 fontWeight: FontWeight.w700,
                               ),

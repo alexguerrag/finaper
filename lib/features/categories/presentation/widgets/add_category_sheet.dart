@@ -4,14 +4,17 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/enums/category_kind.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/category_model.dart';
+import '../../domain/entities/category_entity.dart';
 
 class AddCategorySheet extends StatefulWidget {
   const AddCategorySheet({
     super.key,
     required this.initialKind,
+    this.initialCategory,
   });
 
   final CategoryKind initialKind;
+  final CategoryEntity? initialCategory;
 
   @override
   State<AddCategorySheet> createState() => _AddCategorySheetState();
@@ -23,10 +26,16 @@ class _AddCategorySheetState extends State<AddCategorySheet> {
 
   late CategoryKind _selectedKind;
 
+  bool get _isEditing => widget.initialCategory != null;
+
   @override
   void initState() {
     super.initState();
-    _selectedKind = widget.initialKind;
+    _selectedKind = widget.initialCategory?.kind ?? widget.initialKind;
+
+    if (widget.initialCategory != null) {
+      _nameController.text = widget.initialCategory!.name;
+    }
   }
 
   @override
@@ -56,14 +65,22 @@ class _AddCategorySheetState extends State<AddCategorySheet> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
+    final initial = widget.initialCategory;
+
     final category = CategoryModel(
-      id: 'cat-${_selectedKind.value}-${DateTime.now().millisecondsSinceEpoch}',
+      id: initial != null
+          ? initial.id
+          : 'cat-${_selectedKind.value}-${DateTime.now().millisecondsSinceEpoch}',
       name: _nameController.text.trim(),
       kind: _selectedKind,
-      iconCode: _iconForKind(_selectedKind).codePoint,
-      color: _colorForKind(_selectedKind).withValues(alpha: 1.0),
+      iconCode: initial != null
+          ? initial.iconCode
+          : _iconForKind(_selectedKind).codePoint,
+      color: initial != null
+          ? initial.color.withValues(alpha: 1.0)
+          : _colorForKind(_selectedKind).withValues(alpha: 1.0),
       isSystem: false,
-      createdAt: DateTime.now(),
+      createdAt: initial != null ? initial.createdAt : DateTime.now(),
     );
 
     Navigator.of(context).pop(category);
@@ -101,7 +118,7 @@ class _AddCategorySheetState extends State<AddCategorySheet> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Nueva categoría',
+                    _isEditing ? 'Editar categoría' : 'Nueva categoría',
                     style: GoogleFonts.manrope(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
@@ -131,6 +148,16 @@ class _AddCategorySheetState extends State<AddCategorySheet> {
                     decoration: const InputDecoration(
                       labelText: 'Tipo',
                     ),
+                    // kind is locked in edit mode to avoid breaking budget
+                    // coherence and historical transaction classification
+                    onChanged: _isEditing
+                        ? null
+                        : (value) {
+                            if (value == null) return;
+                            setState(() {
+                              _selectedKind = value;
+                            });
+                          },
                     items: CategoryKind.values
                         .map(
                           (kind) => DropdownMenuItem<CategoryKind>(
@@ -139,13 +166,17 @@ class _AddCategorySheetState extends State<AddCategorySheet> {
                           ),
                         )
                         .toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() {
-                        _selectedKind = value;
-                      });
-                    },
                   ),
+                  if (_isEditing) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'El tipo no se puede cambiar en categorías existentes.',
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        color: AppTheme.onSurfaceMuted,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 22),
                   SizedBox(
                     width: double.infinity,
@@ -160,7 +191,7 @@ class _AddCategorySheetState extends State<AddCategorySheet> {
                         ),
                       ),
                       child: Text(
-                        'Guardar categoría',
+                        _isEditing ? 'Guardar cambios' : 'Guardar categoría',
                         style: GoogleFonts.manrope(
                           fontWeight: FontWeight.w700,
                         ),

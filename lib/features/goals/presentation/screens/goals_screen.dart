@@ -112,6 +112,47 @@ class _GoalsScreenState extends State<GoalsScreen> {
     }
   }
 
+  Future<void> _openEditGoalSheet(GoalEntity goal) async {
+    final result = await showModalBottomSheet<GoalModel>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => AddGoalSheet(initialGoal: goal),
+    );
+
+    if (result == null) return;
+
+    try {
+      await _updateGoal(result);
+      await _loadGoals();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Meta actualizada correctamente.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    } catch (e, s) {
+      debugPrint('Update goal error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo actualizar la meta.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    }
+  }
+
   Future<void> _openUpdateProgressSheet(GoalEntity goal) async {
     final result = await showModalBottomSheet<GoalModel>(
       context: context,
@@ -438,18 +479,38 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                           color: AppTheme.onSurfaceMuted,
                                         ),
                                         onSelected: (value) {
-                                          if (value == 'delete') {
+                                          if (value == 'edit') {
+                                            _openEditGoalSheet(goal);
+                                          } else if (value == 'delete') {
                                             _confirmDeleteGoal(goal);
                                           }
                                         },
                                         itemBuilder: (_) => [
                                           PopupMenuItem<String>(
+                                            value: 'edit',
+                                            child: Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.edit_outlined,
+                                                  size: 18,
+                                                  color: AppTheme.onSurface,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  'Editar',
+                                                  style: GoogleFonts.manrope(
+                                                    color: AppTheme.onSurface,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          PopupMenuItem<String>(
                                             value: 'delete',
                                             child: Row(
                                               children: [
                                                 const Icon(
-                                                  Icons
-                                                      .delete_outline_rounded,
+                                                  Icons.delete_outline_rounded,
                                                   size: 18,
                                                   color: AppTheme.expense,
                                                 ),

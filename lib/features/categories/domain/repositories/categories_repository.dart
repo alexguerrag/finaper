@@ -7,4 +7,6 @@ abstract class CategoriesRepository {
   });
 
   Future<CategoryEntity> createCategory(CategoryEntity category);
+
+  Future<CategoryEntity> updateCategory(CategoryEntity category);
 }

@@ -6,4 +6,6 @@ abstract class BudgetsRepository {
   });
 
   Future<BudgetEntity> upsertBudget(BudgetEntity budget);
+
+  Future<void> deleteBudget(String id);
 }

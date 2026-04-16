@@ -122,6 +122,47 @@ class _RecurringTransactionsScreenState
     }
   }
 
+  Future<void> _openEditSheet(RecurringTransactionEntity item) async {
+    final result = await showModalBottomSheet<RecurringTransactionModel>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => AddRecurringTransactionSheet(initialRecurring: item),
+    );
+
+    if (result == null) return;
+
+    try {
+      await _updateRecurringTransaction(result);
+      await _loadRecurringTransactions();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Recurrente actualizada correctamente.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    } catch (e, s) {
+      debugPrint('Update recurring transaction error: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo actualizar la recurrente.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    }
+  }
+
   Future<void> _toggleActive(
     RecurringTransactionEntity recurring,
     bool isActive,
@@ -499,11 +540,32 @@ class _RecurringTransactionsScreenState
                               color: AppTheme.onSurfaceMuted,
                             ),
                             onSelected: (value) {
-                              if (value == 'delete') {
+                              if (value == 'edit') {
+                                _openEditSheet(item);
+                              } else if (value == 'delete') {
                                 _confirmDeleteRecurring(item);
                               }
                             },
                             itemBuilder: (_) => [
+                              PopupMenuItem<String>(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.edit_outlined,
+                                      size: 18,
+                                      color: AppTheme.onSurface,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Editar',
+                                      style: GoogleFonts.manrope(
+                                        color: AppTheme.onSurface,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                               PopupMenuItem<String>(
                                 value: 'delete',
                                 child: Row(

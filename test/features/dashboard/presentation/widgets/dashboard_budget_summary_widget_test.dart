@@ -235,6 +235,13 @@ class _FakeBudgetsRepository implements BudgetsRepository {
     itemsByMonth[budget.monthKey] = current;
     return budget;
   }
+
+  @override
+  Future<void> deleteBudget(String id) async {
+    for (final key in itemsByMonth.keys) {
+      itemsByMonth[key]?.removeWhere((item) => item.id == id);
+    }
+  }
 }
 
 class _UnsupportedBudgetsLocalDataSource implements BudgetsLocalDataSource {
@@ -247,6 +254,11 @@ class _UnsupportedBudgetsLocalDataSource implements BudgetsLocalDataSource {
 
   @override
   Future<BudgetModel> upsertBudget(BudgetModel budget) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deleteBudget(String id) {
     throw UnimplementedError();
   }
 }

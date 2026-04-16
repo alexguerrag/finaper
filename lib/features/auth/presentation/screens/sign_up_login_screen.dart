@@ -113,17 +113,6 @@ class SignUpLoginScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            Center(
-              child: Text(
-                'Fase 1: bootstrap unificado + persistencia local robusta',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.manrope(
-                  fontSize: 12,
-                  color: AppTheme.onSurfaceMuted,
-                ),
-              ),
-            ),
             const SizedBox(height: 8),
           ],
         ),

@@ -23,4 +23,9 @@ class BudgetsRepositoryImpl implements BudgetsRepository {
       BudgetModel.fromEntity(budget),
     );
   }
+
+  @override
+  Future<void> deleteBudget(String id) {
+    return _localDataSource.deleteBudget(id);
+  }
 }

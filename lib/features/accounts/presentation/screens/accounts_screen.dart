@@ -433,7 +433,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
     );
   }
 
-  Widget _buildAccountCard(AccountBalanceEntity item, {required bool isArchived}) {
+  Widget _buildAccountCard(AccountBalanceEntity item,
+      {required bool isArchived}) {
     final account = item.account;
     final isPositiveFlow = item.netFlow >= 0;
 
