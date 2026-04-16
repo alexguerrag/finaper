@@ -54,8 +54,7 @@ class DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _loadSummary() async {
     try {
-      final localeCode =
-          SettingsRegistry.module.controller.resolvedLocaleCode;
+      final localeCode = SettingsRegistry.module.controller.resolvedLocaleCode;
       final summary = await _dashboardLocalDataSource.getSummary(
         month: _selectedMonth,
         localeCode: localeCode,

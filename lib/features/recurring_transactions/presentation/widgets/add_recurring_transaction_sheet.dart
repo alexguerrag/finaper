@@ -98,10 +98,9 @@ class _AddRecurringTransactionSheetState
         _categories = categories;
 
         if (initial != null) {
-          _selectedAccountId =
-              accounts.any((a) => a.id == initial.accountId)
-                  ? initial.accountId
-                  : (accounts.isNotEmpty ? accounts.first.id : null);
+          _selectedAccountId = accounts.any((a) => a.id == initial.accountId)
+              ? initial.accountId
+              : (accounts.isNotEmpty ? accounts.first.id : null);
           _selectedCategoryId =
               categories.any((c) => c.id == initial.categoryId)
                   ? initial.categoryId
@@ -382,7 +381,8 @@ class _AddRecurringTransactionSheetState
                         ),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
-                          key: ValueKey('rec-account-${_selectedAccountId ?? 'empty'}'),
+                          key: ValueKey(
+                              'rec-account-${_selectedAccountId ?? 'empty'}'),
                           initialValue: _selectedAccountId,
                           decoration: const InputDecoration(
                             labelText: 'Cuenta',
