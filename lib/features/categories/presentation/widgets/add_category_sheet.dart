@@ -80,6 +80,7 @@ class _AddCategorySheetState extends State<AddCategorySheet> {
           ? initial.color.withValues(alpha: 1.0)
           : _colorForKind(_selectedKind).withValues(alpha: 1.0),
       isSystem: false,
+      isArchived: false,
       createdAt: initial != null ? initial.createdAt : DateTime.now(),
     );
 

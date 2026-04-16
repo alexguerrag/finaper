@@ -6,10 +6,12 @@ import '../../../../core/theme/app_theme.dart';
 import '../../data/models/category_model.dart';
 import '../../di/categories_registry.dart';
 import '../../domain/entities/category_entity.dart';
+import '../../domain/usecases/archive_category.dart';
 import '../../domain/usecases/create_category.dart';
 import '../../domain/usecases/get_categories_by_kind.dart';
 import '../../domain/usecases/update_category.dart';
 import '../widgets/add_category_sheet.dart';
+import 'archived_categories_screen.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
@@ -22,6 +24,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   late final GetCategoriesByKind _getCategoriesByKind;
   late final CreateCategory _createCategory;
   late final UpdateCategory _updateCategory;
+  late final ArchiveCategory _archiveCategory;
 
   bool _isLoading = true;
   CategoryKind _selectedKind = CategoryKind.expense;
@@ -33,14 +36,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     _getCategoriesByKind = CategoriesRegistry.module.getCategoriesByKind;
     _createCategory = CategoriesRegistry.module.createCategory;
     _updateCategory = CategoriesRegistry.module.updateCategory;
+    _archiveCategory = CategoriesRegistry.module.archiveCategory;
     _loadCategories();
   }
 
   Future<void> _loadCategories() async {
     try {
-      final categories = await _getCategoriesByKind(
-        kind: _selectedKind,
-      );
+      final categories = await _getCategoriesByKind(kind: _selectedKind);
 
       if (!mounted) return;
 
@@ -53,10 +55,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       debugPrintStack(stackTrace: s);
 
       if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
@@ -65,9 +64,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => AddCategorySheet(
-        initialKind: _selectedKind,
-      ),
+      builder: (_) => AddCategorySheet(initialKind: _selectedKind),
     );
 
     if (result == null) return;
@@ -85,27 +82,18 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       await _loadCategories();
 
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Categoría creada correctamente.',
-            style: GoogleFonts.manrope(),
-          ),
+          content: Text('Categoría creada correctamente.', style: GoogleFonts.manrope()),
         ),
       );
     } catch (e, s) {
       debugPrint('Create category error: $e');
       debugPrintStack(stackTrace: s);
-
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'No se pudo crear la categoría.',
-            style: GoogleFonts.manrope(),
-          ),
+          content: Text('No se pudo crear la categoría.', style: GoogleFonts.manrope()),
         ),
       );
     }
@@ -129,30 +117,117 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       await _loadCategories();
 
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Categoría actualizada correctamente.',
-            style: GoogleFonts.manrope(),
-          ),
+          content: Text('Categoría actualizada correctamente.', style: GoogleFonts.manrope()),
         ),
       );
     } catch (e, s) {
       debugPrint('Update category error: $e');
       debugPrintStack(stackTrace: s);
-
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo actualizar la categoría.', style: GoogleFonts.manrope()),
+        ),
+      );
+    }
+  }
 
+  Future<void> _confirmArchive(CategoryEntity category) async {
+    // Blocker: category has active recurring transactions
+    final hasRecurring = await CategoriesRegistry.module.repository
+        .hasActiveRecurring(category.id);
+
+    if (!mounted) return;
+
+    if (hasRecurring) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'No se pudo actualizar la categoría.',
+            'No se puede archivar "${category.name}": tiene recurrentes activas asociadas. '
+            'Desactívalas primero.',
+            style: GoogleFonts.manrope(),
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surfaceElevated,
+        title: Text(
+          'Archivar categoría',
+          style: GoogleFonts.manrope(
+            fontWeight: FontWeight.w800,
+            color: AppTheme.onSurface,
+          ),
+        ),
+        content: Text(
+          '"${category.name}" dejará de aparecer en los pickers de nuevas transacciones, '
+          'presupuestos y recurrentes. El historial existente no se verá afectado.',
+          style: GoogleFonts.manrope(
+            fontSize: 13,
+            color: AppTheme.onSurfaceMuted,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Cancelar', style: GoogleFonts.manrope()),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.orange.shade700,
+            ),
+            child: Text(
+              'Archivar',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await _archiveCategory(category.id);
+      await _loadCategories();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '"${category.name}" archivada. Puedes restaurarla desde "Ver archivadas".',
             style: GoogleFonts.manrope(),
           ),
         ),
       );
+    } catch (e, s) {
+      debugPrint('Archive category error: $e');
+      debugPrintStack(stackTrace: s);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo archivar la categoría.', style: GoogleFonts.manrope()),
+        ),
+      );
     }
+  }
+
+  Future<void> _openArchivedScreen() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const ArchivedCategoriesScreen(),
+      ),
+    );
+    // Refresh in case user restored a category
+    await _loadCategories();
   }
 
   Future<void> _changeKind(CategoryKind kind) async {
@@ -192,6 +267,31 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          // Ver archivadas link
+          GestureDetector(
+            onTap: _openArchivedScreen,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.inventory_2_outlined,
+                  size: 14,
+                  color: AppTheme.onSurfaceMuted,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Ver archivadas',
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    color: AppTheme.onSurfaceMuted,
+                    decoration: TextDecoration.underline,
+                    decorationColor: AppTheme.onSurfaceMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -225,9 +325,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               ),
               child: Text(
                 'Todavía no hay categorías para este tipo.',
-                style: GoogleFonts.manrope(
-                  color: AppTheme.onSurfaceMuted,
-                ),
+                style: GoogleFonts.manrope(color: AppTheme.onSurfaceMuted),
               ),
             )
           else
@@ -252,10 +350,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
-                        IconData(
-                          category.iconCode,
-                          fontFamily: 'MaterialIcons',
-                        ),
+                        IconData(category.iconCode, fontFamily: 'MaterialIcons'),
                         color: category.color,
                       ),
                     ),
@@ -292,6 +387,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         onSelected: (value) {
                           if (value == 'edit') {
                             _openEditSheet(category);
+                          } else if (value == 'archive') {
+                            _confirmArchive(category);
                           }
                         },
                         itemBuilder: (_) => [
@@ -299,17 +396,21 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                             value: 'edit',
                             child: Row(
                               children: [
-                                const Icon(
-                                  Icons.edit_outlined,
-                                  size: 18,
-                                  color: AppTheme.onSurface,
-                                ),
+                                const Icon(Icons.edit_outlined, size: 18, color: AppTheme.onSurface),
+                                const SizedBox(width: 8),
+                                Text('Editar', style: GoogleFonts.manrope(color: AppTheme.onSurface)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem<String>(
+                            value: 'archive',
+                            child: Row(
+                              children: [
+                                Icon(Icons.inventory_2_outlined, size: 18, color: Colors.orange.shade600),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Editar',
-                                  style: GoogleFonts.manrope(
-                                    color: AppTheme.onSurface,
-                                  ),
+                                  'Archivar',
+                                  style: GoogleFonts.manrope(color: Colors.orange.shade600),
                                 ),
                               ],
                             ),
