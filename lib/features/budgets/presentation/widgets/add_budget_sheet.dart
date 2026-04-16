@@ -6,14 +6,17 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../categories/di/categories_registry.dart';
 import '../../../categories/domain/entities/category_entity.dart';
 import '../../data/models/budget_model.dart';
+import '../../domain/entities/budget_entity.dart';
 
 class AddBudgetSheet extends StatefulWidget {
   const AddBudgetSheet({
     super.key,
     required this.monthKey,
+    this.initialBudget,
   });
 
   final String monthKey;
+  final BudgetEntity? initialBudget;
 
   @override
   State<AddBudgetSheet> createState() => _AddBudgetSheetState();
@@ -29,10 +32,19 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
   List<CategoryEntity> _categories = <CategoryEntity>[];
   String? _selectedCategoryId;
 
+  bool get _isEditing => widget.initialBudget != null;
+
   @override
   void initState() {
     super.initState();
-    _loadExpenseCategories();
+
+    if (_isEditing) {
+      // In edit mode: pre-fill amount, skip category loading
+      _amountController.text = widget.initialBudget!.amountLimit.toString();
+      _isLoading = false;
+    } else {
+      _loadExpenseCategories();
+    }
   }
 
   @override
@@ -79,23 +91,6 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
     if (_isLoading || _isSaving) return;
     if (!_formKey.currentState!.validate()) return;
 
-    final category = _categories
-        .where((item) => item.id == _selectedCategoryId)
-        .cast<CategoryEntity?>()
-        .firstOrNull;
-
-    if (category == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Selecciona una categoría válida.',
-            style: GoogleFonts.manrope(),
-          ),
-        ),
-      );
-      return;
-    }
-
     setState(() {
       _isSaving = true;
     });
@@ -105,17 +100,54 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
       final amount = double.parse(normalized);
       final now = DateTime.now();
 
-      final budget = BudgetModel(
-        id: 'budget-${category.id}-${widget.monthKey}',
-        categoryId: category.id,
-        categoryName: category.name,
-        monthKey: widget.monthKey,
-        amountLimit: amount,
-        spentAmount: 0,
-        color: category.color,
-        createdAt: now,
-        updatedAt: now,
-      );
+      BudgetModel budget;
+
+      if (_isEditing) {
+        final initial = widget.initialBudget!;
+        budget = BudgetModel(
+          id: initial.id,
+          categoryId: initial.categoryId,
+          categoryName: initial.categoryName,
+          monthKey: initial.monthKey,
+          amountLimit: amount,
+          spentAmount: initial.spentAmount,
+          color: initial.color,
+          createdAt: initial.createdAt,
+          updatedAt: now,
+        );
+      } else {
+        final category = _categories
+            .where((item) => item.id == _selectedCategoryId)
+            .cast<CategoryEntity?>()
+            .firstOrNull;
+
+        if (category == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Selecciona una categoría válida.',
+                style: GoogleFonts.manrope(),
+              ),
+            ),
+          );
+          setState(() {
+            _isSaving = false;
+          });
+          return;
+        }
+
+        budget = BudgetModel(
+          id: 'budget-${category.id}-${widget.monthKey}',
+          categoryId: category.id,
+          categoryName: category.name,
+          monthKey: widget.monthKey,
+          amountLimit: amount,
+          spentAmount: 0,
+          color: category.color,
+          createdAt: now,
+          updatedAt: now,
+        );
+      }
 
       if (!mounted) return;
       Navigator.of(context).pop(budget);
@@ -145,7 +177,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final hasCategories = _categories.isNotEmpty;
+    final hasCategories = _isEditing || _categories.isNotEmpty;
 
     return SafeArea(
       top: false,
@@ -182,7 +214,9 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          'Nuevo presupuesto',
+                          _isEditing
+                              ? 'Editar presupuesto'
+                              : 'Nuevo presupuesto',
                           style: GoogleFonts.manrope(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
@@ -191,14 +225,78 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Mes: ${widget.monthKey}. Elige primero la categoría correcta para evitar asignarlo al lugar equivocado.',
+                          _isEditing
+                              ? 'Ajusta el límite mensual de "${widget.initialBudget!.categoryName}".'
+                              : 'Mes: ${widget.monthKey}. Elige primero la categoría correcta para evitar asignarlo al lugar equivocado.',
                           style: GoogleFonts.manrope(
                             fontSize: 12,
                             color: AppTheme.onSurfaceMuted,
                           ),
                         ),
                         const SizedBox(height: 16),
-                        if (!hasCategories)
+
+                        // Edit mode: locked category display
+                        if (_isEditing) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.04),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.08),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: widget.initialBudget!.color
+                                        .withValues(alpha: 0.16),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    Icons.pie_chart_rounded,
+                                    size: 16,
+                                    color: widget.initialBudget!.color,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        widget.initialBudget!.categoryName,
+                                        style: GoogleFonts.manrope(
+                                          fontWeight: FontWeight.w700,
+                                          color: AppTheme.onSurface,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Categoría — no se puede cambiar',
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 11,
+                                          color: AppTheme.onSurfaceMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ]
+
+                        // Create mode: category dropdown
+                        else if (!hasCategories)
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(14),
@@ -217,7 +315,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                               ),
                             ),
                           )
-                        else
+                        else ...[
                           DropdownButtonFormField<String>(
                             initialValue: _selectedCategoryId,
                             decoration: const InputDecoration(
@@ -244,18 +342,20 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                               });
                             },
                           ),
-                        if (hasCategories && _selectedCategoryId != null) ...[
-                          const SizedBox(height: 10),
-                          Text(
-                            'Categoría seleccionada: ${_categories.firstWhere((item) => item.id == _selectedCategoryId).name}',
-                            style: GoogleFonts.manrope(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.primary,
+                          if (_selectedCategoryId != null) ...[
+                            const SizedBox(height: 10),
+                            Text(
+                              'Categoría seleccionada: ${_categories.firstWhere((item) => item.id == _selectedCategoryId).name}',
+                              style: GoogleFonts.manrope(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.primary,
+                              ),
                             ),
-                          ),
+                          ],
+                          const SizedBox(height: 12),
                         ],
-                        const SizedBox(height: 12),
+
                         TextFormField(
                           controller: _amountController,
                           keyboardType: const TextInputType.numberWithOptions(
@@ -322,7 +422,9 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                                     ),
                                   )
                                 : Text(
-                                    'Guardar presupuesto',
+                                    _isEditing
+                                        ? 'Guardar cambios'
+                                        : 'Guardar presupuesto',
                                     style: GoogleFonts.manrope(
                                       fontWeight: FontWeight.w700,
                                     ),

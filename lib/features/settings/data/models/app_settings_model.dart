@@ -6,6 +6,7 @@ class AppSettingsModel extends AppSettingsEntity {
     required super.currencyCode,
     required super.localeCode,
     required super.useSystemLocale,
+    required super.hasCompletedOnboarding,
     required super.updatedAt,
   });
 
@@ -23,6 +24,8 @@ class AppSettingsModel extends AppSettingsEntity {
       localeCode:
           map['locale_code']?.toString() ?? AppSettingsEntity.defaultLocaleCode,
       useSystemLocale: (map['use_system_locale'] as int? ?? 1) == 1,
+      hasCompletedOnboarding:
+          (map['has_completed_onboarding'] as int? ?? 0) == 1,
       updatedAt: DateTime.tryParse(
             map['updated_at']?.toString() ?? '',
           ) ??
@@ -36,6 +39,7 @@ class AppSettingsModel extends AppSettingsEntity {
       currencyCode: entity.currencyCode,
       localeCode: entity.localeCode,
       useSystemLocale: entity.useSystemLocale,
+      hasCompletedOnboarding: entity.hasCompletedOnboarding,
       updatedAt: entity.updatedAt,
     );
   }
@@ -46,6 +50,7 @@ class AppSettingsModel extends AppSettingsEntity {
       'currency_code': currencyCode,
       'locale_code': localeCode,
       'use_system_locale': useSystemLocale ? 1 : 0,
+      'has_completed_onboarding': hasCompletedOnboarding ? 1 : 0,
       'updated_at': updatedAt.toIso8601String(),
     };
   }

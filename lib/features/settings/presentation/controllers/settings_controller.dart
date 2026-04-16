@@ -66,10 +66,13 @@ class SettingsController extends ChangeNotifier {
     }
   }
 
+  bool get hasCompletedOnboarding => _currentSettings.hasCompletedOnboarding;
+
   Future<bool> saveGeneralSettings({
     required String currencyCode,
     required String localeCode,
     required bool useSystemLocale,
+    bool? hasCompletedOnboarding,
   }) async {
     if (_isSaving) return false;
 
@@ -81,6 +84,7 @@ class SettingsController extends ChangeNotifier {
         currencyCode: currencyCode,
         localeCode: localeCode,
         useSystemLocale: useSystemLocale,
+        hasCompletedOnboarding: hasCompletedOnboarding,
         updatedAt: DateTime.now(),
       );
 

@@ -10,7 +10,7 @@ class DatabaseHelper {
   static Database? _database;
 
   static const String _databaseName = 'finaper.db';
-  static const int _databaseVersion = 11;
+  static const int _databaseVersion = 12;
 
   static const String defaultAccountId = 'acc-cash-main';
   static const String defaultAccountName = 'Cuenta principal';
@@ -193,6 +193,15 @@ class DatabaseHelper {
           SET created_at = date
           WHERE created_at IS NULL OR created_at = ''
         ''');
+      }
+
+      if (oldVersion < 12) {
+        await _addColumnIfMissing(
+          db,
+          'app_settings',
+          'has_completed_onboarding',
+          'INTEGER NOT NULL DEFAULT 0',
+        );
       }
 
       await _seedCategories(db);
