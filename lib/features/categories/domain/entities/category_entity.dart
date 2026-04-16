@@ -11,6 +11,7 @@ class CategoryEntity extends Equatable {
     required this.iconCode,
     required this.color,
     required this.isSystem,
+    required this.isArchived,
     required this.createdAt,
   });
 
@@ -20,7 +21,30 @@ class CategoryEntity extends Equatable {
   final int iconCode;
   final Color color;
   final bool isSystem;
+  final bool isArchived;
   final DateTime createdAt;
+
+  CategoryEntity copyWith({
+    String? id,
+    String? name,
+    CategoryKind? kind,
+    int? iconCode,
+    Color? color,
+    bool? isSystem,
+    bool? isArchived,
+    DateTime? createdAt,
+  }) {
+    return CategoryEntity(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      kind: kind ?? this.kind,
+      iconCode: iconCode ?? this.iconCode,
+      color: color ?? this.color,
+      isSystem: isSystem ?? this.isSystem,
+      isArchived: isArchived ?? this.isArchived,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 
   @override
   List<Object?> get props => [
@@ -30,6 +54,7 @@ class CategoryEntity extends Equatable {
         iconCode,
         color,
         isSystem,
+        isArchived,
         createdAt,
       ];
 }

@@ -10,7 +10,7 @@ class DatabaseHelper {
   static Database? _database;
 
   static const String _databaseName = 'finaper.db';
-  static const int _databaseVersion = 12;
+  static const int _databaseVersion = 13;
 
   static const String defaultAccountId = 'acc-cash-main';
   static const String defaultAccountName = 'Cuenta principal';
@@ -204,6 +204,15 @@ class DatabaseHelper {
         );
       }
 
+      if (oldVersion < 13) {
+        await _addColumnIfMissing(
+          db,
+          'categories',
+          'is_archived',
+          'INTEGER NOT NULL DEFAULT 0',
+        );
+      }
+
       await _seedCategories(db);
       await _createIndexes(db);
     } catch (e, s) {
@@ -237,6 +246,7 @@ class DatabaseHelper {
         icon_code INTEGER NOT NULL,
         color_value INTEGER NOT NULL,
         is_system INTEGER NOT NULL DEFAULT 1,
+        is_archived INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL
       )
     ''');

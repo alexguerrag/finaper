@@ -11,6 +11,7 @@ class CategoryModel extends CategoryEntity {
     required super.iconCode,
     required super.color,
     required super.isSystem,
+    required super.isArchived,
     required super.createdAt,
   });
 
@@ -24,6 +25,7 @@ class CategoryModel extends CategoryEntity {
           ? Color(map['color_value'] as int).withValues(alpha: 1.0)
           : Colors.grey.withValues(alpha: 1.0),
       isSystem: (map['is_system'] as int? ?? 1) == 1,
+      isArchived: (map['is_archived'] as int? ?? 0) == 1,
       createdAt: DateTime.tryParse(map['created_at']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
     );
@@ -37,6 +39,7 @@ class CategoryModel extends CategoryEntity {
       iconCode: entity.iconCode,
       color: entity.color.withValues(alpha: 1.0),
       isSystem: entity.isSystem,
+      isArchived: entity.isArchived,
       createdAt: entity.createdAt,
     );
   }
@@ -49,6 +52,7 @@ class CategoryModel extends CategoryEntity {
       'icon_code': iconCode,
       'color_value': color.toARGB32(),
       'is_system': isSystem ? 1 : 0,
+      'is_archived': isArchived ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
     };
   }
