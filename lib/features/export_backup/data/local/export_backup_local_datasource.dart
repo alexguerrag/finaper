@@ -25,7 +25,7 @@ abstract class ExportBackupLocalDataSource {
 class ExportBackupLocalDataSourceImpl implements ExportBackupLocalDataSource {
   const ExportBackupLocalDataSourceImpl(this._databaseHelper);
 
-  static const int _currentDatabaseVersion = 10;
+  static const int _currentDatabaseVersion = 13;
   static const int _currentBackupFormatVersion = 1;
 
   final DatabaseHelper _databaseHelper;

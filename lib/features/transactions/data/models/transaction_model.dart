@@ -21,6 +21,7 @@ class TransactionModel extends TransactionEntity {
     super.transferGroupId,
     super.counterpartyAccountId,
     super.counterpartyAccountName,
+    super.generatedFromRecurringId,
   });
 
   factory TransactionModel.fromMap(Map<String, dynamic> map) {
@@ -56,6 +57,8 @@ class TransactionModel extends TransactionEntity {
       transferGroupId: map['transfer_group_id']?.toString(),
       counterpartyAccountId: map['counterparty_account_id']?.toString(),
       counterpartyAccountName: map['counterparty_account_name']?.toString(),
+      generatedFromRecurringId:
+          map['generated_from_recurring_id']?.toString(),
     );
   }
 
@@ -77,6 +80,7 @@ class TransactionModel extends TransactionEntity {
       transferGroupId: entity.transferGroupId,
       counterpartyAccountId: entity.counterpartyAccountId,
       counterpartyAccountName: entity.counterpartyAccountName,
+      generatedFromRecurringId: entity.generatedFromRecurringId,
     );
   }
 
@@ -99,6 +103,7 @@ class TransactionModel extends TransactionEntity {
       'transfer_group_id': transferGroupId,
       'counterparty_account_id': counterpartyAccountId,
       'counterparty_account_name': counterpartyAccountName,
+      'generated_from_recurring_id': generatedFromRecurringId,
     };
   }
 }

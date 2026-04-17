@@ -21,6 +21,7 @@ class TransactionEntity extends Equatable {
     this.transferGroupId,
     this.counterpartyAccountId,
     this.counterpartyAccountName,
+    this.generatedFromRecurringId,
   });
 
   final String? id;
@@ -45,6 +46,9 @@ class TransactionEntity extends Equatable {
   final String? counterpartyAccountId;
   final String? counterpartyAccountName;
 
+  /// ID de la transacción recurrente que generó este registro. Null si es manual.
+  final String? generatedFromRecurringId;
+
   bool get isTransfer => entryType.isTransfer;
 
   @override
@@ -65,5 +69,6 @@ class TransactionEntity extends Equatable {
         transferGroupId,
         counterpartyAccountId,
         counterpartyAccountName,
+        generatedFromRecurringId,
       ];
 }
