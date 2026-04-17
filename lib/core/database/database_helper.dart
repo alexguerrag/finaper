@@ -347,6 +347,7 @@ class DatabaseHelper {
         currency_code TEXT NOT NULL,
         locale_code TEXT NOT NULL,
         use_system_locale INTEGER NOT NULL DEFAULT 1,
+        has_completed_onboarding INTEGER NOT NULL DEFAULT 0,
         updated_at TEXT NOT NULL
       )
     ''');
