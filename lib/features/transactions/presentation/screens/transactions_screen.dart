@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../accounts/di/accounts_registry.dart';
+import '../../../accounts/domain/entities/account_entity.dart';
+import '../../../accounts/domain/usecases/get_accounts.dart';
 import '../../data/models/transaction_model.dart';
 import '../../di/transactions_registry.dart';
 import '../../domain/usecases/add_transaction.dart';
@@ -28,14 +31,17 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   late final UpdateTransaction _updateTransaction;
   late final DeleteTransaction _deleteTransaction;
   late final DeleteTransactionGroup _deleteTransactionGroup;
+  late final GetAccounts _getAccounts;
 
   bool _isLoading = true;
   String _searchQuery = '';
   _TransactionFilter _filter = _TransactionFilter.all;
+  String? _selectedAccountId;
 
   final TextEditingController _searchController = TextEditingController();
 
   List<TransactionModel> _transactions = <TransactionModel>[];
+  List<AccountEntity> _accounts = <AccountEntity>[];
 
   TransactionListFilterState _listFilterState =
       const TransactionListFilterState(
@@ -52,13 +58,29 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     _deleteTransaction = TransactionsRegistry.module.deleteTransaction;
     _deleteTransactionGroup =
         TransactionsRegistry.module.deleteTransactionGroup;
+    _getAccounts = AccountsRegistry.module.getAccounts;
     _loadTransactions();
+    _loadAccounts();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadAccounts() async {
+    try {
+      final accounts = await _getAccounts(includeArchived: false);
+      if (!mounted) return;
+      setState(() {
+        _accounts = accounts;
+      });
+    } catch (e, s) {
+      debugPrint('TransactionsScreen load accounts error: $e');
+      debugPrintStack(stackTrace: s);
+      // Non-fatal: account filter simply won't appear
+    }
   }
 
   Future<void> refreshTransactions() async {
@@ -395,6 +417,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     setState(() {
       _searchQuery = '';
       _filter = _TransactionFilter.all;
+      _selectedAccountId = null;
       _listFilterState = const TransactionListFilterState(
         dateFilter: TransactionDateFilterOption.all,
         sortOption: TransactionSortOption.newestFirst,
@@ -409,6 +432,11 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       items = items.where((item) => item.isIncome).toList();
     } else if (_filter == _TransactionFilter.expense) {
       items = items.where((item) => !item.isIncome).toList();
+    }
+
+    if (_selectedAccountId != null) {
+      items =
+          items.where((item) => item.accountId == _selectedAccountId).toList();
     }
 
     final query = _searchQuery.trim().toLowerCase();
@@ -576,10 +604,20 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   bool get _hasActiveFilters =>
       _searchQuery.trim().isNotEmpty ||
       _filter != _TransactionFilter.all ||
+      _selectedAccountId != null ||
       _listFilterState.dateFilter != TransactionDateFilterOption.all ||
       _listFilterState.sortOption != TransactionSortOption.newestFirst;
 
   bool get _hasActiveSearch => _searchQuery.trim().isNotEmpty;
+
+  String get _selectedAccountName {
+    if (_selectedAccountId == null) return '';
+    try {
+      return _accounts.firstWhere((a) => a.id == _selectedAccountId).name;
+    } catch (_) {
+      return _selectedAccountId!;
+    }
+  }
 
   bool get _hasActiveDateFilter =>
       _listFilterState.dateFilter != TransactionDateFilterOption.all;
@@ -794,6 +832,36 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                               });
                             },
                           ),
+                          if (_accounts.length >= 2) ...[
+                            const SizedBox(width: 12),
+                            Container(
+                              width: 1,
+                              height: 20,
+                              color: Colors.white.withValues(alpha: 0.15),
+                            ),
+                            const SizedBox(width: 12),
+                            ..._accounts.map((account) {
+                              final selected =
+                                  _selectedAccountId == account.id;
+                              final count = _transactions
+                                  .where((t) => t.accountId == account.id)
+                                  .length;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: _FilterChip(
+                                  label: account.name,
+                                  count: count,
+                                  selected: selected,
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedAccountId =
+                                          selected ? null : account.id;
+                                    });
+                                  },
+                                ),
+                              );
+                            }),
+                          ],
                         ],
                       ),
                     ),
@@ -810,6 +878,10 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                           if (_hasActiveSort)
                             _ActiveFilterBadge(
                               label: 'Orden: $_activeSortLabel',
+                            ),
+                          if (_selectedAccountId != null)
+                            _ActiveFilterBadge(
+                              label: 'Cuenta: $_selectedAccountName',
                             ),
                           if (_hasActiveSearch)
                             const _ActiveFilterBadge(

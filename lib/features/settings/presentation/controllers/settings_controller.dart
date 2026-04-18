@@ -14,6 +14,8 @@ class SettingsController extends ChangeNotifier {
   static const List<Locale> supportedLocales = [
     Locale.fromSubtags(languageCode: 'es', countryCode: 'CL'),
     Locale.fromSubtags(languageCode: 'es', countryCode: 'ES'),
+    Locale.fromSubtags(languageCode: 'es', countryCode: 'AR'),
+    Locale.fromSubtags(languageCode: 'es', countryCode: 'MX'),
     Locale.fromSubtags(languageCode: 'en', countryCode: 'US'),
     Locale.fromSubtags(languageCode: 'pt', countryCode: 'BR'),
   ];
