@@ -41,25 +41,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final ExportFileActionsController _exportFileActionsController =
       ExportRegistry.module.exportFileActionsController;
 
-  static const List<_OptionItem> _currencyOptions = [
-    _OptionItem('CLP', 'Peso chileno (CLP)'),
-    _OptionItem('USD', 'Dólar estadounidense (USD)'),
-    _OptionItem('EUR', 'Euro (EUR)'),
-    _OptionItem('ARS', 'Peso argentino (ARS)'),
-    _OptionItem('BRL', 'Real brasileño (BRL)'),
-    _OptionItem('COP', 'Peso colombiano (COP)'),
-    _OptionItem('MXN', 'Peso mexicano (MXN)'),
-    _OptionItem('PEN', 'Sol peruano (PEN)'),
-  ];
+  static final List<_OptionItem> _currencyOptions = SettingsController
+      .supportedCurrencies
+      .map((e) => _OptionItem(e.$1, e.$2))
+      .toList();
 
-  static const List<_OptionItem> _localeOptions = [
-    _OptionItem('es_CL', 'Español (Chile)'),
-    _OptionItem('es_ES', 'Español (España)'),
-    _OptionItem('es_AR', 'Español (Argentina)'),
-    _OptionItem('es_MX', 'Español (México)'),
-    _OptionItem('en_US', 'English (United States)'),
-    _OptionItem('pt_BR', 'Português (Brasil)'),
-  ];
+  static final List<_OptionItem> _localeOptions = SettingsController
+      .supportedLocaleOptions
+      .map((e) => _OptionItem(e.$1, e.$2))
+      .toList();
 
   late String _selectedCurrencyCode;
   late String _selectedLocaleCode;

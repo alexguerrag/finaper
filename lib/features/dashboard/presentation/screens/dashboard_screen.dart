@@ -174,11 +174,6 @@ class DashboardScreenState extends State<DashboardScreen> {
             icon: const Icon(Icons.flag_rounded),
             tooltip: 'Metas',
           ),
-          IconButton(
-            onPressed: _goToBudgets,
-            icon: const Icon(Icons.savings_rounded),
-            tooltip: 'Presupuestos',
-          ),
         ],
       ),
       body: _isLoading
