@@ -832,39 +832,37 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                               });
                             },
                           ),
-                          if (_accounts.length >= 2) ...[
-                            const SizedBox(width: 12),
-                            Container(
-                              width: 1,
-                              height: 20,
-                              color: Colors.white.withValues(alpha: 0.15),
-                            ),
-                            const SizedBox(width: 12),
-                            ..._accounts.map((account) {
-                              final selected =
-                                  _selectedAccountId == account.id;
-                              final count = _transactions
-                                  .where((t) => t.accountId == account.id)
-                                  .length;
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: _FilterChip(
-                                  label: account.name,
-                                  count: count,
-                                  selected: selected,
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedAccountId =
-                                          selected ? null : account.id;
-                                    });
-                                  },
-                                ),
-                              );
-                            }),
-                          ],
                         ],
                       ),
                     ),
+                    if (_accounts.length >= 2) ...[
+                      const SizedBox(height: 8),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: _accounts.map((account) {
+                            final selected = _selectedAccountId == account.id;
+                            final count = _transactions
+                                .where((t) => t.accountId == account.id)
+                                .length;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: _FilterChip(
+                                label: account.name,
+                                count: count,
+                                selected: selected,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedAccountId =
+                                        selected ? null : account.id;
+                                  });
+                                },
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
                     if (_hasActiveFilters) ...[
                       const SizedBox(height: 14),
                       Wrap(
