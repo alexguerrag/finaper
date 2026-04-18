@@ -17,9 +17,11 @@ class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
     super.key,
     this.onOpenTransactionsTab,
+    this.onOpenBudgetsTab,
   });
 
   final Future<void> Function()? onOpenTransactionsTab;
+  final Future<void> Function()? onOpenBudgetsTab;
 
   @override
   DashboardScreenState createState() => DashboardScreenState();
@@ -121,13 +123,11 @@ class DashboardScreenState extends State<DashboardScreen> {
     await refreshSummary();
   }
 
-  Future<void> _goToCatalogs() async {
-    await Navigator.pushNamed(context, AppRoutes.catalogs);
-    if (!mounted) return;
-    await refreshSummary();
-  }
-
   Future<void> _goToBudgets() async {
+    if (widget.onOpenBudgetsTab != null) {
+      await widget.onOpenBudgetsTab!.call();
+      return;
+    }
     await Navigator.pushNamed(context, AppRoutes.budgets);
     if (!mounted) return;
     await refreshSummary();
@@ -137,21 +137,6 @@ class DashboardScreenState extends State<DashboardScreen> {
     await Navigator.pushNamed(context, AppRoutes.goals);
     if (!mounted) return;
     await refreshSummary();
-  }
-
-  Future<void> _goToRecurringTransactions() async {
-    await Navigator.pushNamed(context, AppRoutes.recurringTransactions);
-    if (!mounted) return;
-    await refreshSummary();
-  }
-
-  Future<void> _goToSettings() async {
-    await Navigator.pushNamed(context, AppRoutes.settings);
-    if (!mounted) return;
-
-    setState(() {
-      _refreshVersion++;
-    });
   }
 
   DateTime _monthStart(DateTime value) {
@@ -193,43 +178,6 @@ class DashboardScreenState extends State<DashboardScreen> {
             onPressed: _goToBudgets,
             icon: const Icon(Icons.savings_rounded),
             tooltip: 'Presupuestos',
-          ),
-          PopupMenuButton<_DashboardMenuAction>(
-            icon: const Icon(Icons.more_vert_rounded),
-            onSelected: (value) {
-              switch (value) {
-                case _DashboardMenuAction.catalogs:
-                  _goToCatalogs();
-                  break;
-                case _DashboardMenuAction.transactions:
-                  _goToTransactions();
-                  break;
-                case _DashboardMenuAction.recurring:
-                  _goToRecurringTransactions();
-                  break;
-                case _DashboardMenuAction.settings:
-                  _goToSettings();
-                  break;
-              }
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: _DashboardMenuAction.catalogs,
-                child: Text('Catálogos'),
-              ),
-              PopupMenuItem(
-                value: _DashboardMenuAction.transactions,
-                child: Text('Movimientos'),
-              ),
-              PopupMenuItem(
-                value: _DashboardMenuAction.recurring,
-                child: Text('Recurrentes'),
-              ),
-              PopupMenuItem(
-                value: _DashboardMenuAction.settings,
-                child: Text('Ajustes'),
-              ),
-            ],
           ),
         ],
       ),
@@ -280,11 +228,4 @@ class DashboardScreenState extends State<DashboardScreen> {
             ),
     );
   }
-}
-
-enum _DashboardMenuAction {
-  catalogs,
-  transactions,
-  recurring,
-  settings,
 }

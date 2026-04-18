@@ -13,6 +13,7 @@ class AppFormatters {
     'BRL': r'R$',
     'COP': r'COP$',
     'MXN': r'MX$',
+    'PEN': 'S/',
   };
 
   static const Map<String, int> _currencyDecimalDigits = {
@@ -23,6 +24,7 @@ class AppFormatters {
     'BRL': 2,
     'COP': 0,
     'MXN': 2,
+    'PEN': 2,
   };
 
   static const List<String> _spanishMonthNames = [
@@ -38,6 +40,36 @@ class AppFormatters {
     'octubre',
     'noviembre',
     'diciembre',
+  ];
+
+  static const List<String> _englishMonthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  static const List<String> _portugueseMonthNames = [
+    'janeiro',
+    'fevereiro',
+    'março',
+    'abril',
+    'maio',
+    'junho',
+    'julho',
+    'agosto',
+    'setembro',
+    'outubro',
+    'novembro',
+    'dezembro',
   ];
 
   static AppSettingsEntity get _settings =>
@@ -139,9 +171,18 @@ class AppFormatters {
     required DateTime value,
     required String localeCode,
   }) {
-    if (localeCode.toLowerCase().startsWith('es')) {
-      final monthName = _spanishMonthNames[value.month - 1];
-      return '$monthName ${value.year}';
+    final locale = localeCode.toLowerCase();
+
+    if (locale.startsWith('es')) {
+      return '${_spanishMonthNames[value.month - 1]} ${value.year}';
+    }
+
+    if (locale.startsWith('en')) {
+      return '${_englishMonthNames[value.month - 1]} ${value.year}';
+    }
+
+    if (locale.startsWith('pt')) {
+      return '${_portugueseMonthNames[value.month - 1]} de ${value.year}';
     }
 
     return '${value.month}/${value.year}';

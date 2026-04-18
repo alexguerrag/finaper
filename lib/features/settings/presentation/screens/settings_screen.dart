@@ -49,11 +49,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _OptionItem('BRL', 'Real brasileño (BRL)'),
     _OptionItem('COP', 'Peso colombiano (COP)'),
     _OptionItem('MXN', 'Peso mexicano (MXN)'),
+    _OptionItem('PEN', 'Sol peruano (PEN)'),
   ];
 
   static const List<_OptionItem> _localeOptions = [
     _OptionItem('es_CL', 'Español (Chile)'),
     _OptionItem('es_ES', 'Español (España)'),
+    _OptionItem('es_AR', 'Español (Argentina)'),
+    _OptionItem('es_MX', 'Español (México)'),
     _OptionItem('en_US', 'English (United States)'),
     _OptionItem('pt_BR', 'Português (Brasil)'),
   ];
