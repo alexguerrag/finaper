@@ -17,27 +17,6 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   late final SettingsController _controller;
 
-  // Currency options: code → display label
-  static const List<(String, String)> _currencies = [
-    ('CLP', 'CLP — Peso chileno'),
-    ('USD', 'USD — Dólar estadounidense'),
-    ('EUR', 'EUR — Euro'),
-    ('BRL', 'BRL — Real brasileño'),
-    ('ARS', 'ARS — Peso argentino'),
-    ('MXN', 'MXN — Peso mexicano'),
-    ('COP', 'COP — Peso colombiano'),
-    ('PEN', 'PEN — Sol peruano'),
-  ];
-
-  // Locale options: code → display label
-  static const List<(String, String)> _locales = [
-    ('es_CL', 'Español (Chile)'),
-    ('es_ES', 'Español (España)'),
-    ('es_AR', 'Español (Argentina)'),
-    ('es_MX', 'Español (México)'),
-    ('en_US', 'English (US)'),
-    ('pt_BR', 'Português (Brasil)'),
-  ];
 
   String _selectedCurrency = AppSettingsEntity.defaultCurrencyCode;
   String _selectedLocale = AppSettingsEntity.defaultLocaleCode;
@@ -138,7 +117,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               const SizedBox(height: 8),
               _DropdownCard<String>(
                 value: _selectedCurrency,
-                items: _currencies
+                items: SettingsController.supportedCurrencies
                     .map(
                         (e) => DropdownMenuItem(value: e.$1, child: Text(e.$2)))
                     .toList(),
@@ -155,7 +134,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 value: _useSystemLocale ? null : _selectedLocale,
                 hint: _useSystemLocale ? 'Usando región del sistema' : null,
                 enabled: !_useSystemLocale,
-                items: _locales
+                items: SettingsController.supportedLocaleOptions
                     .map(
                         (e) => DropdownMenuItem(value: e.$1, child: Text(e.$2)))
                     .toList(),
