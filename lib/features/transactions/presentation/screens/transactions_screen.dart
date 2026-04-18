@@ -610,15 +610,6 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 
   bool get _hasActiveSearch => _searchQuery.trim().isNotEmpty;
 
-  String get _selectedAccountName {
-    if (_selectedAccountId == null) return '';
-    try {
-      return _accounts.firstWhere((a) => a.id == _selectedAccountId).name;
-    } catch (_) {
-      return _selectedAccountId!;
-    }
-  }
-
   bool get _hasActiveDateFilter =>
       _listFilterState.dateFilter != TransactionDateFilterOption.all;
 
@@ -876,10 +867,6 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                           if (_hasActiveSort)
                             _ActiveFilterBadge(
                               label: 'Orden: $_activeSortLabel',
-                            ),
-                          if (_selectedAccountId != null)
-                            _ActiveFilterBadge(
-                              label: 'Cuenta: $_selectedAccountName',
                             ),
                           if (_hasActiveSearch)
                             const _ActiveFilterBadge(
