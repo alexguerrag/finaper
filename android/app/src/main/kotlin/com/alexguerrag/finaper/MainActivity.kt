@@ -1,4 +1,4 @@
-package com.example.finaper
+package com.alexguerrag.finaper
 
 import io.flutter.embedding.android.FlutterActivity
 
