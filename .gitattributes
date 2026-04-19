@@ -1,0 +1,13 @@
+# Default: normalize line endings to LF in repo
+* text=auto eol=lf
+
+# Xcode project files: always LF, never convert
+*.pbxproj text eol=lf
+*.xcworkspacedata text eol=lf
+*.xcsettings text eol=lf
+
+# Binary assets: no conversion
+*.png binary
+*.jpg binary
+*.jks binary
+*.keystore binary
