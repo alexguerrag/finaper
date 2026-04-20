@@ -28,15 +28,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.initState();
     _controller = SettingsRegistry.module.controller;
 
-    // If onboarding was already completed, skip immediately to shell
-    if (_controller.hasCompletedOnboarding) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        Navigator.of(context).pushReplacementNamed(AppRoutes.shell);
-      });
-      return;
-    }
-
     // Pre-fill with current persisted settings (in case of partial save)
     final s = _controller.currentSettings;
     _selectedCurrency = s.currencyCode;
@@ -74,14 +65,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Blank screen while the redirect fires
-    if (_controller.hasCompletedOnboarding) {
-      return const Scaffold(
-        backgroundColor: AppTheme.surface,
-        body: SizedBox.shrink(),
-      );
-    }
-
     return Scaffold(
       backgroundColor: AppTheme.surface,
       body: SafeArea(

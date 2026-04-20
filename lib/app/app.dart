@@ -33,7 +33,9 @@ class FinaperApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          initialRoute: AppRoutes.initial,
+          initialRoute: settingsController.hasCompletedOnboarding
+              ? AppRoutes.shell
+              : AppRoutes.initial,
           routes: AppRoutes.routes,
         );
       },
