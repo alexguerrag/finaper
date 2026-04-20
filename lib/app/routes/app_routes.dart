@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../features/budgets/presentation/screens/budgets_screen.dart';
 import '../../features/catalogs/presentation/screens/catalogs_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../../features/export_backup/presentation/screens/backup_screen.dart';
 import '../../features/goals/presentation/screens/goals_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/recurring_transactions/presentation/screens/recurring_transactions_screen.dart';
@@ -22,6 +23,7 @@ class AppRoutes {
   static const String goals = '/goals';
   static const String recurringTransactions = '/recurring-transactions';
   static const String settings = '/settings';
+  static const String backup = '/backup';
 
   static Map<String, WidgetBuilder> get routes => {
         initial: (_) => const OnboardingScreen(),
@@ -34,5 +36,6 @@ class AppRoutes {
         goals: (_) => const GoalsScreen(),
         recurringTransactions: (_) => const RecurringTransactionsScreen(),
         settings: (_) => const SettingsScreen(),
+        backup: (_) => const BackupScreen(),
       };
 }

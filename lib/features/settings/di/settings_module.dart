@@ -19,6 +19,12 @@ class SettingsModule implements AppModule {
   SettingsModule({DatabaseHelper? databaseHelper})
       : _databaseHelper = databaseHelper ?? DatabaseHelper.instance;
 
+  // ignore: invalid_use_of_visible_for_testing_member
+  SettingsModule.withController(SettingsController c)
+      : _databaseHelper = DatabaseHelper.instance {
+    controller = c;
+  }
+
   @override
   Future<void> register() async {
     localDataSource = AppSettingsLocalDataSourceImpl(_databaseHelper);

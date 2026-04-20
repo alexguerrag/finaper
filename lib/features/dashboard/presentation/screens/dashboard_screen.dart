@@ -180,46 +180,49 @@ class DashboardScreenState extends State<DashboardScreen> {
           ? const Center(
               child: CircularProgressIndicator(),
             )
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                DashboardFinancialSnapshotWidget(
-                  monthLabel: summary?.monthLabel ?? '',
-                  consolidatedBalance: summary?.consolidatedBalance ?? 0,
-                  netFlow: summary?.monthNetFlow ?? 0,
-                  income: summary?.monthIncome ?? 0,
-                  expense: summary?.monthExpense ?? 0,
-                  canGoToNextMonth: _canGoToNextMonth,
-                  onPreviousMonth: _goToPreviousMonth,
-                  onNextMonth: _goToNextMonth,
-                ),
-                const SizedBox(height: 16),
-                DashboardBudgetSummaryWidget(
-                  month: _selectedMonth,
-                  refreshToken: _refreshVersion,
-                  onManagePressed: _goToBudgets,
-                ),
-                const SizedBox(height: 16),
-                BudgetAlertBannerWidget(
-                  month: _selectedMonth,
-                  refreshToken: _refreshVersion,
-                  onManagePressed: _goToBudgets,
-                ),
-                const SizedBox(height: 16),
-                DashboardTopExpenseCategoriesWidget(
-                  categories: summary?.topExpenseCategories ?? const [],
-                  totalExpense: summary?.monthExpense ?? 0,
-                ),
-                const SizedBox(height: 16),
-                TrendChartWidget(
-                  data: summary?.monthlyTrend ?? const [],
-                ),
-                const SizedBox(height: 16),
-                RecentTransactionsWidget(
-                  transactionsOverride: summary?.recentTransactions,
-                  onSeeAll: _goToTransactions,
-                ),
-              ],
+          : RefreshIndicator(
+              onRefresh: refreshSummary,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  DashboardFinancialSnapshotWidget(
+                    monthLabel: summary?.monthLabel ?? '',
+                    consolidatedBalance: summary?.consolidatedBalance ?? 0,
+                    netFlow: summary?.monthNetFlow ?? 0,
+                    income: summary?.monthIncome ?? 0,
+                    expense: summary?.monthExpense ?? 0,
+                    canGoToNextMonth: _canGoToNextMonth,
+                    onPreviousMonth: _goToPreviousMonth,
+                    onNextMonth: _goToNextMonth,
+                  ),
+                  const SizedBox(height: 16),
+                  DashboardBudgetSummaryWidget(
+                    month: _selectedMonth,
+                    refreshToken: _refreshVersion,
+                    onManagePressed: _goToBudgets,
+                  ),
+                  const SizedBox(height: 16),
+                  BudgetAlertBannerWidget(
+                    month: _selectedMonth,
+                    refreshToken: _refreshVersion,
+                    onManagePressed: _goToBudgets,
+                  ),
+                  const SizedBox(height: 16),
+                  DashboardTopExpenseCategoriesWidget(
+                    categories: summary?.topExpenseCategories ?? const [],
+                    totalExpense: summary?.monthExpense ?? 0,
+                  ),
+                  const SizedBox(height: 16),
+                  TrendChartWidget(
+                    data: summary?.monthlyTrend ?? const [],
+                  ),
+                  const SizedBox(height: 16),
+                  RecentTransactionsWidget(
+                    transactionsOverride: summary?.recentTransactions,
+                    onSeeAll: _goToTransactions,
+                  ),
+                ],
+              ),
             ),
     );
   }
