@@ -47,6 +47,12 @@ class MoreScreen extends StatelessWidget {
             onTap: () => _navigate(context, AppRoutes.recurringTransactions),
           ),
           _MoreTile(
+            icon: Icons.backup_rounded,
+            label: 'Datos y respaldo',
+            subtitle: 'Exportar respaldo, CSV y restaurar',
+            onTap: () => _navigate(context, AppRoutes.backup),
+          ),
+          _MoreTile(
             icon: Icons.settings_outlined,
             label: 'Ajustes',
             subtitle: 'Moneda, idioma y preferencias',
