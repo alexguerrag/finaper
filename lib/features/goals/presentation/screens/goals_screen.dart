@@ -517,6 +517,51 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                             ),
                                           ),
                                         ),
+                                      if (!goal.isCompleted &&
+                                          goal.targetDate != null)
+                                        Builder(builder: (context) {
+                                          final today = DateTime.now();
+                                          final todayMidnight = DateTime(
+                                              today.year,
+                                              today.month,
+                                              today.day);
+                                          final daysLeft = goal.targetDate!
+                                              .difference(todayMidnight)
+                                              .inDays;
+                                          if (daysLeft < 0 || daysLeft > 30) {
+                                            return const SizedBox.shrink();
+                                          }
+                                          final isUrgent = daysLeft <= 7;
+                                          final badgeColor = isUrgent
+                                              ? AppTheme.expense
+                                              : AppTheme.warning;
+                                          final label = daysLeft == 0
+                                              ? 'Vence hoy'
+                                              : daysLeft == 1
+                                                  ? 'Vence mañana'
+                                                  : 'Vence en $daysLeft días';
+                                          return Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: badgeColor.withValues(
+                                                alpha: 0.14,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            child: Text(
+                                              label,
+                                              style: GoogleFonts.manrope(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w700,
+                                                color: badgeColor,
+                                              ),
+                                            ),
+                                          );
+                                        }),
                                       PopupMenuButton<String>(
                                         icon: const Icon(
                                           Icons.more_vert_rounded,

@@ -534,7 +534,13 @@ class _RecurringTransactionsScreenState
                       color: Colors.white.withValues(alpha: 0.06),
                     ),
                   ),
-                  child: Column(
+                  child: Builder(builder: (context) {
+                    final today = DateTime.now();
+                    final todayMidnight =
+                        DateTime(today.year, today.month, today.day);
+                    final isOverdue = item.isActive &&
+                        item.nextRunDate.isBefore(todayMidnight);
+                    return Column(
                     children: [
                       Row(
                         children: [
@@ -637,6 +643,30 @@ class _RecurringTransactionsScreenState
                           ),
                         ],
                       ),
+                      if (isOverdue) ...[
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.expense.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              'Vencida',
+                              style: GoogleFonts.manrope(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.expense,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       Container(
                         width: double.infinity,
@@ -712,9 +742,10 @@ class _RecurringTransactionsScreenState
                         ),
                       ),
                     ],
-                  ),
-                ),
+                  );
+                }),
               ),
+            ),
           ],
         ),
       ),
