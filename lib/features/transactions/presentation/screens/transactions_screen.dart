@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../accounts/di/accounts_registry.dart';
-import '../../../accounts/domain/entities/account_entity.dart';
 import '../../../accounts/domain/usecases/get_accounts.dart';
 import '../../data/models/transaction_model.dart';
 import '../../di/transactions_registry.dart';
@@ -13,6 +12,7 @@ import '../../domain/usecases/delete_transaction.dart';
 import '../../domain/usecases/delete_transaction_group.dart';
 import '../../domain/usecases/get_all_transactions.dart';
 import '../../domain/usecases/update_transaction.dart';
+import '../controllers/transaction_list_controller.dart';
 import '../widgets/transaction_details_sheet.dart';
 import '../widgets/transaction_filters_sheet.dart';
 import 'account_transfer_screen.dart';
@@ -32,22 +32,10 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   late final DeleteTransaction _deleteTransaction;
   late final DeleteTransactionGroup _deleteTransactionGroup;
   late final GetAccounts _getAccounts;
+  late final TransactionListController _controller;
 
   bool _isLoading = true;
-  String _searchQuery = '';
-  _TransactionFilter _filter = _TransactionFilter.all;
-  String? _selectedAccountId;
-
   final TextEditingController _searchController = TextEditingController();
-
-  List<TransactionModel> _transactions = <TransactionModel>[];
-  List<AccountEntity> _accounts = <AccountEntity>[];
-
-  TransactionListFilterState _listFilterState =
-      const TransactionListFilterState(
-    dateFilter: TransactionDateFilterOption.all,
-    sortOption: TransactionSortOption.newestFirst,
-  );
 
   @override
   void initState() {
@@ -59,74 +47,65 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     _deleteTransactionGroup =
         TransactionsRegistry.module.deleteTransactionGroup;
     _getAccounts = AccountsRegistry.module.getAccounts;
-    _loadTransactions();
-    _loadAccounts();
+    _controller = TransactionListController();
+    _loadAll();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _controller.dispose();
     super.dispose();
+  }
+
+  // ── data loading ──────────────────────────────────────────────────────────
+
+  Future<void> _loadAll() async {
+    await Future.wait([_loadTransactions(), _loadAccounts()]);
   }
 
   Future<void> _loadAccounts() async {
     try {
       final accounts = await _getAccounts(includeArchived: false);
       if (!mounted) return;
-      setState(() {
-        _accounts = accounts;
-      });
+      _controller.setAccounts(accounts);
     } catch (e, s) {
       debugPrint('TransactionsScreen load accounts error: $e');
       debugPrintStack(stackTrace: s);
-      // Non-fatal: account filter simply won't appear
     }
   }
 
   Future<void> refreshTransactions() async {
     if (!mounted) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     await _loadTransactions();
   }
 
   Future<void> _loadTransactions() async {
     try {
       final result = await _getAllTransactions();
-
       if (!mounted) return;
-
-      setState(() {
-        _transactions =
-            result.map((e) => TransactionModel.fromEntity(e)).toList();
-        _isLoading = false;
-      });
+      _controller
+          .setTransactions(result.map(TransactionModel.fromEntity).toList());
+      setState(() => _isLoading = false);
     } catch (e, s) {
       debugPrint('TransactionsScreen load error: $e');
       debugPrintStack(stackTrace: s);
-
       if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
-
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
           content: Text(
             'No se pudieron cargar las transacciones.',
-            style: GoogleFonts.manrope(
-              fontWeight: FontWeight.w600,
-            ),
+            style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
           ),
         ),
       );
     }
   }
+
+  // ── UI actions ────────────────────────────────────────────────────────────
 
   Future<void> _openAddTransactionSheet() async {
     await showModalBottomSheet<void>(
@@ -134,8 +113,8 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => AddTransactionSheet(
-        onAdd: (transaction) async {
-          await _addTransaction(transaction);
+        onAdd: (t) async {
+          await _addTransaction(t);
           await refreshTransactions();
         },
       ),
@@ -171,10 +150,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
           ),
         ),
       );
-
-      if (didUpdate == true) {
-        await refreshTransactions();
-      }
+      if (didUpdate == true) await refreshTransactions();
       return;
     }
 
@@ -184,8 +160,8 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => AddTransactionSheet(
         initialTransaction: transaction,
-        onAdd: (updatedTransaction) async {
-          await _updateTransaction(updatedTransaction);
+        onAdd: (updated) async {
+          await _updateTransaction(updated);
           await refreshTransactions();
         },
       ),
@@ -221,12 +197,8 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => TransactionFiltersSheet(
-        initialState: _listFilterState,
-        onApply: (state) {
-          setState(() {
-            _listFilterState = state;
-          });
-        },
+        initialState: _controller.advancedFilter,
+        onApply: _controller.setAdvancedFilter,
       ),
     );
   }
@@ -248,37 +220,28 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         note: transaction.note,
         color: transaction.color,
       );
-
       await _addTransaction(duplicated);
       await refreshTransactions();
-
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
           content: Text(
             'Transacción duplicada correctamente.',
-            style: GoogleFonts.manrope(
-              fontWeight: FontWeight.w600,
-            ),
+            style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
           ),
         ),
       );
     } catch (e, s) {
       debugPrint('Duplicate transaction error: $e');
       debugPrintStack(stackTrace: s);
-
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
           content: Text(
             'No se pudo duplicar la transacción.',
-            style: GoogleFonts.manrope(
-              fontWeight: FontWeight.w600,
-            ),
+            style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
           ),
         ),
       );
@@ -296,9 +259,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
           behavior: SnackBarBehavior.floating,
           content: Text(
             'La transacción no tiene un identificador válido.',
-            style: GoogleFonts.manrope(
-              fontWeight: FontWeight.w600,
-            ),
+            style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
           ),
         ),
       );
@@ -306,55 +267,41 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     }
 
     final isTransfer = transaction.isTransfer;
-
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: AppTheme.surfaceElevated,
-          title: Text(
-            isTransfer ? 'Eliminar transferencia' : 'Eliminar transacción',
-            style: GoogleFonts.manrope(
-              fontWeight: FontWeight.w800,
-              color: AppTheme.onSurface,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.surfaceElevated,
+        title: Text(
+          isTransfer ? 'Eliminar transferencia' : 'Eliminar transacción',
+          style: GoogleFonts.manrope(
+            fontWeight: FontWeight.w800,
+            color: AppTheme.onSurface,
+          ),
+        ),
+        content: Text(
+          isTransfer
+              ? '¿Seguro que quieres eliminar esta transferencia completa? Se eliminarán ambas patas del movimiento.'
+              : '¿Seguro que quieres eliminar "${transaction.description}"?',
+          style: GoogleFonts.manrope(color: AppTheme.onSurfaceMuted),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text('Cancelar', style: GoogleFonts.manrope()),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.expense,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(
+              'Eliminar',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
             ),
           ),
-          content: Text(
-            isTransfer
-                ? '¿Seguro que quieres eliminar esta transferencia completa? Se eliminarán ambas patas del movimiento.'
-                : '¿Seguro que quieres eliminar "${transaction.description}"?',
-            style: GoogleFonts.manrope(
-              color: AppTheme.onSurfaceMuted,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop(false);
-              },
-              child: Text(
-                'Cancelar',
-                style: GoogleFonts.manrope(),
-              ),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop(true);
-              },
-              style: FilledButton.styleFrom(
-                backgroundColor: AppTheme.expense,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(
-                'Eliminar',
-                style: GoogleFonts.manrope(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
 
     if (confirm != true) return;
@@ -365,11 +312,8 @@ class TransactionsScreenState extends State<TransactionsScreen> {
       } else {
         await _deleteTransaction(transactionId!);
       }
-
       await refreshTransactions();
-
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
@@ -377,18 +321,14 @@ class TransactionsScreenState extends State<TransactionsScreen> {
             isTransfer
                 ? 'Transferencia eliminada correctamente.'
                 : 'Transacción eliminada correctamente.',
-            style: GoogleFonts.manrope(
-              fontWeight: FontWeight.w600,
-            ),
+            style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
           ),
         ),
       );
     } catch (e, s) {
       debugPrint('Delete transaction error: $e');
       debugPrintStack(stackTrace: s);
-
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
@@ -396,9 +336,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
             isTransfer
                 ? 'No se pudo eliminar la transferencia.'
                 : 'No se pudo eliminar la transacción.',
-            style: GoogleFonts.manrope(
-              fontWeight: FontWeight.w600,
-            ),
+            style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
           ),
         ),
       );
@@ -407,265 +345,14 @@ class TransactionsScreenState extends State<TransactionsScreen> {
 
   void _clearSearch() {
     _searchController.clear();
-    setState(() {
-      _searchQuery = '';
-    });
+    _controller.setSearchQuery('');
   }
 
-  void _clearFilters() {
-    _searchController.clear();
-    setState(() {
-      _searchQuery = '';
-      _filter = _TransactionFilter.all;
-      _selectedAccountId = null;
-      _listFilterState = const TransactionListFilterState(
-        dateFilter: TransactionDateFilterOption.all,
-        sortOption: TransactionSortOption.newestFirst,
-      );
-    });
-  }
-
-  List<TransactionModel> get _visibleTransactions {
-    var items = List<TransactionModel>.from(_transactions);
-
-    if (_filter == _TransactionFilter.income) {
-      items = items.where((item) => item.isIncome).toList();
-    } else if (_filter == _TransactionFilter.expense) {
-      items = items.where((item) => !item.isIncome).toList();
-    }
-
-    if (_selectedAccountId != null) {
-      items =
-          items.where((item) => item.accountId == _selectedAccountId).toList();
-    }
-
-    final query = _searchQuery.trim().toLowerCase();
-    if (query.isNotEmpty) {
-      items = items.where((item) {
-        return item.description.toLowerCase().contains(query) ||
-            item.category.toLowerCase().contains(query) ||
-            item.accountName.toLowerCase().contains(query) ||
-            item.note.toLowerCase().contains(query);
-      }).toList();
-    }
-
-    items = _applyDateFilter(items);
-    items = _applySort(items);
-
-    return items;
-  }
-
-  List<TransactionModel> _applyDateFilter(List<TransactionModel> items) {
-    final option = _listFilterState.dateFilter;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    switch (option) {
-      case TransactionDateFilterOption.all:
-        return items;
-      case TransactionDateFilterOption.last7Days:
-        final start = today.subtract(const Duration(days: 6));
-        return items.where((item) => !_isBeforeDate(item.date, start)).toList();
-      case TransactionDateFilterOption.last30Days:
-        final start = today.subtract(const Duration(days: 29));
-        return items.where((item) => !_isBeforeDate(item.date, start)).toList();
-      case TransactionDateFilterOption.thisMonth:
-        final start = DateTime(now.year, now.month, 1);
-        return items.where((item) => !_isBeforeDate(item.date, start)).toList();
-      case TransactionDateFilterOption.custom:
-        final range = _listFilterState.customRange;
-        if (range == null) return items;
-        final start = DateTime(
-          range.start.year,
-          range.start.month,
-          range.start.day,
-        );
-        final end = DateTime(
-          range.end.year,
-          range.end.month,
-          range.end.day,
-          23,
-          59,
-          59,
-        );
-        return items
-            .where(
-              (item) => !item.date.isBefore(start) && !item.date.isAfter(end),
-            )
-            .toList();
-    }
-  }
-
-  List<TransactionModel> _applySort(List<TransactionModel> items) {
-    final sorted = List<TransactionModel>.from(items);
-
-    switch (_listFilterState.sortOption) {
-      case TransactionSortOption.newestFirst:
-        sorted.sort((a, b) {
-          final dateCmp = b.date.compareTo(a.date);
-          if (dateCmp != 0) return dateCmp;
-          return b.createdAt.compareTo(a.createdAt);
-        });
-        break;
-      case TransactionSortOption.oldestFirst:
-        sorted.sort((a, b) {
-          final dateCmp = a.date.compareTo(b.date);
-          if (dateCmp != 0) return dateCmp;
-          return a.createdAt.compareTo(b.createdAt);
-        });
-        break;
-      case TransactionSortOption.highestAmount:
-        sorted.sort((a, b) => b.amount.compareTo(a.amount));
-        break;
-      case TransactionSortOption.lowestAmount:
-        sorted.sort((a, b) => a.amount.compareTo(b.amount));
-        break;
-    }
-
-    return sorted;
-  }
-
-  bool _isBeforeDate(DateTime value, DateTime reference) {
-    final normalized = DateTime(value.year, value.month, value.day);
-    return normalized.isBefore(reference);
-  }
-
-  Map<String, List<TransactionModel>> get _groupedTransactions {
-    final grouped = <String, List<TransactionModel>>{};
-    final now = DateTime.now();
-    final todayKey = _dateKey(now);
-    final yesterdayKey = _dateKey(now.subtract(const Duration(days: 1)));
-
-    for (final transaction in _visibleTransactions) {
-      final key = _dateKey(transaction.date);
-
-      String label;
-      if (key == todayKey) {
-        label = 'Hoy';
-      } else if (key == yesterdayKey) {
-        label = 'Ayer';
-      } else {
-        label = AppFormatters.formatShortDate(transaction.date);
-      }
-
-      grouped.putIfAbsent(label, () => <TransactionModel>[]).add(transaction);
-    }
-
-    return grouped;
-  }
-
-  String _dateKey(DateTime date) {
-    final y = date.year.toString().padLeft(4, '0');
-    final m = date.month.toString().padLeft(2, '0');
-    final d = date.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
-  }
-
-  double get _totalIncome => _transactions
-      .where((e) => e.isIncome)
-      .fold<double>(0, (sum, e) => sum + e.amount);
-
-  double get _totalExpense => _transactions
-      .where((e) => !e.isIncome)
-      .fold<double>(0, (sum, e) => sum + e.amount);
-
-  int get _incomeCount => _transactions.where((e) => e.isIncome).length;
-
-  int get _expenseCount => _transactions.where((e) => !e.isIncome).length;
-
-  double get _visibleIncome => _visibleTransactions
-      .where((e) => e.isIncome)
-      .fold<double>(0, (sum, e) => sum + e.amount);
-
-  double get _visibleExpense => _visibleTransactions
-      .where((e) => !e.isIncome)
-      .fold<double>(0, (sum, e) => sum + e.amount);
-
-  String _formatSignedAmount({
-    required double value,
-    required bool isIncome,
-  }) {
-    final formatted = AppFormatters.formatCurrency(value.abs());
-    return '${isIncome ? '+' : '-'}$formatted';
-  }
-
-  String _resultSummaryText(int count) {
-    if (count == 0) {
-      return 'No hay resultados para tu búsqueda actual';
-    }
-
-    if (count == 1) {
-      return '1 transacción encontrada';
-    }
-
-    return '$count transacciones encontradas';
-  }
-
-  bool get _hasActiveFilters =>
-      _searchQuery.trim().isNotEmpty ||
-      _filter != _TransactionFilter.all ||
-      _selectedAccountId != null ||
-      _listFilterState.dateFilter != TransactionDateFilterOption.all ||
-      _listFilterState.sortOption != TransactionSortOption.newestFirst;
-
-  bool get _hasActiveSearch => _searchQuery.trim().isNotEmpty;
-
-  bool get _hasActiveDateFilter =>
-      _listFilterState.dateFilter != TransactionDateFilterOption.all;
-
-  bool get _hasActiveSort =>
-      _listFilterState.sortOption != TransactionSortOption.newestFirst;
-
-  bool get _shouldShowSummaryCard =>
-      _transactions.isNotEmpty &&
-      (!_hasActiveSearch || _filter == _TransactionFilter.all);
-
-  String get _activeDateFilterLabel {
-    switch (_listFilterState.dateFilter) {
-      case TransactionDateFilterOption.all:
-        return 'Todo';
-      case TransactionDateFilterOption.last7Days:
-        return '7 días';
-      case TransactionDateFilterOption.last30Days:
-        return '30 días';
-      case TransactionDateFilterOption.thisMonth:
-        return 'Este mes';
-      case TransactionDateFilterOption.custom:
-        final range = _listFilterState.customRange;
-        if (range == null) return 'Personalizado';
-        return '${range.start.day}/${range.start.month} - ${range.end.day}/${range.end.month}';
-    }
-  }
-
-  String get _activeSortLabel {
-    switch (_listFilterState.sortOption) {
-      case TransactionSortOption.newestFirst:
-        return 'Más recientes';
-      case TransactionSortOption.oldestFirst:
-        return 'Más antiguas';
-      case TransactionSortOption.highestAmount:
-        return 'Mayor monto';
-      case TransactionSortOption.lowestAmount:
-        return 'Menor monto';
-    }
-  }
+  // ── build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final totalIncome = _totalIncome;
-    final totalExpense = _totalExpense;
-    final net = totalIncome - totalExpense;
-    final visibleIncome = _visibleIncome;
-    final visibleExpense = _visibleExpense;
-    final grouped = _groupedTransactions;
-    final visibleTransactions = _visibleTransactions;
     final canPop = Navigator.of(context).canPop();
-    final visibleCount = visibleTransactions.length;
-    final summaryValue = _filter == _TransactionFilter.expense
-        ? visibleExpense
-        : _filter == _TransactionFilter.income
-            ? visibleIncome
-            : net;
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -679,281 +366,295 @@ class TransactionsScreenState extends State<TransactionsScreen> {
           icon: const Icon(Icons.add_rounded),
           label: Text(
             'Nueva',
-            style: GoogleFonts.manrope(
-              fontWeight: FontWeight.w700,
-            ),
+            style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
           ),
         ),
       ),
       body: SafeArea(
         child: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(),
-              )
-            : RefreshIndicator(
-                onRefresh: refreshTransactions,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 132),
-                  children: [
-                    Row(
+            ? const Center(child: CircularProgressIndicator())
+            : ListenableBuilder(
+                listenable: _controller,
+                builder: (context, _) {
+                  final c = _controller;
+                  final grouped = c.groupedTransactions;
+                  final visibleCount = c.visibleTransactions.length;
+                  final totalNet = c.totalIncome - c.totalExpense;
+                  final summaryValue =
+                      c.typeFilter == TransactionTypeFilter.expense
+                          ? c.visibleExpense
+                          : c.typeFilter == TransactionTypeFilter.income
+                              ? c.visibleIncome
+                              : totalNet;
+                  final shouldShowSummary = c.allTransactions.isNotEmpty &&
+                      (!c.hasActiveSearch ||
+                          c.typeFilter == TransactionTypeFilter.all);
+
+                  return RefreshIndicator(
+                    onRefresh: refreshTransactions,
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 132),
                       children: [
-                        if (canPop) ...[
-                          IconButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                            icon: const Icon(Icons.arrow_back_rounded),
-                            tooltip: 'Volver',
-                            style: IconButton.styleFrom(
-                              backgroundColor:
-                                  Colors.white.withValues(alpha: 0.04),
-                              foregroundColor: AppTheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                        ],
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Transacciones',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppTheme.onSurface,
+                        // ── header ──────────────────────────────────────────
+                        Row(
+                          children: [
+                            if (canPop) ...[
+                              IconButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                icon: const Icon(Icons.arrow_back_rounded),
+                                tooltip: 'Volver',
+                                style: IconButton.styleFrom(
+                                  backgroundColor:
+                                      Colors.white.withValues(alpha: 0.04),
+                                  foregroundColor: AppTheme.onSurface,
                                 ),
                               ),
-                              const SizedBox(height: 6),
-                              Text(
-                                _resultSummaryText(visibleCount),
-                                style: GoogleFonts.manrope(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppTheme.onSurfaceMuted,
-                                ),
+                              const SizedBox(width: 12),
+                            ],
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Transacciones',
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 30,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppTheme.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _resultSummaryText(visibleCount),
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.onSurfaceMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: _openFiltersSheet,
+                              tooltip: 'Filtrar y ordenar',
+                              style: IconButton.styleFrom(
+                                backgroundColor: c.hasActiveFilters
+                                    ? AppTheme.primary.withValues(alpha: 0.16)
+                                    : Colors.white.withValues(alpha: 0.04),
+                                foregroundColor: c.hasActiveFilters
+                                    ? AppTheme.primary
+                                    : AppTheme.onSurface,
+                              ),
+                              icon: const Icon(Icons.tune_rounded),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+
+                        // ── search ───────────────────────────────────────────
+                        TextField(
+                          controller: _searchController,
+                          onChanged: _controller.setSearchQuery,
+                          decoration: InputDecoration(
+                            hintText:
+                                'Buscar por concepto, categoría, cuenta o nota',
+                            prefixIcon: const Icon(Icons.search_rounded),
+                            suffixIcon: c.searchQuery.trim().isEmpty
+                                ? null
+                                : IconButton(
+                                    onPressed: _clearSearch,
+                                    icon: const Icon(Icons.close_rounded),
+                                    tooltip: 'Limpiar búsqueda',
+                                  ),
+                            filled: true,
+                            fillColor: AppTheme.surface,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.08),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.08),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // ── type filter chips ────────────────────────────────
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _FilterChip(
+                                label: 'Todas',
+                                count: c.allTransactions.length,
+                                selected:
+                                    c.typeFilter == TransactionTypeFilter.all,
+                                onTap: () =>
+                                    c.setTypeFilter(TransactionTypeFilter.all),
+                              ),
+                              const SizedBox(width: 8),
+                              _FilterChip(
+                                label: 'Ingresos',
+                                count: c.incomeCount,
+                                selected: c.typeFilter ==
+                                    TransactionTypeFilter.income,
+                                onTap: () => c.setTypeFilter(
+                                    TransactionTypeFilter.income),
+                              ),
+                              const SizedBox(width: 8),
+                              _FilterChip(
+                                label: 'Gastos',
+                                count: c.expenseCount,
+                                selected: c.typeFilter ==
+                                    TransactionTypeFilter.expense,
+                                onTap: () => c.setTypeFilter(
+                                    TransactionTypeFilter.expense),
                               ),
                             ],
                           ),
                         ),
-                        IconButton(
-                          onPressed: _openFiltersSheet,
-                          tooltip: 'Filtrar y ordenar',
-                          style: IconButton.styleFrom(
-                            backgroundColor: _hasActiveFilters
-                                ? AppTheme.primary.withValues(alpha: 0.16)
-                                : Colors.white.withValues(alpha: 0.04),
-                            foregroundColor: _hasActiveFilters
-                                ? AppTheme.primary
-                                : AppTheme.onSurface,
+
+                        // ── account filter chips ─────────────────────────────
+                        if (c.accounts.length >= 2) ...[
+                          const SizedBox(height: 8),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: c.accounts.map((account) {
+                                final selected =
+                                    c.selectedAccountId == account.id;
+                                final count = c.allTransactions
+                                    .where((t) => t.accountId == account.id)
+                                    .length;
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: _FilterChip(
+                                    label: account.name,
+                                    count: count,
+                                    selected: selected,
+                                    onTap: () => c.setSelectedAccount(
+                                        selected ? null : account.id),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
                           ),
-                          icon: const Icon(Icons.tune_rounded),
-                        ),
+                        ],
+
+                        // ── active filter badges ─────────────────────────────
+                        if (c.hasActiveFilters) ...[
+                          const SizedBox(height: 14),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              if (c.hasActiveDateFilter)
+                                _ActiveFilterBadge(
+                                  label: 'Período: ${c.activeDateFilterLabel}',
+                                ),
+                              if (c.hasActiveSort)
+                                _ActiveFilterBadge(
+                                  label: 'Orden: ${c.activeSortLabel}',
+                                ),
+                              if (c.hasActiveSearch)
+                                const _ActiveFilterBadge(
+                                  label: 'Búsqueda activa',
+                                ),
+                            ],
+                          ),
+                        ],
+
+                        // ── summary card ─────────────────────────────────────
+                        if (shouldShowSummary) ...[
+                          const SizedBox(height: 18),
+                          _AdaptiveSummaryCard(
+                            filter: c.typeFilter,
+                            totalIncome: c.totalIncome,
+                            totalExpense: c.totalExpense,
+                            totalNet: totalNet,
+                            visibleCount: visibleCount,
+                            summaryValue: summaryValue,
+                            onClearFilters:
+                                c.hasActiveFilters ? c.clearFilters : null,
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+
+                        // ── list ─────────────────────────────────────────────
+                        if (grouped.isEmpty)
+                          _EmptyTransactionsState(
+                            hasActiveFilters: c.hasActiveFilters,
+                            onClearFilters: c.clearFilters,
+                            onAddTransaction: _openAddTransactionSheet,
+                          )
+                        else
+                          ...grouped.entries.map((entry) {
+                            final dayIncome = entry.value
+                                .where((e) => e.isIncome)
+                                .fold(0.0, (s, e) => s + e.amount);
+                            final dayExpense = entry.value
+                                .where((e) => !e.isIncome)
+                                .fold(0.0, (s, e) => s + e.amount);
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _TransactionSectionHeader(
+                                  label: entry.key,
+                                  count: entry.value.length,
+                                  income: dayIncome,
+                                  expense: dayExpense,
+                                ),
+                                const SizedBox(height: 12),
+                                ...entry.value.map(
+                                  (item) => _TransactionCard(
+                                    item: item,
+                                    signedAmountText: _formatSignedAmount(
+                                      value: item.amount,
+                                      isIncome: item.isIncome,
+                                    ),
+                                    onTap: () => _openTransactionDetails(item),
+                                    onEdit: () =>
+                                        _openEditTransactionSheet(item),
+                                    onDelete: () =>
+                                        _confirmDeleteTransaction(item),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                              ],
+                            );
+                          }),
                       ],
                     ),
-                    const SizedBox(height: 18),
-                    TextField(
-                      controller: _searchController,
-                      onChanged: (value) {
-                        setState(() {
-                          _searchQuery = value;
-                        });
-                      },
-                      decoration: InputDecoration(
-                        hintText:
-                            'Buscar por concepto, categoría, cuenta o nota',
-                        prefixIcon: const Icon(Icons.search_rounded),
-                        suffixIcon: _searchQuery.trim().isEmpty
-                            ? null
-                            : IconButton(
-                                onPressed: _clearSearch,
-                                icon: const Icon(Icons.close_rounded),
-                                tooltip: 'Limpiar búsqueda',
-                              ),
-                        filled: true,
-                        fillColor: AppTheme.surface,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.08),
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.08),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _FilterChip(
-                            label: 'Todas',
-                            count: _transactions.length,
-                            selected: _filter == _TransactionFilter.all,
-                            onTap: () {
-                              setState(() {
-                                _filter = _TransactionFilter.all;
-                              });
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          _FilterChip(
-                            label: 'Ingresos',
-                            count: _incomeCount,
-                            selected: _filter == _TransactionFilter.income,
-                            onTap: () {
-                              setState(() {
-                                _filter = _TransactionFilter.income;
-                              });
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          _FilterChip(
-                            label: 'Gastos',
-                            count: _expenseCount,
-                            selected: _filter == _TransactionFilter.expense,
-                            onTap: () {
-                              setState(() {
-                                _filter = _TransactionFilter.expense;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (_accounts.length >= 2) ...[
-                      const SizedBox(height: 8),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: _accounts.map((account) {
-                            final selected = _selectedAccountId == account.id;
-                            final count = _transactions
-                                .where((t) => t.accountId == account.id)
-                                .length;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: _FilterChip(
-                                label: account.name,
-                                count: count,
-                                selected: selected,
-                                onTap: () {
-                                  setState(() {
-                                    _selectedAccountId =
-                                        selected ? null : account.id;
-                                  });
-                                },
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ],
-                    if (_hasActiveFilters) ...[
-                      const SizedBox(height: 14),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          if (_hasActiveDateFilter)
-                            _ActiveFilterBadge(
-                              label: 'Período: $_activeDateFilterLabel',
-                            ),
-                          if (_hasActiveSort)
-                            _ActiveFilterBadge(
-                              label: 'Orden: $_activeSortLabel',
-                            ),
-                          if (_hasActiveSearch)
-                            const _ActiveFilterBadge(
-                              label: 'Búsqueda activa',
-                            ),
-                        ],
-                      ),
-                    ],
-                    if (_shouldShowSummaryCard) ...[
-                      const SizedBox(height: 18),
-                      _AdaptiveSummaryCard(
-                        filter: _filter,
-                        totalIncome: totalIncome,
-                        totalExpense: totalExpense,
-                        totalNet: net,
-                        visibleCount: visibleCount,
-                        summaryValue: summaryValue,
-                        onClearFilters:
-                            _hasActiveFilters ? _clearFilters : null,
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    if (grouped.isEmpty)
-                      _EmptyTransactionsState(
-                        hasActiveFilters: _hasActiveFilters,
-                        onClearFilters: _clearFilters,
-                        onAddTransaction: _openAddTransactionSheet,
-                      )
-                    else
-                      ...grouped.entries.map((entry) {
-                        final dayIncome = entry.value
-                            .where((item) => item.isIncome)
-                            .fold<double>(0, (sum, item) => sum + item.amount);
-                        final dayExpense = entry.value
-                            .where((item) => !item.isIncome)
-                            .fold<double>(0, (sum, item) => sum + item.amount);
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _TransactionSectionHeader(
-                              label: entry.key,
-                              count: entry.value.length,
-                              income: dayIncome,
-                              expense: dayExpense,
-                            ),
-                            const SizedBox(height: 12),
-                            ...entry.value.map(
-                              (item) => _TransactionCard(
-                                item: item,
-                                signedAmountText: _formatSignedAmount(
-                                  value: item.amount,
-                                  isIncome: item.isIncome,
-                                ),
-                                onTap: () {
-                                  _openTransactionDetails(item);
-                                },
-                                onEdit: () {
-                                  _openEditTransactionSheet(item);
-                                },
-                                onDelete: () {
-                                  _confirmDeleteTransaction(item);
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                          ],
-                        );
-                      }),
-                  ],
-                ),
+                  );
+                },
               ),
       ),
     );
   }
+
+  // ── helpers ───────────────────────────────────────────────────────────────
+
+  String _resultSummaryText(int count) {
+    if (count == 0) return 'No hay resultados para tu búsqueda actual';
+    if (count == 1) return '1 transacción encontrada';
+    return '$count transacciones encontradas';
+  }
+
+  String _formatSignedAmount({required double value, required bool isIncome}) {
+    final formatted = AppFormatters.formatCurrency(value.abs());
+    return '${isIncome ? '+' : '-'}$formatted';
+  }
 }
 
-enum _TransactionFilter {
-  all,
-  income,
-  expense,
-}
+// ── private widgets ───────────────────────────────────────────────────────────
 
-enum _TransactionAction {
-  edit,
-  delete,
-}
+enum _TransactionAction { edit, delete }
 
 class _FilterChip extends StatelessWidget {
   const _FilterChip({
@@ -1021,9 +722,7 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _ActiveFilterBadge extends StatelessWidget {
-  const _ActiveFilterBadge({
-    required this.label,
-  });
+  const _ActiveFilterBadge({required this.label});
 
   final String label;
 
@@ -1034,9 +733,7 @@ class _ActiveFilterBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: AppTheme.primary.withValues(alpha: 0.45),
-        ),
+        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.45)),
       ),
       child: Text(
         label,
@@ -1061,7 +758,7 @@ class _AdaptiveSummaryCard extends StatelessWidget {
     required this.onClearFilters,
   });
 
-  final _TransactionFilter filter;
+  final TransactionTypeFilter filter;
   final double totalIncome;
   final double totalExpense;
   final double totalNet;
@@ -1071,15 +768,13 @@ class _AdaptiveSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (filter == _TransactionFilter.all) {
+    if (filter == TransactionTypeFilter.all) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.04),
-          ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
         ),
         child: Column(
           children: [
@@ -1117,9 +812,7 @@ class _AdaptiveSummaryCard extends StatelessWidget {
                   icon: const Icon(Icons.restart_alt_rounded),
                   label: Text(
                     'Limpiar filtros',
-                    style: GoogleFonts.manrope(
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -1129,7 +822,7 @@ class _AdaptiveSummaryCard extends StatelessWidget {
       );
     }
 
-    final isIncome = filter == _TransactionFilter.income;
+    final isIncome = filter == TransactionTypeFilter.income;
     final title = isIncome ? 'Ingresos visibles' : 'Gastos visibles';
     final accentColor = isIncome ? AppTheme.income : AppTheme.expense;
     final subtitle = visibleCount == 1
@@ -1141,9 +834,7 @@ class _AdaptiveSummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.04),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
       ),
       child: Row(
         children: [
@@ -1187,9 +878,7 @@ class _AdaptiveSummaryCard extends StatelessWidget {
               icon: const Icon(Icons.restart_alt_rounded),
               label: Text(
                 'Limpiar',
-                style: GoogleFonts.manrope(
-                  fontWeight: FontWeight.w700,
-                ),
+                style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
               ),
             ),
         ],
@@ -1211,9 +900,7 @@ class _SummaryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatted = AppFormatters.formatCurrency(value.abs());
     final prefix = value < 0 ? '-' : '';
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1227,7 +914,7 @@ class _SummaryItem extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          '$prefix$formatted',
+          '$prefix${AppFormatters.formatCurrency(value.abs())}',
           style: GoogleFonts.manrope(
             fontSize: 15,
             fontWeight: FontWeight.w800,
@@ -1259,9 +946,7 @@ class _TransactionSectionHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Row(
         children: [
@@ -1345,9 +1030,7 @@ class _TransactionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.04),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -1464,14 +1147,12 @@ class _TransactionCard extends StatelessWidget {
                         switch (action) {
                           case _TransactionAction.edit:
                             onEdit();
-                            break;
                           case _TransactionAction.delete:
                             onDelete();
-                            break;
                         }
                       },
                       itemBuilder: (context) => [
-                        PopupMenuItem<_TransactionAction>(
+                        PopupMenuItem(
                           value: _TransactionAction.edit,
                           child: Text(
                             'Editar',
@@ -1481,7 +1162,7 @@ class _TransactionCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        PopupMenuItem<_TransactionAction>(
+                        PopupMenuItem(
                           value: _TransactionAction.delete,
                           child: Text(
                             'Eliminar',
@@ -1505,10 +1186,7 @@ class _TransactionCard extends StatelessWidget {
 }
 
 class _MetaBadge extends StatelessWidget {
-  const _MetaBadge({
-    required this.icon,
-    required this.label,
-  });
+  const _MetaBadge({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -1520,18 +1198,12 @@ class _MetaBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.04),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 12,
-            color: AppTheme.onSurfaceMuted,
-          ),
+          Icon(icon, size: 12, color: AppTheme.onSurfaceMuted),
           const SizedBox(width: 6),
           Flexible(
             child: Text(
@@ -1568,9 +1240,7 @@ class _EmptyTransactionsState extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.04),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
       ),
       child: Column(
         children: [
@@ -1619,34 +1289,27 @@ class _EmptyTransactionsState extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: onClearFilters,
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.10),
-                    ),
+                    side:
+                        BorderSide(color: Colors.white.withValues(alpha: 0.10)),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                   icon: const Icon(Icons.restart_alt_rounded),
                   label: Text(
                     'Limpiar filtros',
-                    style: GoogleFonts.manrope(
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
                   ),
                 ),
               FilledButton.icon(
                 onPressed: onAddTransaction,
                 style: FilledButton.styleFrom(
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
+                      borderRadius: BorderRadius.circular(14)),
                 ),
                 icon: const Icon(Icons.add_rounded),
                 label: Text(
                   'Nueva transacción',
-                  style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
                 ),
               ),
             ],

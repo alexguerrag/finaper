@@ -34,25 +34,26 @@ class BudgetsLocalDataSourceImpl implements BudgetsLocalDataSource {
         orderBy: 'category_name ASC',
       );
 
-      final result = <BudgetModel>[];
+      // Fetch all category spending for the month in a single aggregation
+      // query instead of one query per budget (eliminates N+1).
+      final categoryIds = budgets
+          .map((b) => b['category_id']?.toString() ?? '')
+          .where((id) => id.isNotEmpty)
+          .toList();
 
-      for (final budget in budgets) {
+      final spentByCategory = await _getSpentAmountsByCategories(
+        db,
+        categoryIds: categoryIds,
+        monthKey: monthKey,
+      );
+
+      return budgets.map((budget) {
         final categoryId = budget['category_id']?.toString() ?? '';
-        final spentAmount = await _getSpentAmountForCategoryMonth(
-          db,
-          categoryId: categoryId,
-          monthKey: monthKey,
+        return BudgetModel.fromMap(
+          budget,
+          spentAmount: spentByCategory[categoryId] ?? 0.0,
         );
-
-        result.add(
-          BudgetModel.fromMap(
-            budget,
-            spentAmount: spentAmount,
-          ),
-        );
-      }
-
-      return result;
+      }).toList();
     } catch (e, s) {
       debugPrint('getBudgetsByMonth error: $e');
       debugPrintStack(stackTrace: s);
@@ -134,32 +135,40 @@ class BudgetsLocalDataSourceImpl implements BudgetsLocalDataSource {
     await db.delete('budgets', where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<double> _getSpentAmountForCategoryMonth(
+  /// Single GROUP BY query — replaces the old per-category N+1 loop.
+  Future<Map<String, double>> _getSpentAmountsByCategories(
     Database db, {
-    required String categoryId,
+    required List<String> categoryIds,
     required String monthKey,
   }) async {
-    final range = _monthRangeFromKey(monthKey);
+    if (categoryIds.isEmpty) return {};
 
-    final result = await db.rawQuery(
+    final range = _monthRangeFromKey(monthKey);
+    final placeholders = categoryIds.map((_) => '?').join(', ');
+
+    final rows = await db.rawQuery(
       '''
-      SELECT COALESCE(SUM(amount), 0) AS total
+      SELECT category_id, COALESCE(SUM(amount), 0) AS total
       FROM transactions
-      WHERE category_id = ?
+      WHERE category_id IN ($placeholders)
         AND is_income = 0
         AND entry_type = ?
         AND date >= ?
         AND date < ?
+      GROUP BY category_id
       ''',
       [
-        categoryId,
+        ...categoryIds,
         TransactionEntryType.standard.storageValue,
         range.start.toIso8601String(),
         range.end.toIso8601String(),
       ],
     );
 
-    return (result.first['total'] as num? ?? 0).toDouble();
+    return {
+      for (final row in rows)
+        row['category_id'].toString(): (row['total'] as num? ?? 0).toDouble(),
+    };
   }
 
   _MonthRange _monthRangeFromKey(String monthKey) {
