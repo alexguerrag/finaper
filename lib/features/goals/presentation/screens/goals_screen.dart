@@ -29,6 +29,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
   bool _isLoading = true;
   _GoalFilter _filter = _GoalFilter.active;
   List<GoalEntity> _goals = <GoalEntity>[];
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -38,6 +40,12 @@ class _GoalsScreenState extends State<GoalsScreen> {
     _updateGoal = GoalsRegistry.module.updateGoal;
     _deleteGoal = GoalsRegistry.module.deleteGoal;
     _loadGoals();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadGoals() async {
@@ -264,14 +272,20 @@ class _GoalsScreenState extends State<GoalsScreen> {
   }
 
   List<GoalEntity> get _filteredGoals {
+    final List<GoalEntity> byStatus;
     switch (_filter) {
       case _GoalFilter.active:
-        return _goals.where((goal) => !goal.isCompleted).toList();
+        byStatus = _goals.where((goal) => !goal.isCompleted).toList();
       case _GoalFilter.completed:
-        return _goals.where((goal) => goal.isCompleted).toList();
+        byStatus = _goals.where((goal) => goal.isCompleted).toList();
       case _GoalFilter.all:
-        return _goals;
+        byStatus = _goals;
     }
+    final q = _searchQuery.trim().toLowerCase();
+    if (q.isEmpty) return byStatus;
+    return byStatus
+        .where((g) => g.name.toLowerCase().contains(q))
+        .toList();
   }
 
   String _dateSubtitle(GoalEntity goal) {
@@ -354,6 +368,37 @@ class _GoalsScreenState extends State<GoalsScreen> {
                   },
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _searchController,
+              onChanged: (v) => setState(() => _searchQuery = v),
+              decoration: InputDecoration(
+                hintText: 'Buscar por nombre',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _searchQuery.trim().isEmpty
+                    ? null
+                    : IconButton(
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                        icon: const Icon(Icons.close_rounded),
+                        tooltip: 'Limpiar búsqueda',
+                      ),
+                filled: true,
+                fillColor: AppTheme.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide:
+                      BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide:
+                      BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             if (_isLoading)

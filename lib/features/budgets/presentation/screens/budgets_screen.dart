@@ -29,6 +29,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   List<BudgetEntity> _budgets = <BudgetEntity>[];
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   String get _monthKey => budgetMonthKeyFromDate(_selectedMonth);
 
@@ -46,6 +48,12 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     _upsertBudget = BudgetsRegistry.module.upsertBudget;
     _deleteBudget = BudgetsRegistry.module.deleteBudget;
     _loadBudgets();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadBudgets() async {
@@ -340,6 +348,14 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     return AppFormatters.formatMonthYear(date);
   }
 
+  List<BudgetEntity> get _visibleBudgets {
+    final q = _searchQuery.trim().toLowerCase();
+    if (q.isEmpty) return _budgets;
+    return _budgets
+        .where((b) => b.categoryName.toLowerCase().contains(q))
+        .toList();
+  }
+
   String _formatCurrency(double value) {
     return AppFormatters.formatCurrency(value);
   }
@@ -500,6 +516,37 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               ),
             ),
             const SizedBox(height: 16),
+            TextField(
+              controller: _searchController,
+              onChanged: (v) => setState(() => _searchQuery = v),
+              decoration: InputDecoration(
+                hintText: 'Buscar por categoría',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _searchQuery.trim().isEmpty
+                    ? null
+                    : IconButton(
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                        icon: const Icon(Icons.close_rounded),
+                        tooltip: 'Limpiar búsqueda',
+                      ),
+                filled: true,
+                fillColor: AppTheme.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide:
+                      BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide:
+                      BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 48),
@@ -597,8 +644,37 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   ],
                 ),
               )
+            else if (_visibleBudgets.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.search_off_rounded,
+                      size: 36,
+                      color: AppTheme.onSurfaceMuted,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Sin resultados para tu búsqueda.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.manrope(
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              )
             else
-              ..._budgets.map(
+              ..._visibleBudgets.map(
                 (budget) {
                   final progress = budget.progress.clamp(0.0, 1.2);
                   final displayColor =
