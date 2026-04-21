@@ -31,6 +31,12 @@ class DatabaseHelper {
     return _database!;
   }
 
+  @visibleForTesting
+  void overrideForTest(Database db) => _database = db;
+
+  @visibleForTesting
+  static void resetForTest() => _database = null;
+
   Future<Database> _openDatabase() async {
     try {
       final dbPath = await getDatabasesPath();
