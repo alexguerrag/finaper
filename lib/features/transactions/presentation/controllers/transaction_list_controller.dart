@@ -76,6 +76,25 @@ class TransactionListController extends ChangeNotifier {
   bool get hasActiveSort =>
       _advancedFilter.sortOption != TransactionSortOption.newestFirst;
 
+  String get resultSummaryText {
+    final count = visibleTransactions.length;
+    if (count == 0) return 'No hay resultados para tu búsqueda actual';
+    if (count == 1) return '1 transacción encontrada';
+    return '$count transacciones encontradas';
+  }
+
+  double get totalNet => totalIncome - totalExpense;
+
+  double get summaryValue {
+    if (_typeFilter == TransactionTypeFilter.expense) return visibleExpense;
+    if (_typeFilter == TransactionTypeFilter.income) return visibleIncome;
+    return totalNet;
+  }
+
+  bool get shouldShowSummary =>
+      _allTransactions.isNotEmpty &&
+      (!hasActiveSearch || _typeFilter == TransactionTypeFilter.all);
+
   String get activeDateFilterLabel {
     switch (_advancedFilter.dateFilter) {
       case TransactionDateFilterOption.all:
