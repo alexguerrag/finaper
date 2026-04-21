@@ -1,13 +1,40 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/formatters/app_formatters.dart';
+import '../../../accounts/di/accounts_registry.dart';
 import '../../../accounts/domain/entities/account_entity.dart';
+import '../../../accounts/domain/usecases/get_accounts.dart';
 import '../../data/models/transaction_model.dart';
+import '../../di/transactions_registry.dart';
+import '../../domain/usecases/add_transaction.dart';
+import '../../domain/usecases/delete_transaction.dart';
+import '../../domain/usecases/delete_transaction_group.dart';
+import '../../domain/usecases/get_all_transactions.dart';
+import '../../domain/usecases/update_transaction.dart';
 import '../widgets/transaction_filters_sheet.dart';
 
 enum TransactionTypeFilter { all, income, expense }
 
 class TransactionListController extends ChangeNotifier {
+  // ── use cases (lazy — initialized on first loadAll()) ─────────────────────
+  late final GetAllTransactions _getAllTransactions;
+  late final AddTransaction _addTransaction;
+  late final UpdateTransaction _updateTransaction;
+  late final DeleteTransaction _deleteTransaction;
+  late final DeleteTransactionGroup _deleteTransactionGroup;
+  late final GetAccounts _getAccounts;
+  bool _useCasesReady = false;
+
+  // ── load state ────────────────────────────────────────────────────────────
+  bool _isLoading = false;
+  bool _hasLoadError = false;
+  bool _disposed = false;
+
+  bool get isLoading => _isLoading;
+  bool get hasLoadError => _hasLoadError;
+
+  void clearLoadError() => _hasLoadError = false;
+
   // ── raw data ──────────────────────────────────────────────────────────────
   List<TransactionModel> _allTransactions = [];
   List<AccountEntity> _accounts = [];
@@ -125,7 +152,91 @@ class TransactionListController extends ChangeNotifier {
     }
   }
 
-  // ── data mutations ────────────────────────────────────────────────────────
+  // ── data loading ──────────────────────────────────────────────────────────
+  Future<void> loadAll() async {
+    _initUseCases();
+    _isLoading = true;
+    _hasLoadError = false;
+    _notify();
+    await Future.wait([_fetchTransactions(), _fetchAccounts()]);
+  }
+
+  Future<void> refresh() async {
+    _initUseCases();
+    _isLoading = true;
+    _notify();
+    await _fetchTransactions();
+  }
+
+  Future<void> _fetchAccounts() async {
+    try {
+      final accounts = await _getAccounts(includeArchived: false);
+      _accounts = accounts;
+      _notify();
+    } catch (e, s) {
+      debugPrint('TransactionListController: load accounts error: $e');
+      debugPrintStack(stackTrace: s);
+    }
+  }
+
+  Future<void> _fetchTransactions() async {
+    try {
+      final result = await _getAllTransactions();
+      _allTransactions = result.map(TransactionModel.fromEntity).toList();
+      _invalidateCache();
+      _isLoading = false;
+      _notify();
+    } catch (e, s) {
+      debugPrint('TransactionListController: load transactions error: $e');
+      debugPrintStack(stackTrace: s);
+      _isLoading = false;
+      _hasLoadError = true;
+      _notify();
+    }
+  }
+
+  // ── CRUD operations ───────────────────────────────────────────────────────
+  Future<void> addTransaction(TransactionModel t) async {
+    await _addTransaction(t);
+    await refresh();
+  }
+
+  Future<void> updateTransaction(TransactionModel t) async {
+    await _updateTransaction(t);
+    await refresh();
+  }
+
+  Future<void> deleteTransaction(String id) async {
+    await _deleteTransaction(id);
+    await refresh();
+  }
+
+  Future<void> deleteTransactionGroup(String groupId) async {
+    await _deleteTransactionGroup(groupId);
+    await refresh();
+  }
+
+  Future<void> duplicateTransaction(TransactionModel source) async {
+    final now = DateTime.now();
+    final copy = TransactionModel(
+      id: now.millisecondsSinceEpoch.toString(),
+      accountId: source.accountId,
+      accountName: source.accountName,
+      description: source.description,
+      categoryId: source.categoryId,
+      category: source.category,
+      amount: source.amount,
+      isIncome: source.isIncome,
+      date: now,
+      createdAt: now,
+      note: source.note,
+      color: source.color,
+    );
+    await _addTransaction(copy);
+    await refresh();
+  }
+
+  // ── filter mutations ──────────────────────────────────────────────────────
   void setTransactions(List<TransactionModel> transactions) {
     _allTransactions = transactions;
     _invalidateCache();
@@ -137,7 +248,6 @@ class TransactionListController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── filter mutations ──────────────────────────────────────────────────────
   void setSearchQuery(String value) {
     if (_searchQuery == value) return;
     _searchQuery = value;
@@ -177,7 +287,29 @@ class TransactionListController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── private: cache + computation ──────────────────────────────────────────
+  // ── lifecycle ─────────────────────────────────────────────────────────────
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  // ── private helpers ───────────────────────────────────────────────────────
+  void _initUseCases() {
+    if (_useCasesReady) return;
+    _getAllTransactions = TransactionsRegistry.module.getAllTransactions;
+    _addTransaction = TransactionsRegistry.module.addTransaction;
+    _updateTransaction = TransactionsRegistry.module.updateTransaction;
+    _deleteTransaction = TransactionsRegistry.module.deleteTransaction;
+    _deleteTransactionGroup = TransactionsRegistry.module.deleteTransactionGroup;
+    _getAccounts = AccountsRegistry.module.getAccounts;
+    _useCasesReady = true;
+  }
+
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
+
   void _invalidateCache() {
     _cachedVisible = null;
     _cachedGrouped = null;
