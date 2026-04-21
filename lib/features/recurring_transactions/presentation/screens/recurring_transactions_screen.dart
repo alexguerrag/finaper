@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/enums/recurrence_frequency.dart';
 import '../../../../core/formatters/app_formatters.dart';
+import '../../../../core/notifications/notification_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/recurring_transaction_model.dart';
 import '../../di/recurring_transactions_registry.dart';
@@ -68,6 +69,7 @@ class _RecurringTransactionsScreenState
         _items = items;
         _isLoading = false;
       });
+      NotificationService.checkAndNotifyRecurring(items);
     } catch (e, s) {
       debugPrint('RecurringTransactionsScreen load error: $e');
       debugPrintStack(stackTrace: s);
