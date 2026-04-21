@@ -33,6 +33,8 @@ class _RecurringTransactionsScreenState
   bool _isLoading = true;
   _RecurringFilter _filter = _RecurringFilter.active;
   List<RecurringTransactionEntity> _items = <RecurringTransactionEntity>[];
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -48,6 +50,12 @@ class _RecurringTransactionsScreenState
     _syncDueRecurringTransactions =
         RecurringTransactionsRegistry.module.syncDueRecurringTransactions;
     _loadRecurringTransactions();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadRecurringTransactions() async {
@@ -319,14 +327,21 @@ class _RecurringTransactionsScreenState
   }
 
   List<RecurringTransactionEntity> get _filteredItems {
+    final List<RecurringTransactionEntity> byStatus;
     switch (_filter) {
       case _RecurringFilter.active:
-        return _items.where((item) => item.isActive).toList();
+        byStatus = _items.where((item) => item.isActive).toList();
       case _RecurringFilter.inactive:
-        return _items.where((item) => !item.isActive).toList();
+        byStatus = _items.where((item) => !item.isActive).toList();
       case _RecurringFilter.all:
-        return _items;
+        byStatus = _items;
     }
+    final q = _searchQuery.trim().toLowerCase();
+    if (q.isEmpty) return byStatus;
+    return byStatus.where((item) {
+      return item.description.toLowerCase().contains(q) ||
+          item.categoryName.toLowerCase().contains(q);
+    }).toList();
   }
 
   String _formatDate(DateTime date) {
@@ -430,6 +445,37 @@ class _RecurringTransactionsScreenState
                   },
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _searchController,
+              onChanged: (v) => setState(() => _searchQuery = v),
+              decoration: InputDecoration(
+                hintText: 'Buscar por concepto o categoría',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _searchQuery.trim().isEmpty
+                    ? null
+                    : IconButton(
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                        icon: const Icon(Icons.close_rounded),
+                        tooltip: 'Limpiar búsqueda',
+                      ),
+                filled: true,
+                fillColor: AppTheme.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide:
+                      BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide:
+                      BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             if (_isLoading)
