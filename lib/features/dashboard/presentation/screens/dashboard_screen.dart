@@ -10,7 +10,9 @@ import '../widgets/budget_alert_banner_widget.dart';
 import '../widgets/dashboard_budget_summary_widget.dart';
 import '../widgets/dashboard_financial_snapshot_widget.dart';
 import '../widgets/dashboard_top_expense_categories_widget.dart';
+import '../widgets/goal_alert_banner_widget.dart';
 import '../widgets/recent_transactions_widget.dart';
+import '../widgets/recurring_alert_banner_widget.dart';
 import '../widgets/trend_chart_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -139,6 +141,12 @@ class DashboardScreenState extends State<DashboardScreen> {
     await refreshSummary();
   }
 
+  Future<void> _goToRecurring() async {
+    await Navigator.pushNamed(context, AppRoutes.recurringTransactions);
+    if (!mounted) return;
+    await refreshSummary();
+  }
+
   DateTime _monthStart(DateTime value) {
     return DateTime(value.year, value.month, 1);
   }
@@ -206,6 +214,16 @@ class DashboardScreenState extends State<DashboardScreen> {
                     month: _selectedMonth,
                     refreshToken: _refreshVersion,
                     onManagePressed: _goToBudgets,
+                  ),
+                  const SizedBox(height: 16),
+                  RecurringAlertBannerWidget(
+                    refreshToken: _refreshVersion,
+                    onManagePressed: _goToRecurring,
+                  ),
+                  const SizedBox(height: 16),
+                  GoalAlertBannerWidget(
+                    refreshToken: _refreshVersion,
+                    onManagePressed: _goToGoals,
                   ),
                   const SizedBox(height: 16),
                   DashboardTopExpenseCategoriesWidget(
