@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/formatters/app_formatters.dart';
+import '../../../../core/notifications/notification_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/budget_model.dart';
 import '../../di/budgets_registry.dart';
@@ -68,6 +69,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         _budgets = budgets;
         _isLoading = false;
       });
+      NotificationService.checkAndNotifyBudgets(budgets);
     } catch (e, s) {
       debugPrint('BudgetsScreen load error: $e');
       debugPrintStack(stackTrace: s);
