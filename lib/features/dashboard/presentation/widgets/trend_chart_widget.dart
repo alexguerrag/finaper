@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/local/dashboard_local_datasource.dart';
 
@@ -281,12 +282,13 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
 
   String _formatTooltipValue(double val) {
     if (val >= 1000) {
+      final symbol = AppFormatters.currentCurrencySymbol;
       final k = val / 1000;
       return k == k.truncateToDouble()
-          ? '\$${k.toInt()}k'
-          : '\$${k.toStringAsFixed(1)}k';
+          ? '$symbol${k.toInt()}k'
+          : '$symbol${k.toStringAsFixed(1)}k';
     }
-    return '\$${val.toStringAsFixed(0)}';
+    return AppFormatters.formatCurrency(val);
   }
 }
 
