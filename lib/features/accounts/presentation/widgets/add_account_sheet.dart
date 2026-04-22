@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/enums/account_type.dart';
+import '../../../../core/formatters/app_formatters.dart';
+import '../../../../core/formatters/currency_input_formatter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/account_model.dart';
 import '../../domain/entities/account_entity.dart';
@@ -48,11 +50,10 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
   }
 
   String _formatInitialBalance(double value) {
-    final asText = value.toStringAsFixed(2);
-    if (asText.endsWith('.00')) {
-      return value.toStringAsFixed(0);
-    }
-    return asText;
+    return ThousandsInputFormatter.formatForInput(
+      value,
+      decimalDigits: AppFormatters.currentCurrencyDecimalDigits,
+    );
   }
 
   IconData _iconForType(AccountType type) {
@@ -86,21 +87,10 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
   }
 
   double _parseInitialBalance() {
-    final normalized =
-        _initialBalanceController.text.trim().replaceAll(',', '.');
-    return double.tryParse(normalized) ?? 0;
-  }
-
-  void _normalizeInitialBalanceInput(String value) {
-    final normalized = value.replaceAll(',', '.');
-    if (normalized == value) return;
-
-    _initialBalanceController.value = _initialBalanceController.value.copyWith(
-      text: normalized,
-      selection: TextSelection.collapsed(
-        offset: normalized.length,
-      ),
-    );
+    return ThousandsInputFormatter.parse(
+          _initialBalanceController.text.trim(),
+        ) ??
+        0;
   }
 
   void _submit() {
@@ -179,35 +169,33 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
                     },
                   ),
                   const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _initialBalanceController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Saldo inicial',
-                      hintText: '0',
-                      prefixText: '\$ ',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
+                  Builder(builder: (context) {
+                    final dec = AppFormatters.currentCurrencyDecimalDigits;
+                    return TextFormField(
+                      controller: _initialBalanceController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        ThousandsInputFormatter(decimalDigits: dec),
+                      ],
+                      decoration: InputDecoration(
+                        labelText: 'Saldo inicial',
+                        hintText: dec == 0 ? '0' : '0,00',
+                        prefixText: '\$ ',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return null;
+                        }
+                        final parsed =
+                            ThousandsInputFormatter.parse(value.trim());
+                        if (parsed == null) return 'Escribe un saldo válido';
+                        if (parsed < 0) {
+                          return 'Por ahora el saldo inicial no puede ser negativo';
+                        }
                         return null;
-                      }
-
-                      final normalized = value.trim().replaceAll(',', '.');
-                      final parsed = double.tryParse(normalized);
-
-                      if (parsed == null) {
-                        return 'Escribe un saldo válido';
-                      }
-
-                      if (parsed < 0) {
-                        return 'Por ahora el saldo inicial no puede ser negativo';
-                      }
-
-                      return null;
-                    },
-                    onChanged: _normalizeInitialBalanceInput,
-                  ),
+                      },
+                    );
+                  }),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<AccountType>(
                     initialValue: _selectedType,

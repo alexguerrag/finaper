@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/goal_model.dart';
 import '../../domain/entities/goal_entity.dart';
@@ -121,7 +122,7 @@ class _UpdateGoalProgressSheetState extends State<UpdateGoalProgressSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Objetivo: \$${widget.goal.targetAmount.toStringAsFixed(0)}',
+                          'Objetivo: ${AppFormatters.formatCurrency(widget.goal.targetAmount)}',
                           style: GoogleFonts.manrope(
                             fontWeight: FontWeight.w700,
                             color: AppTheme.onSurface,
@@ -129,7 +130,7 @@ class _UpdateGoalProgressSheetState extends State<UpdateGoalProgressSheet> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Acumulado actual: \$${widget.goal.currentAmount.toStringAsFixed(0)}',
+                          'Acumulado actual: ${AppFormatters.formatCurrency(widget.goal.currentAmount)}',
                           style: GoogleFonts.manrope(
                             fontSize: 12,
                             color: AppTheme.onSurfaceMuted,
@@ -137,7 +138,7 @@ class _UpdateGoalProgressSheetState extends State<UpdateGoalProgressSheet> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Pendiente: \$${remainingAmount.toStringAsFixed(0)}',
+                          'Pendiente: ${AppFormatters.formatCurrency(remainingAmount)}',
                           style: GoogleFonts.manrope(
                             fontSize: 12,
                             color: AppTheme.onSurfaceMuted,

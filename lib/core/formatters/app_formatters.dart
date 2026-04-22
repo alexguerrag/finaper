@@ -96,6 +96,9 @@ class AppFormatters {
 
   static String get currentCurrencyCode => _settings.currencyCode;
 
+  static String get currentCurrencySymbol =>
+      _currencySymbols[_settings.currencyCode] ?? _settings.currencyCode;
+
   static String formatCurrency(num value) {
     return formatCurrencyWith(
       value: value,

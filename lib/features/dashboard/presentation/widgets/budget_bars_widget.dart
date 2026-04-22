@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../budgets/di/budgets_registry.dart';
 import '../../../budgets/domain/entities/budget_entity.dart';
@@ -218,7 +219,7 @@ class _BudgetBarsWidgetState extends State<BudgetBarsWidget>
                                   ),
                                 ),
                                 Text(
-                                  '\$${budget.spentAmount.toStringAsFixed(0)} / \$${budget.amountLimit.toStringAsFixed(0)}',
+                                  '${AppFormatters.formatCurrency(budget.spentAmount)} / ${AppFormatters.formatCurrency(budget.amountLimit)}',
                                   style: GoogleFonts.manrope(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
