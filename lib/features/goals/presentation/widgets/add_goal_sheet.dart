@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/formatters/app_formatters.dart';
+import '../../../../core/formatters/currency_input_formatter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/goal_model.dart';
 import '../../domain/entities/goal_entity.dart';
@@ -72,8 +74,11 @@ class _AddGoalSheetState extends State<AddGoalSheet> {
 
     if (initial != null) {
       _nameController.text = initial.name;
-      _targetAmountController.text = initial.targetAmount.toString();
-      _currentAmountController.text = initial.currentAmount.toString();
+      final dec = AppFormatters.currentCurrencyDecimalDigits;
+      _targetAmountController.text =
+          ThousandsInputFormatter.formatForInput(initial.targetAmount, decimalDigits: dec);
+      _currentAmountController.text =
+          ThousandsInputFormatter.formatForInput(initial.currentAmount, decimalDigits: dec);
       _targetDate = initial.targetDate;
       _selectedPreset = _presets.firstWhere(
         (p) => p.icon.codePoint == initial.iconCode,
@@ -124,13 +129,10 @@ class _AddGoalSheetState extends State<AddGoalSheet> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
-    final normalizedTarget =
-        _targetAmountController.text.trim().replaceAll(',', '.');
-    final normalizedCurrent =
-        _currentAmountController.text.trim().replaceAll(',', '.');
-
-    final targetAmount = double.parse(normalizedTarget);
-    final currentAmount = double.parse(normalizedCurrent);
+    final targetAmount =
+        ThousandsInputFormatter.parse(_targetAmountController.text.trim()) ?? 0;
+    final currentAmount =
+        ThousandsInputFormatter.parse(_currentAmountController.text.trim()) ?? 0;
 
     final now = DateTime.now();
     final isCompleted = currentAmount >= targetAmount;
@@ -247,73 +249,62 @@ class _AddGoalSheetState extends State<AddGoalSheet> {
                     },
                   ),
                   const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _targetAmountController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: const InputDecoration(
-                      labelText: 'Monto objetivo',
-                      hintText: 'Ej. 5000',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Ingresa un monto objetivo';
-                      }
-
-                      final normalized = value.trim().replaceAll(',', '.');
-                      final parsed = double.tryParse(normalized);
-
-                      if (parsed == null) {
-                        return 'Monto inválido';
-                      }
-
-                      if (parsed <= 0) {
-                        return 'Debe ser mayor a cero';
-                      }
-
-                      return null;
-                    },
-                  ),
+                  Builder(builder: (context) {
+                    final dec = AppFormatters.currentCurrencyDecimalDigits;
+                    final hint = dec == 0 ? '0' : '0,00';
+                    return TextFormField(
+                      controller: _targetAmountController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        ThousandsInputFormatter(decimalDigits: dec),
+                      ],
+                      decoration: InputDecoration(
+                        labelText: 'Monto objetivo',
+                        hintText: hint,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Ingresa un monto objetivo';
+                        }
+                        final parsed =
+                            ThousandsInputFormatter.parse(value.trim());
+                        if (parsed == null) return 'Monto inválido';
+                        if (parsed <= 0) return 'Debe ser mayor a cero';
+                        return null;
+                      },
+                    );
+                  }),
                   const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _currentAmountController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: const InputDecoration(
-                      labelText: 'Monto acumulado inicial',
-                      hintText: 'Ej. 0',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Ingresa un monto inicial';
-                      }
-
-                      final normalized = value.trim().replaceAll(',', '.');
-                      final parsed = double.tryParse(normalized);
-
-                      if (parsed == null) {
-                        return 'Monto inválido';
-                      }
-
-                      if (parsed < 0) {
-                        return 'No puede ser negativo';
-                      }
-
-                      final target = double.tryParse(
-                        _targetAmountController.text
-                            .trim()
-                            .replaceAll(',', '.'),
-                      );
-
-                      if (target != null && parsed > target) {
-                        return 'No debe superar el objetivo';
-                      }
-
-                      return null;
-                    },
-                  ),
+                  Builder(builder: (context) {
+                    final dec = AppFormatters.currentCurrencyDecimalDigits;
+                    final hint = dec == 0 ? '0' : '0,00';
+                    return TextFormField(
+                      controller: _currentAmountController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        ThousandsInputFormatter(decimalDigits: dec),
+                      ],
+                      decoration: InputDecoration(
+                        labelText: 'Monto acumulado inicial',
+                        hintText: hint,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Ingresa un monto inicial';
+                        }
+                        final parsed =
+                            ThousandsInputFormatter.parse(value.trim());
+                        if (parsed == null) return 'Monto inválido';
+                        if (parsed < 0) return 'No puede ser negativo';
+                        final target = ThousandsInputFormatter.parse(
+                            _targetAmountController.text.trim());
+                        if (target != null && parsed > target) {
+                          return 'No debe superar el objetivo';
+                        }
+                        return null;
+                      },
+                    );
+                  }),
                   const SizedBox(height: 12),
                   InkWell(
                     onTap: _pickTargetDate,

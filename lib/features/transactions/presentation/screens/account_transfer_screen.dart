@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/formatters/app_formatters.dart';
+import '../../../../core/formatters/currency_input_formatter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../accounts/di/accounts_registry.dart';
 import '../../../accounts/domain/entities/account_entity.dart';
@@ -70,7 +72,10 @@ class _AccountTransferScreenState extends State<AccountTransferScreen> {
     _descriptionController.text = widget.initialDescription ?? '';
     _noteController.text = widget.initialNote ?? '';
     if (widget.initialAmount != null) {
-      _amountController.text = widget.initialAmount!.toStringAsFixed(2);
+      _amountController.text = ThousandsInputFormatter.formatForInput(
+        widget.initialAmount!,
+        decimalDigits: AppFormatters.currentCurrencyDecimalDigits,
+      );
     }
     _loadAccounts();
   }
@@ -208,8 +213,7 @@ class _AccountTransferScreenState extends State<AccountTransferScreen> {
       return;
     }
 
-    final normalizedAmount = _amountController.text.trim().replaceAll(',', '.');
-    final amount = double.tryParse(normalizedAmount);
+    final amount = ThousandsInputFormatter.parse(_amountController.text.trim());
 
     if (amount == null || amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -445,33 +449,36 @@ class _AccountTransferScreenState extends State<AccountTransferScreen> {
                           },
                         ),
                         const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _amountController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: const InputDecoration(
-                            labelText: 'Monto',
-                            hintText: '0.00',
-                            prefixText: '\$ ',
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Ingresa un monto';
-                            }
-
-                            final normalized =
-                                value.trim().replaceAll(',', '.');
-                            final parsed = double.tryParse(normalized);
-                            if (parsed == null) {
-                              return 'Escribe un monto válido';
-                            }
-                            if (parsed <= 0) {
-                              return 'El monto debe ser mayor a cero';
-                            }
-                            return null;
-                          },
-                        ),
+                        Builder(builder: (context) {
+                          final dec =
+                              AppFormatters.currentCurrencyDecimalDigits;
+                          return TextFormField(
+                            controller: _amountController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              ThousandsInputFormatter(decimalDigits: dec),
+                            ],
+                            decoration: InputDecoration(
+                              labelText: 'Monto',
+                              hintText: dec == 0 ? '0' : '0,00',
+                              prefixText: '\$ ',
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Ingresa un monto';
+                              }
+                              final parsed = ThousandsInputFormatter.parse(
+                                  value.trim());
+                              if (parsed == null) {
+                                return 'Escribe un monto válido';
+                              }
+                              if (parsed <= 0) {
+                                return 'El monto debe ser mayor a cero';
+                              }
+                              return null;
+                            },
+                          );
+                        }),
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: _descriptionController,
