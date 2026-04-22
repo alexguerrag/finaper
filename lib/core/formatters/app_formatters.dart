@@ -27,6 +27,19 @@ class AppFormatters {
     'PEN': 2,
   };
 
+  // Locale tied to each currency so thousands/decimal separators are always
+  // correct regardless of the device system locale.
+  static const Map<String, String> _currencyLocale = {
+    'CLP': 'es_CL',
+    'USD': 'en_US',
+    'EUR': 'es_ES',
+    'ARS': 'es_AR',
+    'BRL': 'pt_BR',
+    'COP': 'es_CO',
+    'MXN': 'es_MX',
+    'PEN': 'es_PE',
+  };
+
   static const List<String> _spanishMonthNames = [
     'enero',
     'febrero',
@@ -97,10 +110,13 @@ class AppFormatters {
     required String localeCode,
   }) {
     try {
-      final normalizedLocale = _normalizeLocaleCode(localeCode);
+      // Use the currency's canonical locale so separators are always correct
+      // (e.g. CLP always uses period thousands regardless of system locale).
+      final effectiveLocale =
+          _currencyLocale[currencyCode] ?? _normalizeLocaleCode(localeCode);
 
       final formatter = NumberFormat.currency(
-        locale: normalizedLocale,
+        locale: effectiveLocale,
         name: currencyCode,
         symbol: _currencySymbols[currencyCode] ?? '$currencyCode ',
         decimalDigits: _currencyDecimalDigits[currencyCode] ?? 2,
