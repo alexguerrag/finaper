@@ -10,7 +10,7 @@ class DatabaseHelper {
   static Database? _database;
 
   static const String _databaseName = 'finaper.db';
-  static const int _databaseVersion = 13;
+  static const int _databaseVersion = 14;
 
   static const String defaultAccountId = 'acc-cash-main';
   static const String defaultAccountName = 'Cuenta principal';
@@ -216,6 +216,76 @@ class DatabaseHelper {
           'categories',
           'is_archived',
           'INTEGER NOT NULL DEFAULT 0',
+        );
+      }
+
+      if (oldVersion < 14) {
+        // Rename categories
+        await db.rawUpdate(
+          "UPDATE categories SET name = 'Casa' WHERE id = 'cat-exp-home'",
+        );
+        await db.rawUpdate(
+          "UPDATE categories SET name = 'Ocio / Entretenimiento' WHERE id = 'cat-exp-entertainment'",
+        );
+        await db.rawUpdate(
+          "UPDATE categories SET name = 'Suscripciones / Streaming' WHERE id = 'cat-exp-subscriptions'",
+        );
+        await db.rawUpdate(
+          "UPDATE categories SET name = 'Honorarios / Freelance' WHERE id = 'cat-inc-freelance'",
+        );
+        await db.rawUpdate(
+          "UPDATE categories SET name = 'Bonos' WHERE id = 'cat-inc-bonus'",
+        );
+
+        // Update denormalized category name in transactions
+        await db.rawUpdate(
+          "UPDATE transactions SET category = 'Casa' WHERE category_id = 'cat-exp-home'",
+        );
+        await db.rawUpdate(
+          "UPDATE transactions SET category = 'Ocio / Entretenimiento' WHERE category_id = 'cat-exp-entertainment'",
+        );
+        await db.rawUpdate(
+          "UPDATE transactions SET category = 'Suscripciones / Streaming' WHERE category_id = 'cat-exp-subscriptions'",
+        );
+        await db.rawUpdate(
+          "UPDATE transactions SET category = 'Honorarios / Freelance' WHERE category_id = 'cat-inc-freelance'",
+        );
+        await db.rawUpdate(
+          "UPDATE transactions SET category = 'Bonos' WHERE category_id = 'cat-inc-bonus'",
+        );
+
+        // Update denormalized category name in recurring_transactions
+        await db.rawUpdate(
+          "UPDATE recurring_transactions SET category_name = 'Casa' WHERE category_id = 'cat-exp-home'",
+        );
+        await db.rawUpdate(
+          "UPDATE recurring_transactions SET category_name = 'Ocio / Entretenimiento' WHERE category_id = 'cat-exp-entertainment'",
+        );
+        await db.rawUpdate(
+          "UPDATE recurring_transactions SET category_name = 'Suscripciones / Streaming' WHERE category_id = 'cat-exp-subscriptions'",
+        );
+        await db.rawUpdate(
+          "UPDATE recurring_transactions SET category_name = 'Honorarios / Freelance' WHERE category_id = 'cat-inc-freelance'",
+        );
+        await db.rawUpdate(
+          "UPDATE recurring_transactions SET category_name = 'Bonos' WHERE category_id = 'cat-inc-bonus'",
+        );
+
+        // Update denormalized category name in budgets
+        await db.rawUpdate(
+          "UPDATE budgets SET category_name = 'Casa' WHERE category_id = 'cat-exp-home'",
+        );
+        await db.rawUpdate(
+          "UPDATE budgets SET category_name = 'Ocio / Entretenimiento' WHERE category_id = 'cat-exp-entertainment'",
+        );
+        await db.rawUpdate(
+          "UPDATE budgets SET category_name = 'Suscripciones / Streaming' WHERE category_id = 'cat-exp-subscriptions'",
+        );
+        await db.rawUpdate(
+          "UPDATE budgets SET category_name = 'Honorarios / Freelance' WHERE category_id = 'cat-inc-freelance'",
+        );
+        await db.rawUpdate(
+          "UPDATE budgets SET category_name = 'Bonos' WHERE category_id = 'cat-inc-bonus'",
         );
       }
 
@@ -483,7 +553,7 @@ class DatabaseHelper {
       },
       {
         'id': 'cat-exp-home',
-        'name': 'Hogar',
+        'name': 'Casa',
         'kind': 'expense',
         'icon_code': Icons.home_rounded.codePoint,
         'color_value': Colors.brown.toARGB32(),
@@ -501,7 +571,7 @@ class DatabaseHelper {
       },
       {
         'id': 'cat-exp-entertainment',
-        'name': 'Entretenimiento',
+        'name': 'Ocio / Entretenimiento',
         'kind': 'expense',
         'icon_code': Icons.movie_rounded.codePoint,
         'color_value': Colors.purple.toARGB32(),
@@ -528,7 +598,7 @@ class DatabaseHelper {
       },
       {
         'id': 'cat-exp-subscriptions',
-        'name': 'Suscripciones',
+        'name': 'Suscripciones / Streaming',
         'kind': 'expense',
         'icon_code': Icons.subscriptions_rounded.codePoint,
         'color_value': Colors.deepPurple.toARGB32(),
@@ -573,7 +643,7 @@ class DatabaseHelper {
       },
       {
         'id': 'cat-inc-freelance',
-        'name': 'Freelance',
+        'name': 'Honorarios / Freelance',
         'kind': 'income',
         'icon_code': Icons.work_rounded.codePoint,
         'color_value': Colors.lightGreen.toARGB32(),
@@ -600,7 +670,7 @@ class DatabaseHelper {
       },
       {
         'id': 'cat-inc-bonus',
-        'name': 'Bono',
+        'name': 'Bonos',
         'kind': 'income',
         'icon_code': Icons.card_giftcard_rounded.codePoint,
         'color_value': Colors.amber.toARGB32(),
@@ -623,6 +693,224 @@ class DatabaseHelper {
         'icon_code': Icons.more_horiz_rounded.codePoint,
         'color_value': Colors.grey.toARGB32(),
         'is_system': 1,
+        'created_at': now,
+      },
+      // --- New expense categories (v14) ---
+      {
+        'id': 'cat-exp-car',
+        'name': 'Automóvil',
+        'kind': 'expense',
+        'icon_code': Icons.directions_car_rounded.codePoint,
+        'color_value': Colors.blueGrey.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-fuel',
+        'name': 'Combustible',
+        'kind': 'expense',
+        'icon_code': Icons.local_gas_station_rounded.codePoint,
+        'color_value': Colors.deepOrange.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-tolls',
+        'name': 'Autopistas / Peajes',
+        'kind': 'expense',
+        'icon_code': Icons.toll_rounded.codePoint,
+        'color_value': Colors.brown.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-supermarket',
+        'name': 'Supermercado',
+        'kind': 'expense',
+        'icon_code': Icons.shopping_cart_rounded.codePoint,
+        'color_value': Colors.green.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-clothing',
+        'name': 'Ropa y Calzado',
+        'kind': 'expense',
+        'icon_code': Icons.checkroom_rounded.codePoint,
+        'color_value': Colors.pink.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-home-services',
+        'name': 'Servicios Hogar',
+        'kind': 'expense',
+        'icon_code': Icons.home_repair_service_rounded.codePoint,
+        'color_value': Colors.teal.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-rent',
+        'name': 'Arriendo / Hipoteca',
+        'kind': 'expense',
+        'icon_code': Icons.house_rounded.codePoint,
+        'color_value': Colors.brown.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-snacks',
+        'name': 'Snack / Bebidas',
+        'kind': 'expense',
+        'icon_code': Icons.local_cafe_rounded.codePoint,
+        'color_value': Colors.orange.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-restaurant',
+        'name': 'Restaurante',
+        'kind': 'expense',
+        'icon_code': Icons.lunch_dining_rounded.codePoint,
+        'color_value': Colors.red.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-comms',
+        'name': 'Comunicaciones',
+        'kind': 'expense',
+        'icon_code': Icons.phone_android_rounded.codePoint,
+        'color_value': Colors.indigo.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-sports',
+        'name': 'Deportes',
+        'kind': 'expense',
+        'icon_code': Icons.fitness_center_rounded.codePoint,
+        'color_value': Colors.green.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-dental',
+        'name': 'Dental',
+        'kind': 'expense',
+        'icon_code': Icons.healing_rounded.codePoint,
+        'color_value': Colors.cyan.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-pharmacy',
+        'name': 'Farmacia',
+        'kind': 'expense',
+        'icon_code': Icons.local_pharmacy_rounded.codePoint,
+        'color_value': Colors.red.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-hygiene',
+        'name': 'Artículos de Aseo',
+        'kind': 'expense',
+        'icon_code': Icons.cleaning_services_rounded.codePoint,
+        'color_value': Colors.blue.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-pets',
+        'name': 'Mascotas',
+        'kind': 'expense',
+        'icon_code': Icons.pets_rounded.codePoint,
+        'color_value': Colors.amber.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-insurance',
+        'name': 'Seguros',
+        'kind': 'expense',
+        'icon_code': Icons.security_rounded.codePoint,
+        'color_value': Colors.blueGrey.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-bills',
+        'name': 'Facturas',
+        'kind': 'expense',
+        'icon_code': Icons.receipt_long_rounded.codePoint,
+        'color_value': Colors.deepPurple.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-financial',
+        'name': 'Gasto Financiero',
+        'kind': 'expense',
+        'icon_code': Icons.currency_exchange_rounded.codePoint,
+        'color_value': Colors.deepOrange.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-condo',
+        'name': 'Gastos Edificio / Condominio',
+        'kind': 'expense',
+        'icon_code': Icons.apartment_rounded.codePoint,
+        'color_value': Colors.brown.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-gifts',
+        'name': 'Regalos',
+        'kind': 'expense',
+        'icon_code': Icons.card_giftcard_rounded.codePoint,
+        'color_value': Colors.pink.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-donations',
+        'name': 'Donaciones',
+        'kind': 'expense',
+        'icon_code': Icons.volunteer_activism_rounded.codePoint,
+        'color_value': Colors.purple.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-exp-travel',
+        'name': 'Viajes / Vacaciones',
+        'kind': 'expense',
+        'icon_code': Icons.flight_rounded.codePoint,
+        'color_value': Colors.cyan.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      // --- New income categories (v14) ---
+      {
+        'id': 'cat-inc-rent-received',
+        'name': 'Arriendo Recibido',
+        'kind': 'income',
+        'icon_code': Icons.domain_rounded.codePoint,
+        'color_value': Colors.teal.toARGB32(),
+        'is_system': 0,
+        'created_at': now,
+      },
+      {
+        'id': 'cat-inc-pension',
+        'name': 'Pensión / Jubilación',
+        'kind': 'income',
+        'icon_code': Icons.elderly_rounded.codePoint,
+        'color_value': Colors.amber.toARGB32(),
+        'is_system': 0,
         'created_at': now,
       },
     ];
