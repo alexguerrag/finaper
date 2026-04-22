@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/enums/category_kind.dart';
 import '../../../../core/enums/recurrence_frequency.dart';
+import '../../../../core/formatters/app_formatters.dart';
+import '../../../../core/formatters/currency_input_formatter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../accounts/di/accounts_registry.dart';
 import '../../../accounts/domain/entities/account_entity.dart';
@@ -58,7 +60,10 @@ class _AddRecurringTransactionSheetState
     if (initial != null) {
       _isIncome = initial.isIncome;
       _descriptionController.text = initial.description;
-      _amountController.text = initial.amount.toString();
+      _amountController.text = ThousandsInputFormatter.formatForInput(
+        initial.amount,
+        decimalDigits: AppFormatters.currentCurrencyDecimalDigits,
+      );
       _noteController.text = initial.note;
       _intervalController.text = initial.intervalValue.toString();
       _startDate = initial.startDate;
@@ -251,7 +256,7 @@ class _AddRecurringTransactionSheetState
     }
 
     final amount =
-        double.parse(_amountController.text.trim().replaceAll(',', '.'));
+        ThousandsInputFormatter.parse(_amountController.text.trim()) ?? 0;
     final intervalValue = int.parse(_intervalController.text.trim());
     final now = DateTime.now();
 
@@ -454,47 +459,34 @@ class _AddRecurringTransactionSheetState
                           },
                         ),
                         const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _amountController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: const InputDecoration(
-                            labelText: 'Monto',
-                            hintText: 'Ej. 250.00',
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Ingresa un monto';
-                            }
-
-                            final normalized =
-                                value.trim().replaceAll(',', '.');
-                            final parsed = double.tryParse(normalized);
-
-                            if (parsed == null) {
-                              return 'Monto inválido';
-                            }
-
-                            if (parsed <= 0) {
-                              return 'Debe ser mayor a cero';
-                            }
-
-                            return null;
-                          },
-                          onChanged: (value) {
-                            final normalized = value.replaceAll(',', '.');
-                            if (normalized != value) {
-                              _amountController.value =
-                                  _amountController.value.copyWith(
-                                text: normalized,
-                                selection: TextSelection.collapsed(
-                                  offset: normalized.length,
-                                ),
-                              );
-                            }
-                          },
-                        ),
+                        Builder(builder: (context) {
+                          final decDigits =
+                              AppFormatters.currentCurrencyDecimalDigits;
+                          return TextFormField(
+                            controller: _amountController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              ThousandsInputFormatter(
+                                  decimalDigits: decDigits),
+                            ],
+                            decoration: InputDecoration(
+                              labelText: 'Monto',
+                              hintText: decDigits == 0 ? '0' : '0,00',
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Ingresa un monto';
+                              }
+                              final parsed = ThousandsInputFormatter.parse(
+                                  value.trim());
+                              if (parsed == null) return 'Monto inválido';
+                              if (parsed <= 0) {
+                                return 'Debe ser mayor a cero';
+                              }
+                              return null;
+                            },
+                          );
+                        }),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<RecurrenceFrequency>(
                           key: ValueKey('rec-freq-${_frequency.name}'),

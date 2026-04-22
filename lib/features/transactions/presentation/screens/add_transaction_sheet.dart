@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/enums/category_kind.dart';
+import '../../../../core/formatters/app_formatters.dart';
+import '../../../../core/formatters/currency_input_formatter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../accounts/di/accounts_registry.dart';
 import '../../../accounts/domain/entities/account_entity.dart';
@@ -100,11 +102,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   }
 
   String _formatInitialAmount(double value) {
-    final asText = value.toStringAsFixed(2);
-    if (asText.endsWith('.00')) {
-      return value.toStringAsFixed(0);
-    }
-    return asText;
+    final decDigits = AppFormatters.currentCurrencyDecimalDigits;
+    return ThousandsInputFormatter.formatForInput(value, decimalDigits: decDigits);
   }
 
   _QuickDateOption _resolveQuickDateOption(DateTime value) {
@@ -408,8 +407,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       return null;
     }
 
-    final normalizedAmount = _amountController.text.trim().replaceAll(',', '.');
-    final amount = double.tryParse(normalizedAmount);
+    final amount = ThousandsInputFormatter.parse(_amountController.text.trim());
 
     if (amount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -855,65 +853,52 @@ class _AmountHeroField extends StatelessWidget {
           color: accentColor.withValues(alpha: 0.35),
         ),
       ),
-      child: TextFormField(
-        controller: controller,
-        focusNode: focusNode,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        textInputAction: TextInputAction.next,
-        style: GoogleFonts.manrope(
-          fontSize: 28,
-          fontWeight: FontWeight.w800,
-          color: AppTheme.onSurface,
-        ),
-        decoration: InputDecoration(
-          labelText: 'Monto',
-          hintText: '0.00',
-          prefixText: '\$ ',
-          prefixStyle: GoogleFonts.manrope(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: accentColor,
+      child: Builder(builder: (context) {
+        final decDigits = AppFormatters.currentCurrencyDecimalDigits;
+        final hintText = decDigits == 0 ? '0' : '0,00';
+        return TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.next,
+          inputFormatters: [
+            ThousandsInputFormatter(decimalDigits: decDigits),
+          ],
+          style: GoogleFonts.manrope(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.onSurface,
           ),
-          filled: false,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 0,
-            vertical: 8,
+          decoration: InputDecoration(
+            labelText: 'Monto',
+            hintText: hintText,
+            prefixText: '\$ ',
+            prefixStyle: GoogleFonts.manrope(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: accentColor,
+            ),
+            filled: false,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 0,
+              vertical: 8,
+            ),
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            errorBorder: InputBorder.none,
+            focusedErrorBorder: InputBorder.none,
           ),
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          errorBorder: InputBorder.none,
-          focusedErrorBorder: InputBorder.none,
-        ),
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) {
-            return 'Ingresa un monto';
-          }
-
-          final normalized = value.trim().replaceAll(',', '.');
-          final parsed = double.tryParse(normalized);
-
-          if (parsed == null) {
-            return 'Escribe un monto válido';
-          }
-
-          if (parsed <= 0) {
-            return 'El monto debe ser mayor a cero';
-          }
-
-          return null;
-        },
-        onChanged: (value) {
-          final normalized = value.replaceAll(',', '.');
-          if (normalized != value) {
-            controller.value = controller.value.copyWith(
-              text: normalized,
-              selection: TextSelection.collapsed(
-                offset: normalized.length,
-              ),
-            );
-          }
-        },
-      ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Ingresa un monto';
+            }
+            final parsed = ThousandsInputFormatter.parse(value.trim());
+            if (parsed == null) return 'Escribe un monto válido';
+            if (parsed <= 0) return 'El monto debe ser mayor a cero';
+            return null;
+          },
+        );
+      }),
     );
   }
 }

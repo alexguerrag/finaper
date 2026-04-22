@@ -78,6 +78,11 @@ class AppFormatters {
   static String get _resolvedLocaleCode =>
       SettingsRegistry.module.controller.resolvedLocaleCode;
 
+  static int get currentCurrencyDecimalDigits =>
+      _currencyDecimalDigits[_settings.currencyCode] ?? 2;
+
+  static String get currentCurrencyCode => _settings.currencyCode;
+
   static String formatCurrency(num value) {
     return formatCurrencyWith(
       value: value,
