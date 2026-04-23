@@ -38,8 +38,7 @@ class NotificationService {
 
   // ── budget alerts ─────────────────────────────────────────────────────────
 
-  static Future<void> checkAndNotifyBudgets(
-      List<BudgetEntity> budgets) async {
+  static Future<void> checkAndNotifyBudgets(List<BudgetEntity> budgets) async {
     if (_budgetNotifiedThisSession || !_initialized) return;
     _budgetNotifiedThisSession = true;
 
@@ -86,8 +85,8 @@ class NotificationService {
     final todayMidnight = DateTime(today.year, today.month, today.day);
 
     final overdue = items
-        .where((item) =>
-            item.isActive && item.nextRunDate.isBefore(todayMidnight))
+        .where(
+            (item) => item.isActive && item.nextRunDate.isBefore(todayMidnight))
         .toList();
 
     if (overdue.isEmpty) return;

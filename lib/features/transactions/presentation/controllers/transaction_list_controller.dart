@@ -301,7 +301,8 @@ class TransactionListController extends ChangeNotifier {
     _addTransaction = TransactionsRegistry.module.addTransaction;
     _updateTransaction = TransactionsRegistry.module.updateTransaction;
     _deleteTransaction = TransactionsRegistry.module.deleteTransaction;
-    _deleteTransactionGroup = TransactionsRegistry.module.deleteTransactionGroup;
+    _deleteTransactionGroup =
+        TransactionsRegistry.module.deleteTransactionGroup;
     _getAccounts = AccountsRegistry.module.getAccounts;
     _useCasesReady = true;
   }

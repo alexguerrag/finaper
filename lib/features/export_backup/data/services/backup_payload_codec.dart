@@ -180,7 +180,8 @@ class BackupPayloadCodec {
           ? row['locale_code']
           : 'es_CL',
       'use_system_locale': _readInt(row['use_system_locale']) ?? 1,
-      'has_completed_onboarding': _readInt(row['has_completed_onboarding']) ?? 0,
+      'has_completed_onboarding':
+          _readInt(row['has_completed_onboarding']) ?? 0,
       'updated_at': row['updated_at']?.toString().trim().isNotEmpty == true
           ? row['updated_at']
           : now,

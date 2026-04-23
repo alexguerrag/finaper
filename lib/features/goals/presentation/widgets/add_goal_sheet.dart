@@ -75,10 +75,12 @@ class _AddGoalSheetState extends State<AddGoalSheet> {
     if (initial != null) {
       _nameController.text = initial.name;
       final dec = AppFormatters.currentCurrencyDecimalDigits;
-      _targetAmountController.text =
-          ThousandsInputFormatter.formatForInput(initial.targetAmount, decimalDigits: dec);
-      _currentAmountController.text =
-          ThousandsInputFormatter.formatForInput(initial.currentAmount, decimalDigits: dec);
+      _targetAmountController.text = ThousandsInputFormatter.formatForInput(
+          initial.targetAmount,
+          decimalDigits: dec);
+      _currentAmountController.text = ThousandsInputFormatter.formatForInput(
+          initial.currentAmount,
+          decimalDigits: dec);
       _targetDate = initial.targetDate;
       _selectedPreset = _presets.firstWhere(
         (p) => p.icon.codePoint == initial.iconCode,
@@ -132,7 +134,8 @@ class _AddGoalSheetState extends State<AddGoalSheet> {
     final targetAmount =
         ThousandsInputFormatter.parse(_targetAmountController.text.trim()) ?? 0;
     final currentAmount =
-        ThousandsInputFormatter.parse(_currentAmountController.text.trim()) ?? 0;
+        ThousandsInputFormatter.parse(_currentAmountController.text.trim()) ??
+            0;
 
     final now = DateTime.now();
     final isCompleted = currentAmount >= targetAmount;

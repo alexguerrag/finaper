@@ -307,135 +307,136 @@ class _AccountsScreenState extends State<AccountsScreen> {
               onRefresh: _loadAccountBalances,
               child: ListView(
                 padding: const EdgeInsets.all(16),
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Saldo real por cuenta derivado desde saldo inicial y movimientos registrados.',
-                  style: GoogleFonts.manrope(
-                    fontSize: 13,
-                    color: AppTheme.onSurfaceMuted,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              FilledButton.icon(
-                onPressed: _openAddSheet,
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('Nueva'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          FilledButton.tonalIcon(
-            onPressed: _canTransfer ? _openTransferFlow : null,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            icon: const Icon(Icons.swap_horiz_rounded),
-            label: Text(
-              _canTransfer
-                  ? 'Transferir entre cuentas'
-                  : 'Necesitas 2 cuentas para transferir',
-              style: GoogleFonts.manrope(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: AppTheme.surface,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.06),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Saldo total consolidado',
-                  style: GoogleFonts.manrope(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.onSurfaceMuted,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  AppFormatters.formatCurrency(_consolidatedBalance),
-                  style: GoogleFonts.manrope(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.onSurface,
-                    height: 1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (_activeBalances.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Text(
-                'Todavía no hay cuentas activas.',
-                style: GoogleFonts.manrope(
-                  color: AppTheme.onSurfaceMuted,
-                ),
-              ),
-            )
-          else
-            ..._activeBalances.map(
-              (item) => _buildAccountCard(item, isArchived: false),
-            ),
-          if (_archivedBalances.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () => setState(() => _showArchived = !_showArchived),
-              child: Row(
                 children: [
-                  Icon(
-                    _showArchived
-                        ? Icons.expand_less_rounded
-                        : Icons.expand_more_rounded,
-                    size: 18,
-                    color: AppTheme.onSurfaceMuted,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Saldo real por cuenta derivado desde saldo inicial y movimientos registrados.',
+                          style: GoogleFonts.manrope(
+                            fontSize: 13,
+                            color: AppTheme.onSurfaceMuted,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      FilledButton.icon(
+                        onPressed: _openAddSheet,
+                        icon: const Icon(Icons.add_rounded),
+                        label: const Text('Nueva'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _showArchived
-                        ? 'Ocultar archivadas (${_archivedBalances.length})'
-                        : 'Mostrar archivadas (${_archivedBalances.length})',
-                    style: GoogleFonts.manrope(
-                      fontSize: 13,
-                      color: AppTheme.onSurfaceMuted,
+                  const SizedBox(height: 12),
+                  FilledButton.tonalIcon(
+                    onPressed: _canTransfer ? _openTransferFlow : null,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    icon: const Icon(Icons.swap_horiz_rounded),
+                    label: Text(
+                      _canTransfer
+                          ? 'Transferir entre cuentas'
+                          : 'Necesitas 2 cuentas para transferir',
+                      style: GoogleFonts.manrope(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surface,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.06),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Saldo total consolidado',
+                          style: GoogleFonts.manrope(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.onSurfaceMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          AppFormatters.formatCurrency(_consolidatedBalance),
+                          style: GoogleFonts.manrope(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.onSurface,
+                            height: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (_activeBalances.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surface,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Text(
+                        'Todavía no hay cuentas activas.',
+                        style: GoogleFonts.manrope(
+                          color: AppTheme.onSurfaceMuted,
+                        ),
+                      ),
+                    )
+                  else
+                    ..._activeBalances.map(
+                      (item) => _buildAccountCard(item, isArchived: false),
+                    ),
+                  if (_archivedBalances.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () =>
+                          setState(() => _showArchived = !_showArchived),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _showArchived
+                                ? Icons.expand_less_rounded
+                                : Icons.expand_more_rounded,
+                            size: 18,
+                            color: AppTheme.onSurfaceMuted,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _showArchived
+                                ? 'Ocultar archivadas (${_archivedBalances.length})'
+                                : 'Mostrar archivadas (${_archivedBalances.length})',
+                            style: GoogleFonts.manrope(
+                              fontSize: 13,
+                              color: AppTheme.onSurfaceMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_showArchived) ...[
+                      const SizedBox(height: 8),
+                      ..._archivedBalances.map(
+                        (item) => _buildAccountCard(item, isArchived: true),
+                      ),
+                    ],
+                  ],
                 ],
               ),
             ),
-            if (_showArchived) ...[
-              const SizedBox(height: 8),
-              ..._archivedBalances.map(
-                (item) => _buildAccountCard(item, isArchived: true),
-              ),
-            ],
-          ],
-        ],
-      ),
-    ),
-  );
+    );
   }
 
   Widget _buildAccountCard(AccountBalanceEntity item,

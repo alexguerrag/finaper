@@ -466,8 +466,7 @@ class _AddRecurringTransactionSheetState
                             controller: _amountController,
                             keyboardType: TextInputType.number,
                             inputFormatters: [
-                              ThousandsInputFormatter(
-                                  decimalDigits: decDigits),
+                              ThousandsInputFormatter(decimalDigits: decDigits),
                             ],
                             decoration: InputDecoration(
                               labelText: 'Monto',
@@ -477,8 +476,8 @@ class _AddRecurringTransactionSheetState
                               if (value == null || value.trim().isEmpty) {
                                 return 'Ingresa un monto';
                               }
-                              final parsed = ThousandsInputFormatter.parse(
-                                  value.trim());
+                              final parsed =
+                                  ThousandsInputFormatter.parse(value.trim());
                               if (parsed == null) return 'Monto inválido';
                               if (parsed <= 0) {
                                 return 'Debe ser mayor a cero';

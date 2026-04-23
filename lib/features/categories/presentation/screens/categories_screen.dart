@@ -102,7 +102,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Categoría creada correctamente.', style: GoogleFonts.manrope()),
+          content: Text('Categoría creada correctamente.',
+              style: GoogleFonts.manrope()),
         ),
       );
     } catch (e, s) {
@@ -111,7 +112,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('No se pudo crear la categoría.', style: GoogleFonts.manrope()),
+          content: Text('No se pudo crear la categoría.',
+              style: GoogleFonts.manrope()),
         ),
       );
     }
@@ -137,7 +139,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Categoría actualizada correctamente.', style: GoogleFonts.manrope()),
+          content: Text('Categoría actualizada correctamente.',
+              style: GoogleFonts.manrope()),
         ),
       );
     } catch (e, s) {
@@ -146,7 +149,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('No se pudo actualizar la categoría.', style: GoogleFonts.manrope()),
+          content: Text('No se pudo actualizar la categoría.',
+              style: GoogleFonts.manrope()),
         ),
       );
     }
@@ -232,7 +236,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('No se pudo archivar la categoría.', style: GoogleFonts.manrope()),
+          content: Text('No se pudo archivar la categoría.',
+              style: GoogleFonts.manrope()),
         ),
       );
     }
@@ -275,217 +280,235 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               onRefresh: _loadCategories,
               child: ListView(
                 padding: const EdgeInsets.all(16),
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Gestiona categorías para clasificar ingresos y gastos.',
-                  style: GoogleFonts.manrope(
-                    fontSize: 13,
-                    color: AppTheme.onSurfaceMuted,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              FilledButton.icon(
-                onPressed: _openAddSheet,
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('Nueva'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Ver archivadas link
-          GestureDetector(
-            onTap: _openArchivedScreen,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.inventory_2_outlined,
-                  size: 14,
-                  color: AppTheme.onSurfaceMuted,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'Ver archivadas',
-                  style: GoogleFonts.manrope(
-                    fontSize: 12,
-                    color: AppTheme.onSurfaceMuted,
-                    decoration: TextDecoration.underline,
-                    decorationColor: AppTheme.onSurfaceMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _searchController,
-            style: GoogleFonts.manrope(color: AppTheme.onSurface),
-            decoration: InputDecoration(
-              hintText: 'Buscar categoría...',
-              hintStyle: GoogleFonts.manrope(color: AppTheme.onSurfaceMuted),
-              prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.onSurfaceMuted),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.close_rounded, color: AppTheme.onSurfaceMuted),
-                      onPressed: () => _searchController.clear(),
-                    )
-                  : null,
-              filled: true,
-              fillColor: AppTheme.surface,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: AppTheme.primary.withValues(alpha: 0.6)),
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _KindChip(
-                label: 'Gastos',
-                selected: _selectedKind == CategoryKind.expense,
-                onTap: () => _changeKind(CategoryKind.expense),
-              ),
-              const SizedBox(width: 8),
-              _KindChip(
-                label: 'Ingresos',
-                selected: _selectedKind == CategoryKind.income,
-                onTap: () => _changeKind(CategoryKind.income),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (_isLoading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 48),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else if (_filteredCategories.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Text(
-                _searchQuery.isNotEmpty
-                    ? 'Sin resultados para "$_searchQuery".'
-                    : 'Todavía no hay categorías para este tipo.',
-                style: GoogleFonts.manrope(color: AppTheme.onSurfaceMuted),
-              ),
-            )
-          else
-            ..._filteredCategories.map(
-              (category) => Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.06),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: category.color.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Icon(
-                        IconData(category.iconCode, fontFamily: 'MaterialIcons'),
-                        color: category.color,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            category.name,
-                            style: GoogleFonts.manrope(
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.onSurface,
-                            ),
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Gestiona categorías para clasificar ingresos y gastos.',
+                          style: GoogleFonts.manrope(
+                            fontSize: 13,
+                            color: AppTheme.onSurfaceMuted,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            category.isSystem ? 'Sistema' : 'Personalizada',
-                            style: GoogleFonts.manrope(
-                              fontSize: 12,
-                              color: AppTheme.onSurfaceMuted,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                    if (!category.isSystem)
-                      PopupMenuButton<String>(
-                        icon: const Icon(
-                          Icons.more_vert_rounded,
-                          size: 18,
+                      const SizedBox(width: 12),
+                      FilledButton.icon(
+                        onPressed: _openAddSheet,
+                        icon: const Icon(Icons.add_rounded),
+                        label: const Text('Nueva'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Ver archivadas link
+                  GestureDetector(
+                    onTap: _openArchivedScreen,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.inventory_2_outlined,
+                          size: 14,
                           color: AppTheme.onSurfaceMuted,
                         ),
-                        onSelected: (value) {
-                          if (value == 'edit') {
-                            _openEditSheet(category);
-                          } else if (value == 'archive') {
-                            _confirmArchive(category);
-                          }
-                        },
-                        itemBuilder: (_) => [
-                          PopupMenuItem<String>(
-                            value: 'edit',
-                            child: Row(
-                              children: [
-                                const Icon(Icons.edit_outlined, size: 18, color: AppTheme.onSurface),
-                                const SizedBox(width: 8),
-                                Text('Editar', style: GoogleFonts.manrope(color: AppTheme.onSurface)),
-                              ],
-                            ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Ver archivadas',
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            color: AppTheme.onSurfaceMuted,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppTheme.onSurfaceMuted,
                           ),
-                          PopupMenuItem<String>(
-                            value: 'archive',
-                            child: Row(
-                              children: [
-                                Icon(Icons.inventory_2_outlined, size: 18, color: Colors.orange.shade600),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Archivar',
-                                  style: GoogleFonts.manrope(color: Colors.orange.shade600),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _searchController,
+                    style: GoogleFonts.manrope(color: AppTheme.onSurface),
+                    decoration: InputDecoration(
+                      hintText: 'Buscar categoría...',
+                      hintStyle:
+                          GoogleFonts.manrope(color: AppTheme.onSurfaceMuted),
+                      prefixIcon: const Icon(Icons.search_rounded,
+                          color: AppTheme.onSurfaceMuted),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.close_rounded,
+                                  color: AppTheme.onSurfaceMuted),
+                              onPressed: () => _searchController.clear(),
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: AppTheme.surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.06)),
                       ),
-                  ],
-                ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.06)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                            color: AppTheme.primary.withValues(alpha: 0.6)),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      _KindChip(
+                        label: 'Gastos',
+                        selected: _selectedKind == CategoryKind.expense,
+                        onTap: () => _changeKind(CategoryKind.expense),
+                      ),
+                      const SizedBox(width: 8),
+                      _KindChip(
+                        label: 'Ingresos',
+                        selected: _selectedKind == CategoryKind.income,
+                        onTap: () => _changeKind(CategoryKind.income),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (_isLoading)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 48),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else if (_filteredCategories.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surface,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Text(
+                        _searchQuery.isNotEmpty
+                            ? 'Sin resultados para "$_searchQuery".'
+                            : 'Todavía no hay categorías para este tipo.',
+                        style:
+                            GoogleFonts.manrope(color: AppTheme.onSurfaceMuted),
+                      ),
+                    )
+                  else
+                    ..._filteredCategories.map(
+                      (category) => Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surface,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.06),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 46,
+                              height: 46,
+                              decoration: BoxDecoration(
+                                color: category.color.withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Icon(
+                                IconData(category.iconCode,
+                                    fontFamily: 'MaterialIcons'),
+                                color: category.color,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    category.name,
+                                    style: GoogleFonts.manrope(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    category.isSystem
+                                        ? 'Sistema'
+                                        : 'Personalizada',
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 12,
+                                      color: AppTheme.onSurfaceMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (!category.isSystem)
+                              PopupMenuButton<String>(
+                                icon: const Icon(
+                                  Icons.more_vert_rounded,
+                                  size: 18,
+                                  color: AppTheme.onSurfaceMuted,
+                                ),
+                                onSelected: (value) {
+                                  if (value == 'edit') {
+                                    _openEditSheet(category);
+                                  } else if (value == 'archive') {
+                                    _confirmArchive(category);
+                                  }
+                                },
+                                itemBuilder: (_) => [
+                                  PopupMenuItem<String>(
+                                    value: 'edit',
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.edit_outlined,
+                                            size: 18,
+                                            color: AppTheme.onSurface),
+                                        const SizedBox(width: 8),
+                                        Text('Editar',
+                                            style: GoogleFonts.manrope(
+                                                color: AppTheme.onSurface)),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem<String>(
+                                    value: 'archive',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.inventory_2_outlined,
+                                            size: 18,
+                                            color: Colors.orange.shade600),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Archivar',
+                                          style: GoogleFonts.manrope(
+                                              color: Colors.orange.shade600),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
-        ],
-      ),
-    ),
-  );
+    );
   }
 }
 

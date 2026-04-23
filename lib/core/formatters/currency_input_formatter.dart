@@ -56,8 +56,7 @@ class ThousandsInputFormatter extends TextInputFormatter {
       }
 
       final formattedInt = intRaw.isEmpty ? '' : _addPeriodThousands(intRaw);
-      final formatted =
-          decRaw != null ? '$formattedInt,$decRaw' : formattedInt;
+      final formatted = decRaw != null ? '$formattedInt,$decRaw' : formattedInt;
 
       return TextEditingValue(
         text: formatted,
@@ -84,8 +83,7 @@ class ThousandsInputFormatter extends TextInputFormatter {
   /// "20.000" → "20000", "1.234,56" → "1234.56"
   static double? parse(String text) {
     // Remove period thousands separator, replace comma decimal with period.
-    final normalized =
-        text.replaceAll('.', '').replaceAll(',', '.').trim();
+    final normalized = text.replaceAll('.', '').replaceAll(',', '.').trim();
     return double.tryParse(normalized);
   }
 

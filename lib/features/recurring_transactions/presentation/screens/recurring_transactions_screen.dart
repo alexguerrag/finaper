@@ -541,195 +541,38 @@ class _RecurringTransactionsScreenState
                     final isOverdue = item.isActive &&
                         item.nextRunDate.isBefore(todayMidnight);
                     return Column(
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 46,
-                            height: 46,
-                            decoration: BoxDecoration(
-                              color: item.color.withValues(alpha: 0.16),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Icon(
-                              item.isIncome
-                                  ? Icons.arrow_downward_rounded
-                                  : Icons.arrow_upward_rounded,
-                              color: item.color,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.description,
-                                  style: GoogleFonts.manrope(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppTheme.onSurface,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${item.categoryName} · ${item.accountName}',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 12,
-                                    color: AppTheme.onSurfaceMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Switch.adaptive(
-                            value: item.isActive,
-                            onChanged: (value) {
-                              _toggleActive(item, value);
-                            },
-                          ),
-                          PopupMenuButton<String>(
-                            icon: const Icon(
-                              Icons.more_vert_rounded,
-                              size: 18,
-                              color: AppTheme.onSurfaceMuted,
-                            ),
-                            onSelected: (value) {
-                              if (value == 'edit') {
-                                _openEditSheet(item);
-                              } else if (value == 'delete') {
-                                _confirmDeleteRecurring(item);
-                              }
-                            },
-                            itemBuilder: (_) => [
-                              PopupMenuItem<String>(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.edit_outlined,
-                                      size: 18,
-                                      color: AppTheme.onSurface,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Editar',
-                                      style: GoogleFonts.manrope(
-                                        color: AppTheme.onSurface,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              PopupMenuItem<String>(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.delete_outline_rounded,
-                                      size: 18,
-                                      color: AppTheme.expense,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Eliminar',
-                                      style: GoogleFonts.manrope(
-                                        color: AppTheme.expense,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      if (isOverdue) ...[
-                        const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppTheme.expense.withValues(alpha: 0.14),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              'Vencida',
-                              style: GoogleFonts.manrope(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.expense,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.04),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Column(
+                      children: [
+                        Row(
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  _formatSignedAmount(
-                                    amount: item.amount,
-                                    isIncome: item.isIncome,
-                                  ),
-                                  style: GoogleFonts.manrope(
-                                    fontWeight: FontWeight.w800,
-                                    color: item.isIncome
-                                        ? AppTheme.income
-                                        : AppTheme.expense,
-                                  ),
-                                ),
-                                Text(
-                                  _frequencyLabel(item),
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppTheme.primary,
-                                  ),
-                                ),
-                              ],
+                            Container(
+                              width: 46,
+                              height: 46,
+                              decoration: BoxDecoration(
+                                color: item.color.withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Icon(
+                                item.isIncome
+                                    ? Icons.arrow_downward_rounded
+                                    : Icons.arrow_upward_rounded,
+                                color: item.color,
+                              ),
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Próxima: ${_formatDate(item.nextRunDate)}',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 12,
-                                    color: AppTheme.onSurfaceMuted,
-                                  ),
-                                ),
-                                Text(
-                                  item.lastGeneratedDate == null
-                                      ? 'Sin generar aún'
-                                      : 'Última: ${_formatDate(item.lastGeneratedDate!)}',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 12,
-                                    color: AppTheme.onSurfaceMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (item.endDate != null) ...[
-                              const SizedBox(height: 6),
-                              Row(
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Finaliza: ${_formatDate(item.endDate!)}',
+                                    item.description,
+                                    style: GoogleFonts.manrope(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${item.categoryName} · ${item.accountName}',
                                     style: GoogleFonts.manrope(
                                       fontSize: 12,
                                       color: AppTheme.onSurfaceMuted,
@@ -737,15 +580,174 @@ class _RecurringTransactionsScreenState
                                   ),
                                 ],
                               ),
-                            ],
+                            ),
+                            Switch.adaptive(
+                              value: item.isActive,
+                              onChanged: (value) {
+                                _toggleActive(item, value);
+                              },
+                            ),
+                            PopupMenuButton<String>(
+                              icon: const Icon(
+                                Icons.more_vert_rounded,
+                                size: 18,
+                                color: AppTheme.onSurfaceMuted,
+                              ),
+                              onSelected: (value) {
+                                if (value == 'edit') {
+                                  _openEditSheet(item);
+                                } else if (value == 'delete') {
+                                  _confirmDeleteRecurring(item);
+                                }
+                              },
+                              itemBuilder: (_) => [
+                                PopupMenuItem<String>(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.edit_outlined,
+                                        size: 18,
+                                        color: AppTheme.onSurface,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Editar',
+                                        style: GoogleFonts.manrope(
+                                          color: AppTheme.onSurface,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem<String>(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.delete_outline_rounded,
+                                        size: 18,
+                                        color: AppTheme.expense,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Eliminar',
+                                        style: GoogleFonts.manrope(
+                                          color: AppTheme.expense,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                      ),
-                    ],
-                  );
-                }),
+                        if (isOverdue) ...[
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppTheme.expense.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                'Vencida',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.expense,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.04),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    _formatSignedAmount(
+                                      amount: item.amount,
+                                      isIncome: item.isIncome,
+                                    ),
+                                    style: GoogleFonts.manrope(
+                                      fontWeight: FontWeight.w800,
+                                      color: item.isIncome
+                                          ? AppTheme.income
+                                          : AppTheme.expense,
+                                    ),
+                                  ),
+                                  Text(
+                                    _frequencyLabel(item),
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Próxima: ${_formatDate(item.nextRunDate)}',
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 12,
+                                      color: AppTheme.onSurfaceMuted,
+                                    ),
+                                  ),
+                                  Text(
+                                    item.lastGeneratedDate == null
+                                        ? 'Sin generar aún'
+                                        : 'Última: ${_formatDate(item.lastGeneratedDate!)}',
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 12,
+                                      color: AppTheme.onSurfaceMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (item.endDate != null) ...[
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Finaliza: ${_formatDate(item.endDate!)}',
+                                      style: GoogleFonts.manrope(
+                                        fontSize: 12,
+                                        color: AppTheme.onSurfaceMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
               ),
-            ),
           ],
         ),
       ),

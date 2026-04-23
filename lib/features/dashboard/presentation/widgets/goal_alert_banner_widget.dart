@@ -56,8 +56,7 @@ class _GoalAlertBannerWidgetState extends State<GoalAlertBannerWidget> {
 
       final atRisk = goals.where((g) {
         if (g.targetDate == null) return false;
-        final daysLeft =
-            g.targetDate!.difference(todayMidnight).inDays;
+        final daysLeft = g.targetDate!.difference(todayMidnight).inDays;
         return daysLeft >= 0 && daysLeft <= widget.deadlineThresholdDays;
       }).toList()
         ..sort((a, b) => a.targetDate!.compareTo(b.targetDate!));
@@ -66,8 +65,7 @@ class _GoalAlertBannerWidgetState extends State<GoalAlertBannerWidget> {
 
       int daysLeft = 0;
       if (atRisk.isNotEmpty) {
-        daysLeft =
-            atRisk.first.targetDate!.difference(todayMidnight).inDays;
+        daysLeft = atRisk.first.targetDate!.difference(todayMidnight).inDays;
       }
 
       setState(() {

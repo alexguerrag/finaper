@@ -3,8 +3,10 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
 
 import '../core/theme/app_theme.dart';
+import '../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../features/settings/di/settings_registry.dart';
 import '../features/settings/presentation/controllers/settings_controller.dart';
+import '../features/shell/presentation/pages/main_shell_page.dart';
 import 'routes/app_routes.dart';
 
 class FinaperApp extends StatelessWidget {
@@ -33,9 +35,13 @@ class FinaperApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          initialRoute: settingsController.hasCompletedOnboarding
-              ? AppRoutes.shell
-              : AppRoutes.initial,
+          onGenerateInitialRoutes: (_) => [
+            MaterialPageRoute<void>(
+              builder: (_) => settingsController.hasCompletedOnboarding
+                  ? const MainShellPage()
+                  : const OnboardingScreen(),
+            ),
+          ],
           routes: AppRoutes.routes,
         );
       },

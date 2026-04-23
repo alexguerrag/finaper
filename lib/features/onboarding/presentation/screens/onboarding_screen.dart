@@ -17,7 +17,6 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   late final SettingsController _controller;
 
-
   String _selectedCurrency = AppSettingsEntity.defaultCurrencyCode;
   String _selectedLocale = AppSettingsEntity.defaultLocaleCode;
   bool _useSystemLocale = false;

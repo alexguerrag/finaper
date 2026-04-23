@@ -49,8 +49,7 @@ class _RecurringAlertBannerWidgetState
 
   Future<void> _loadAlert() async {
     try {
-      final items =
-          await _getRecurringTransactions(includeInactive: false);
+      final items = await _getRecurringTransactions(includeInactive: false);
 
       final today = DateTime.now();
       final todayMidnight = DateTime(today.year, today.month, today.day);

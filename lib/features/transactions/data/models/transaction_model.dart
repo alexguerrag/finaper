@@ -57,8 +57,7 @@ class TransactionModel extends TransactionEntity {
       transferGroupId: map['transfer_group_id']?.toString(),
       counterpartyAccountId: map['counterparty_account_id']?.toString(),
       counterpartyAccountName: map['counterparty_account_name']?.toString(),
-      generatedFromRecurringId:
-          map['generated_from_recurring_id']?.toString(),
+      generatedFromRecurringId: map['generated_from_recurring_id']?.toString(),
     );
   }
 

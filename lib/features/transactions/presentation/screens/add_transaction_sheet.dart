@@ -103,7 +103,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
   String _formatInitialAmount(double value) {
     final decDigits = AppFormatters.currentCurrencyDecimalDigits;
-    return ThousandsInputFormatter.formatForInput(value, decimalDigits: decDigits);
+    return ThousandsInputFormatter.formatForInput(value,
+        decimalDigits: decDigits);
   }
 
   _QuickDateOption _resolveQuickDateOption(DateTime value) {

@@ -283,9 +283,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
     }
     final q = _searchQuery.trim().toLowerCase();
     if (q.isEmpty) return byStatus;
-    return byStatus
-        .where((g) => g.name.toLowerCase().contains(q))
-        .toList();
+    return byStatus.where((g) => g.name.toLowerCase().contains(q)).toList();
   }
 
   String _dateSubtitle(GoalEntity goal) {

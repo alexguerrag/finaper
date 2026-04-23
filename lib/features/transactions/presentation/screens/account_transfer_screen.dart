@@ -467,8 +467,8 @@ class _AccountTransferScreenState extends State<AccountTransferScreen> {
                               if (value == null || value.trim().isEmpty) {
                                 return 'Ingresa un monto';
                               }
-                              final parsed = ThousandsInputFormatter.parse(
-                                  value.trim());
+                              final parsed =
+                                  ThousandsInputFormatter.parse(value.trim());
                               if (parsed == null) {
                                 return 'Escribe un monto válido';
                               }

@@ -374,8 +374,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                     controller: _searchController,
                     onChanged: _controller.setSearchQuery,
                     decoration: InputDecoration(
-                      hintText:
-                          'Buscar por concepto, categoría, cuenta o nota',
+                      hintText: 'Buscar por concepto, categoría, cuenta o nota',
                       prefixIcon: const Icon(Icons.search_rounded),
                       suffixIcon: c.searchQuery.trim().isEmpty
                           ? null
@@ -410,8 +409,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                         TxTypeFilterChip(
                           label: 'Todas',
                           count: c.allTransactions.length,
-                          selected:
-                              c.typeFilter == TransactionTypeFilter.all,
+                          selected: c.typeFilter == TransactionTypeFilter.all,
                           onTap: () =>
                               c.setTypeFilter(TransactionTypeFilter.all),
                         ),
@@ -444,8 +442,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: c.accounts.map((account) {
-                          final selected =
-                              c.selectedAccountId == account.id;
+                          final selected = c.selectedAccountId == account.id;
                           final count = c.allTransactions
                               .where((t) => t.accountId == account.id)
                               .length;
@@ -533,8 +530,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                               item: item,
                               onTap: () => _openTransactionDetails(item),
                               onEdit: () => _openEditTransactionSheet(item),
-                              onDelete: () =>
-                                  _confirmDeleteTransaction(item),
+                              onDelete: () => _confirmDeleteTransaction(item),
                             ),
                           ),
                           const SizedBox(height: 10),
