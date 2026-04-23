@@ -74,7 +74,7 @@ class _MainShellPageState extends State<MainShellPage> {
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
             selectedIcon: Icon(Icons.dashboard_rounded),
-            label: 'Dashboard',
+            label: 'Inicio',
             tooltip: 'Resumen financiero',
           ),
           NavigationDestination(
