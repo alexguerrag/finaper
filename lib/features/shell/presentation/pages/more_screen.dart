@@ -29,6 +29,12 @@ class MoreScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
           _MoreTile(
+            icon: Icons.savings_outlined,
+            label: 'Presupuestos',
+            subtitle: 'Límites de gasto por categoría',
+            onTap: () => _navigate(context, AppRoutes.budgets),
+          ),
+          _MoreTile(
             icon: Icons.flag_rounded,
             label: 'Metas',
             subtitle: 'Seguimiento de objetivos de ahorro',
