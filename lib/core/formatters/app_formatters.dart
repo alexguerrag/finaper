@@ -118,14 +118,15 @@ class AppFormatters {
       final effectiveLocale =
           _currencyLocale[currencyCode] ?? _normalizeLocaleCode(localeCode);
 
-      final formatter = NumberFormat.currency(
-        locale: effectiveLocale,
-        name: currencyCode,
-        symbol: _currencySymbols[currencyCode] ?? '$currencyCode ',
-        decimalDigits: _currencyDecimalDigits[currencyCode] ?? 2,
-      );
+      final symbol = _currencySymbols[currencyCode] ?? currencyCode;
+      final decimalDigits = _currencyDecimalDigits[currencyCode] ?? 2;
 
-      return formatter.format(value);
+      // Format number only (no symbol) so we can force symbol-before-number
+      // regardless of what ICU/intl does for the locale (e.g. es_CL puts it after).
+      final decimalPart = decimalDigits > 0 ? '.${'0' * decimalDigits}' : '';
+      final formatter = NumberFormat('#,##0$decimalPart', effectiveLocale);
+
+      return '$symbol ${formatter.format(value)}';
     } catch (e, s) {
       debugPrint('formatCurrencyWith error: $e');
       debugPrintStack(stackTrace: s);
