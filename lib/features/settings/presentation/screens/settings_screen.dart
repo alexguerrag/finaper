@@ -1,18 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../app/routes/app_routes.dart';
 import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../export_backup/di/export_registry.dart';
-import '../../../export_backup/domain/entities/export_file_entity.dart';
-import '../../../export_backup/domain/usecases/export_backup_json.dart';
-import '../../../export_backup/domain/usecases/export_transactions_csv.dart';
-import '../../../export_backup/domain/usecases/pick_backup_restore_preview.dart';
-import '../../../export_backup/domain/usecases/restore_backup_json.dart';
-import '../../../export_backup/presentation/controllers/export_file_actions_controller.dart';
-import '../../../export_backup/presentation/widgets/export_file_actions_dialog.dart';
-import '../../../export_backup/presentation/widgets/restore_backup_dialog.dart';
 import '../../di/settings_registry.dart';
 import '../controllers/settings_controller.dart';
 
@@ -25,21 +15,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final SettingsController _controller = SettingsRegistry.module.controller;
-
-  final ExportBackupJson _exportBackupJson =
-      ExportRegistry.module.exportBackupJson;
-
-  final ExportTransactionsCsv _exportTransactionsCsv =
-      ExportRegistry.module.exportTransactionsCsv;
-
-  final PickBackupRestorePreview _pickBackupRestorePreview =
-      ExportRegistry.module.pickBackupRestorePreview;
-
-  final RestoreBackupJson _restoreBackupJson =
-      ExportRegistry.module.restoreBackupJson;
-
-  final ExportFileActionsController _exportFileActionsController =
-      ExportRegistry.module.exportFileActionsController;
 
   static final List<_OptionItem> _currencyOptions = SettingsController
       .supportedCurrencies
@@ -55,18 +30,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late String _selectedLocaleCode;
   late bool _useSystemLocale;
 
-  bool _isExportingBackup = false;
-  bool _isExportingCsv = false;
-  bool _isRestoringBackup = false;
-
   @override
   void initState() {
     super.initState();
     _hydrateDraftFromController();
-  }
-
-  bool get _isBusyWithBackupActions {
-    return _isExportingBackup || _isExportingCsv || _isRestoringBackup;
   }
 
   void _hydrateDraftFromController() {
@@ -77,10 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   String get _effectiveLocaleCode {
-    if (_useSystemLocale) {
-      return _controller.resolvedLocaleCode;
-    }
-
+    if (_useSystemLocale) return _controller.resolvedLocaleCode;
     return _selectedLocaleCode;
   }
 
@@ -107,174 +71,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _exportBackup() async {
-    if (_isExportingBackup) return;
-
-    setState(() {
-      _isExportingBackup = true;
-    });
-
-    try {
-      final file = await _exportBackupJson();
-
-      if (!mounted) return;
-
-      await _showExportSuccessDialog(
-        title: 'Respaldo JSON generado',
-        file: file,
-      );
-    } catch (e, s) {
-      debugPrint('SettingsScreen _exportBackup error: $e');
-      debugPrintStack(stackTrace: s);
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo generar el respaldo JSON.'),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isExportingBackup = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _exportCsv() async {
-    if (_isExportingCsv) return;
-
-    setState(() {
-      _isExportingCsv = true;
-    });
-
-    try {
-      final file = await _exportTransactionsCsv();
-
-      if (!mounted) return;
-
-      await _showExportSuccessDialog(
-        title: 'CSV de transacciones generado',
-        file: file,
-      );
-    } catch (e, s) {
-      debugPrint('SettingsScreen _exportCsv error: $e');
-      debugPrintStack(stackTrace: s);
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo generar el CSV de transacciones.'),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isExportingCsv = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _restoreBackup() async {
-    if (_isRestoringBackup) return;
-
-    setState(() {
-      _isRestoringBackup = true;
-    });
-
-    try {
-      final validationResult = await _pickBackupRestorePreview();
-
-      if (!mounted || validationResult == null) {
-        return;
-      }
-
-      final shouldRestore = await showDialog<bool>(
-        context: context,
-        builder: (_) {
-          return RestoreBackupDialog(
-            validationResult: validationResult,
-          );
-        },
-      );
-
-      if (!mounted || shouldRestore != true) {
-        return;
-      }
-
-      await _restoreBackupJson(validationResult.payload);
-
-      if (!mounted) return;
-
-      await _controller.load();
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Respaldo restaurado correctamente.'),
-        ),
-      );
-
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRoutes.shell,
-        (_) => false,
-      );
-    } on FormatException catch (e, s) {
-      debugPrint('SettingsScreen _restoreBackup format error: $e');
-      debugPrintStack(stackTrace: s);
-
-      if (!mounted) return;
-
-      final message = e.message;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-        ),
-      );
-    } catch (e, s) {
-      debugPrint('SettingsScreen _restoreBackup error: $e');
-      debugPrintStack(stackTrace: s);
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo restaurar el respaldo seleccionado.'),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isRestoringBackup = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _showExportSuccessDialog({
-    required String title,
-    required ExportFileEntity file,
-  }) async {
-    _exportFileActionsController.clearError();
-
-    await showDialog<void>(
-      context: context,
-      builder: (_) {
-        return ExportFileActionsDialog(
-          title: title,
-          file: file,
-          controller: _exportFileActionsController,
-        );
-      },
-    );
-  }
-
   void _resetDraft() {
     setState(() {
       _hydrateDraftFromController();
@@ -283,11 +79,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String _labelFor(List<_OptionItem> options, String value) {
     for (final option in options) {
-      if (option.value == value) {
-        return option.label;
-      }
+      if (option.value == value) return option.label;
     }
-
     return value;
   }
 
@@ -301,9 +94,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           appBar: AppBar(
             title: Text(
               'Ajustes',
-              style: GoogleFonts.manrope(
-                fontWeight: FontWeight.w700,
-              ),
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
             ),
             actions: [
               IconButton(
@@ -314,9 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
           body: _controller.isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(),
-                )
+              ? const Center(child: CircularProgressIndicator())
               : ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
@@ -327,9 +116,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: Column(
                         children: [
                           DropdownButtonFormField<String>(
-                            key: ValueKey(
-                              'currency_$_selectedCurrencyCode',
-                            ),
+                            key: ValueKey('currency_$_selectedCurrencyCode'),
                             initialValue: _selectedCurrencyCode,
                             decoration: const InputDecoration(
                               labelText: 'Moneda base',
@@ -344,10 +131,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 .toList(),
                             onChanged: (value) {
                               if (value == null) return;
-
-                              setState(() {
-                                _selectedCurrencyCode = value;
-                              });
+                              setState(() => _selectedCurrencyCode = value);
                             },
                           ),
                           const SizedBox(height: 16),
@@ -362,9 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: SwitchListTile.adaptive(
                               value: _useSystemLocale,
                               onChanged: (value) {
-                                setState(() {
-                                  _useSystemLocale = value;
-                                });
+                                setState(() => _useSystemLocale = value);
                               },
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -399,10 +181,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ? null
                                 : (value) {
                                     if (value == null) return;
-
-                                    setState(() {
-                                      _selectedLocaleCode = value;
-                                    });
+                                    setState(() => _selectedLocaleCode = value);
                                   },
                           ),
                         ],
@@ -447,83 +226,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             value: AppFormatters.formatShortDateWith(
                               value: DateTime.now(),
                               localeCode: _effectiveLocaleCode,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _SectionCard(
-                      title: 'Exportación y respaldo',
-                      subtitle:
-                          'Genera archivos locales o restaura un respaldo completo de forma segura.',
-                      child: Column(
-                        children: [
-                          OutlinedButton.icon(
-                            onPressed:
-                                _isBusyWithBackupActions ? null : _exportBackup,
-                            icon: _isExportingBackup
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(Icons.backup_rounded),
-                            label: Text(
-                              _isExportingBackup
-                                  ? 'Generando respaldo...'
-                                  : 'Exportar respaldo JSON',
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(48),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          OutlinedButton.icon(
-                            onPressed:
-                                _isBusyWithBackupActions ? null : _exportCsv,
-                            icon: _isExportingCsv
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(Icons.table_view_rounded),
-                            label: Text(
-                              _isExportingCsv
-                                  ? 'Generando CSV...'
-                                  : 'Exportar transacciones CSV',
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(48),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          FilledButton.icon(
-                            onPressed: _isBusyWithBackupActions
-                                ? null
-                                : _restoreBackup,
-                            icon: _isRestoringBackup
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Icon(Icons.restore_rounded),
-                            label: Text(
-                              _isRestoringBackup
-                                  ? 'Validando respaldo...'
-                                  : 'Restaurar desde respaldo JSON',
-                            ),
-                            style: FilledButton.styleFrom(
-                              minimumSize: const Size.fromHeight(48),
                             ),
                           ),
                         ],
@@ -613,10 +315,7 @@ class _SectionCard extends StatelessWidget {
 }
 
 class _PreviewRow extends StatelessWidget {
-  const _PreviewRow({
-    required this.label,
-    required this.value,
-  });
+  const _PreviewRow({required this.label, required this.value});
 
   final String label;
   final String value;
