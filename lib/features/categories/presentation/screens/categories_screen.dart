@@ -30,6 +30,15 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   CategoryKind _selectedKind = CategoryKind.expense;
   List<CategoryEntity> _categories = <CategoryEntity>[];
 
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  List<CategoryEntity> get _filteredCategories {
+    if (_searchQuery.isEmpty) return _categories;
+    final q = _searchQuery.toLowerCase();
+    return _categories.where((c) => c.name.toLowerCase().contains(q)).toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -37,7 +46,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     _createCategory = CategoriesRegistry.module.createCategory;
     _updateCategory = CategoriesRegistry.module.updateCategory;
     _archiveCategory = CategoriesRegistry.module.archiveCategory;
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text);
+    });
     _loadCategories();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCategories() async {
@@ -303,6 +321,37 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          TextField(
+            controller: _searchController,
+            style: GoogleFonts.manrope(color: AppTheme.onSurface),
+            decoration: InputDecoration(
+              hintText: 'Buscar categoría...',
+              hintStyle: GoogleFonts.manrope(color: AppTheme.onSurfaceMuted),
+              prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.onSurfaceMuted),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.close_rounded, color: AppTheme.onSurfaceMuted),
+                      onPressed: () => _searchController.clear(),
+                    )
+                  : null,
+              filled: true,
+              fillColor: AppTheme.surface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: AppTheme.primary.withValues(alpha: 0.6)),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+          ),
+          const SizedBox(height: 16),
           Row(
             children: [
               _KindChip(
@@ -326,7 +375,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 child: CircularProgressIndicator(),
               ),
             )
-          else if (_categories.isEmpty)
+          else if (_filteredCategories.isEmpty)
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -334,12 +383,14 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Text(
-                'Todavía no hay categorías para este tipo.',
+                _searchQuery.isNotEmpty
+                    ? 'Sin resultados para "$_searchQuery".'
+                    : 'Todavía no hay categorías para este tipo.',
                 style: GoogleFonts.manrope(color: AppTheme.onSurfaceMuted),
               ),
             )
           else
-            ..._categories.map(
+            ..._filteredCategories.map(
               (category) => Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
