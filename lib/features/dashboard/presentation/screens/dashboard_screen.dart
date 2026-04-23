@@ -14,16 +14,19 @@ import '../widgets/goal_alert_banner_widget.dart';
 import '../widgets/recent_transactions_widget.dart';
 import '../widgets/recurring_alert_banner_widget.dart';
 import '../widgets/trend_chart_widget.dart';
+import '../widgets/welcome_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
     super.key,
     this.onOpenTransactionsTab,
     this.onOpenBudgetsTab,
+    this.onOpenAccountsTab,
   });
 
   final Future<void> Function()? onOpenTransactionsTab;
   final Future<void> Function()? onOpenBudgetsTab;
+  final Future<void> Function()? onOpenAccountsTab;
 
   @override
   DashboardScreenState createState() => DashboardScreenState();
@@ -36,6 +39,7 @@ class DashboardScreenState extends State<DashboardScreen> {
   bool _isLoading = true;
   int _refreshVersion = 0;
   DashboardSummaryData? _summary;
+  bool _welcomeChecked = false;
 
   @override
   void initState() {
@@ -71,6 +75,13 @@ class DashboardScreenState extends State<DashboardScreen> {
         _summary = summary;
         _isLoading = false;
       });
+
+      if (!_welcomeChecked) {
+        _welcomeChecked = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showWelcomeIfNeeded();
+        });
+      }
     } catch (e, s) {
       debugPrint('Error loading dashboard summary: $e');
       debugPrintStack(stackTrace: s);
@@ -81,6 +92,39 @@ class DashboardScreenState extends State<DashboardScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  void _showWelcomeIfNeeded() {
+    if (!mounted) return;
+    final controller = SettingsRegistry.module.controller;
+    if (controller.hasCompletedOnboarding) return;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => WelcomeSheet(
+        onGoToAccounts: () {
+          Navigator.of(context).pop();
+          _markOnboardingComplete();
+          widget.onOpenAccountsTab?.call();
+        },
+        onDismiss: () {
+          Navigator.of(context).pop();
+          _markOnboardingComplete();
+        },
+      ),
+    );
+  }
+
+  void _markOnboardingComplete() {
+    final c = SettingsRegistry.module.controller;
+    c.saveGeneralSettings(
+      currencyCode: c.currentSettings.currencyCode,
+      localeCode: c.currentSettings.localeCode,
+      useSystemLocale: c.currentSettings.useSystemLocale,
+      hasCompletedOnboarding: true,
+    );
   }
 
   Future<void> _goToPreviousMonth() async {

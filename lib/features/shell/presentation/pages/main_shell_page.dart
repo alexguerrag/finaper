@@ -30,6 +30,7 @@ class _MainShellPageState extends State<MainShellPage> {
         key: _dashboardKey,
         onOpenTransactionsTab: () => _switchTab(1),
         onOpenBudgetsTab: () => _switchTab(2),
+        onOpenAccountsTab: () => _switchTab(3),
       ),
       const TransactionsScreen(),
       const BudgetsScreen(),
