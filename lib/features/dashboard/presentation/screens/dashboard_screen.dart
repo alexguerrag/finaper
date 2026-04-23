@@ -209,13 +209,14 @@ class DashboardScreenState extends State<DashboardScreen> {
               'Finaper',
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.w700,
+                color: const Color(0xFFCDD5E0),
               ),
             ),
             Text(
-              'Tu inicio financiero',
+              'Controla tu dinero',
               style: GoogleFonts.manrope(
                 fontSize: 12,
-                color: AppTheme.onSurfaceMuted,
+                color: const Color(0xFFB8A060),
               ),
             ),
           ],

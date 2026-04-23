@@ -593,55 +593,31 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _isCopyingPreviousMonth
-                                ? null
-                                : _copyBudgetsFromPreviousMonth,
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(48),
-                              side: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.10),
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            icon: _isCopyingPreviousMonth
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(Icons.content_copy_rounded),
-                            label: Text(
-                              _isCopyingPreviousMonth
-                                  ? 'Copiando...'
-                                  : 'Copiar mes anterior',
-                            ),
-                          ),
+                    OutlinedButton.icon(
+                      onPressed: _isCopyingPreviousMonth
+                          ? null
+                          : _copyBudgetsFromPreviousMonth,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.10),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: FilledButton.icon(
-                            onPressed: _openAddBudgetSheet,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppTheme.primary,
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size.fromHeight(48),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            icon: const Icon(Icons.add_rounded),
-                            label: const Text('Crear'),
-                          ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                      ],
+                      ),
+                      icon: _isCopyingPreviousMonth
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.content_copy_rounded),
+                      label: Text(
+                        _isCopyingPreviousMonth
+                            ? 'Copiando...'
+                            : 'Copiar mes anterior',
+                      ),
                     ),
                   ],
                 ),
