@@ -335,8 +335,8 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                             Text(
                               'Transacciones',
                               style: GoogleFonts.manrope(
-                                fontSize: 30,
-                                fontWeight: FontWeight.w800,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
                                 color: AppTheme.onSurface,
                               ),
                             ),
