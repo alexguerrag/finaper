@@ -243,10 +243,20 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: _loadCategories,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
+    return Scaffold(
+      backgroundColor: AppTheme.background,
+      appBar: AppBar(
+        title: Text(
+          'Categorías',
+          style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+        ),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadCategories,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
         children: [
           Row(
             children: [
@@ -423,7 +433,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             ),
         ],
       ),
-    );
+    ),
+  );
   }
 }
 
