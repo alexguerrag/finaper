@@ -293,16 +293,20 @@ class _AccountsScreenState extends State<AccountsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadAccountBalances,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
+    return Scaffold(
+      backgroundColor: AppTheme.background,
+      appBar: AppBar(
+        title: Text(
+          'Cuentas',
+          style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+        ),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadAccountBalances,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
         children: [
           Row(
             children: [
@@ -430,7 +434,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
           ],
         ],
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildAccountCard(AccountBalanceEntity item,
