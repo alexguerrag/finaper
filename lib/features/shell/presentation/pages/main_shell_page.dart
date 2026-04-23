@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../accounts/presentation/screens/accounts_screen.dart';
 import '../../../budgets/presentation/screens/budgets_screen.dart';
 import '../../../dashboard/presentation/screens/dashboard_screen.dart';
 import '../../../transactions/presentation/screens/transactions_screen.dart';
@@ -32,6 +33,7 @@ class _MainShellPageState extends State<MainShellPage> {
       ),
       const TransactionsScreen(),
       const BudgetsScreen(),
+      const AccountsScreen(),
       MoreScreen(onRefreshDashboard: _refreshDashboard),
     ];
   }
@@ -85,6 +87,12 @@ class _MainShellPageState extends State<MainShellPage> {
             selectedIcon: Icon(Icons.savings_rounded),
             label: 'Presupuestos',
             tooltip: 'Presupuestos del mes',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.account_balance_wallet_outlined),
+            selectedIcon: Icon(Icons.account_balance_wallet_rounded),
+            label: 'Cuentas',
+            tooltip: 'Mis cuentas',
           ),
           NavigationDestination(
             icon: Icon(Icons.grid_view_rounded),

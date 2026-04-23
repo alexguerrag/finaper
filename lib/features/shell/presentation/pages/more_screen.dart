@@ -35,10 +35,10 @@ class MoreScreen extends StatelessWidget {
             onTap: () => _navigate(context, AppRoutes.goals),
           ),
           _MoreTile(
-            icon: Icons.folder_outlined,
-            label: 'Catálogos',
-            subtitle: 'Cuentas y categorías',
-            onTap: () => _navigate(context, AppRoutes.catalogs),
+            icon: Icons.label_outlined,
+            label: 'Categorías',
+            subtitle: 'Organiza tus movimientos por tipo',
+            onTap: () => _navigate(context, AppRoutes.categories),
           ),
           _MoreTile(
             icon: Icons.repeat_rounded,
