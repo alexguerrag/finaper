@@ -69,33 +69,26 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
               color: AppTheme.onSurface,
             ),
           ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: _SnapshotMetricItem(
-                  label: 'Flujo del mes',
-                  value: _formatSignedCurrency(netFlow),
-                  color: flowColor,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _SnapshotMetricItem(
-                  label: 'Ingresos',
-                  value: AppFormatters.formatCurrency(income),
-                  color: AppTheme.income,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _SnapshotMetricItem(
-                  label: 'Gastos',
-                  value: AppFormatters.formatCurrency(expense),
-                  color: AppTheme.expense,
-                ),
-              ),
-            ],
+          const SizedBox(height: 16),
+          const Divider(color: Colors.white10, height: 1),
+          const SizedBox(height: 12),
+          _SnapshotMetricRow(
+            label: 'Ingresos',
+            value: AppFormatters.formatCurrency(income),
+            color: AppTheme.income,
+          ),
+          const SizedBox(height: 10),
+          _SnapshotMetricRow(
+            label: 'Gastos',
+            value: AppFormatters.formatCurrency(expense),
+            color: AppTheme.expense,
+          ),
+          const SizedBox(height: 10),
+          _SnapshotMetricRow(
+            label: 'Flujo del mes',
+            value: _formatSignedCurrency(netFlow),
+            color: flowColor,
+            bold: true,
           ),
         ],
       ),
@@ -190,54 +183,42 @@ class _MonthButton extends StatelessWidget {
   }
 }
 
-class _SnapshotMetricItem extends StatelessWidget {
-  const _SnapshotMetricItem({
+class _SnapshotMetricRow extends StatelessWidget {
+  const _SnapshotMetricRow({
     required this.label,
     required this.value,
     required this.color,
+    this.bold = false,
   });
 
   final String label;
   final String value;
   final Color color;
+  final bool bold;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
             label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.manrope(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.onSurfaceMuted,
+              fontSize: 13,
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+              color: bold ? AppTheme.onSurface : AppTheme.onSurfaceMuted,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.manrope(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.manrope(
+            fontSize: 13,
+            fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+            color: color,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
