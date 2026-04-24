@@ -92,6 +92,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   height: 1.5,
                 ),
               ),
+              const SizedBox(height: 12),
+              Text(
+                'Lo primero que debes hacer al entrar es agregar una cuenta con el saldo que tienes hoy. Eso le dará a Finaper el punto de partida para mostrarte tu situación real.',
+                style: GoogleFonts.manrope(
+                  fontSize: 13,
+                  color: AppTheme.primary.withValues(alpha: 0.85),
+                  height: 1.55,
+                ),
+              ),
               const SizedBox(height: 40),
 
               // Currency
