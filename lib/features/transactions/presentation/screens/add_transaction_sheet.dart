@@ -51,7 +51,15 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   _QuickDateOption _quickDateOption = _QuickDateOption.today;
 
   List<AccountEntity> _accounts = <AccountEntity>[];
+  Map<String, double> _accountBalances = {};
   List<CategoryEntity> _categories = <CategoryEntity>[];
+
+  /// For expense transactions, hides accounts with zero or negative balance.
+  /// For income, all accounts are visible (any account can receive money).
+  List<AccountEntity> get _visibleAccounts {
+    if (_isIncome) return _accounts;
+    return _accounts.where((a) => (_accountBalances[a.id] ?? 0) > 0).toList();
+  }
 
   String? _selectedAccountId;
   String? _selectedCategoryId;
@@ -136,17 +144,23 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       _applyPreferences(preferences);
 
       final accounts = await AccountsRegistry.module.getAccounts();
+      final balances = await AccountsRegistry.module.getAccountBalances();
       final categories = await CategoriesRegistry.module.getCategoriesByKind(
         kind: _currentCategoryKind,
       );
 
       if (!mounted) return;
 
+      final balanceMap = {
+        for (final b in balances) b.account.id: b.currentBalance,
+      };
+
       final resolvedAccountId = _resolveAccountId(accounts);
       final resolvedCategoryId = _resolveCategoryId(categories);
 
       setState(() {
         _accounts = accounts;
+        _accountBalances = balanceMap;
         _categories = categories;
         _selectedAccountId = resolvedAccountId;
         _selectedCategoryId = resolvedCategoryId;
@@ -548,6 +562,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     _noteController.clear();
     _selectedDate = _dateOnly(DateTime.now());
     _quickDateOption = _QuickDateOption.today;
+    _selectedCategoryId = null;
+    // _selectedAccountId intentionally kept — user likely entering from same account
 
     _formKey.currentState?.reset();
 
@@ -724,13 +740,17 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                               const SizedBox(height: 12),
                               DropdownButtonFormField<String>(
                                 key: ValueKey(
-                                  'account-${_selectedAccountId ?? 'empty'}',
+                                  'account-${_isIncome ? 'inc' : 'exp'}-${_selectedAccountId ?? 'empty'}',
                                 ),
-                                initialValue: _selectedAccountId,
+                                initialValue: _visibleAccounts.any(
+                                  (a) => a.id == _selectedAccountId,
+                                )
+                                    ? _selectedAccountId
+                                    : null,
                                 decoration: const InputDecoration(
                                   labelText: 'Cuenta',
                                 ),
-                                items: _accounts
+                                items: _visibleAccounts
                                     .map(
                                       (account) => DropdownMenuItem<String>(
                                         value: account.id,
