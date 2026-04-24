@@ -117,12 +117,30 @@ class AccountsLocalDataSourceImpl implements AccountsLocalDataSource {
     try {
       final db = await _databaseHelper.database;
 
-      await db.update(
-        'accounts',
-        account.toMap(),
-        where: 'id = ?',
-        whereArgs: [account.id],
-      );
+      await db.transaction((txn) async {
+        await txn.update(
+          'accounts',
+          account.toMap(),
+          where: 'id = ?',
+          whereArgs: [account.id],
+        );
+
+        // Propagate name change to denormalized columns in transactions
+        await txn.rawUpdate(
+          'UPDATE transactions SET account_name = ? WHERE account_id = ?',
+          [account.name, account.id],
+        );
+        await txn.rawUpdate(
+          'UPDATE transactions SET counterparty_account_name = ? WHERE counterparty_account_id = ?',
+          [account.name, account.id],
+        );
+
+        // Propagate to recurring transactions
+        await txn.rawUpdate(
+          'UPDATE recurring_transactions SET account_name = ? WHERE account_id = ?',
+          [account.name, account.id],
+        );
+      });
 
       return account;
     } catch (e, s) {
