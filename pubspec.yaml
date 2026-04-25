@@ -1,5 +1,5 @@
 name: finaper
-description: "A new Flutter project."
+description: "App de finanzas personales para organizar ingresos, gastos, cuentas y presupuestos."
 publish_to: 'none'
 
 version: 1.4.0+1

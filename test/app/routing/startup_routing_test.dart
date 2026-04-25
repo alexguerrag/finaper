@@ -116,7 +116,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Metas'), findsOneWidget);
-        expect(find.text('Catálogos'), findsOneWidget);
+        expect(find.text('Categorías'), findsOneWidget);
         expect(find.text('Recurrentes'), findsOneWidget);
         expect(find.text('Datos y respaldo'), findsOneWidget);
         expect(find.text('Ajustes'), findsOneWidget);
