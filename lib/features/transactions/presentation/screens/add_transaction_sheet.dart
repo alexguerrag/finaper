@@ -61,6 +61,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     return _accounts.where((a) => (_accountBalances[a.id] ?? 0) > 0).toList();
   }
 
+  int _resetCount = 0;
+
   String? _selectedAccountId;
   String? _selectedCategoryId;
 
@@ -560,14 +562,14 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     _amountController.clear();
     _descriptionController.clear();
     _noteController.clear();
-    _selectedDate = _dateOnly(DateTime.now());
-    _quickDateOption = _QuickDateOption.today;
-    _selectedCategoryId = null;
-    // _selectedAccountId intentionally kept — user likely entering from same account
 
-    _formKey.currentState?.reset();
-
-    setState(() {});
+    setState(() {
+      _selectedDate = _dateOnly(DateTime.now());
+      _quickDateOption = _QuickDateOption.today;
+      _selectedCategoryId = null;
+      _resetCount++;
+      // _selectedAccountId intentionally kept — user likely entering from same account
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -710,7 +712,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                               const SizedBox(height: 16),
                               DropdownButtonFormField<String>(
                                 key: ValueKey(
-                                  'category-${_isIncome ? 'income' : 'expense'}-${_selectedCategoryId ?? 'empty'}',
+                                  'category-${_isIncome ? 'income' : 'expense'}-$_resetCount-${_selectedCategoryId ?? 'empty'}',
                                 ),
                                 initialValue: _selectedCategoryId,
                                 decoration: const InputDecoration(
