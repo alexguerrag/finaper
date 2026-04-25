@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/enums/category_kind.dart';
+import '../../../../core/formatters/app_formatters.dart';
+import '../../../../core/formatters/currency_input_formatter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../categories/di/categories_registry.dart';
 import '../../../categories/domain/entities/category_entity.dart';
@@ -40,7 +42,10 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
 
     if (_isEditing) {
       // In edit mode: pre-fill amount, skip category loading
-      _amountController.text = widget.initialBudget!.amountLimit.toString();
+      _amountController.text = ThousandsInputFormatter.formatForInput(
+        widget.initialBudget!.amountLimit,
+        decimalDigits: AppFormatters.currentCurrencyDecimalDigits,
+      );
       _isLoading = false;
     } else {
       _loadExpenseCategories();
@@ -96,8 +101,10 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
     });
 
     try {
-      final normalized = _amountController.text.trim().replaceAll(',', '.');
-      final amount = double.parse(normalized);
+      final amount = ThousandsInputFormatter.parse(
+        _amountController.text.trim(),
+      );
+      if (amount == null) return;
       final now = DateTime.now();
 
       BudgetModel budget;
@@ -358,44 +365,26 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
 
                         TextFormField(
                           controller: _amountController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            ThousandsInputFormatter(
+                              decimalDigits:
+                                  AppFormatters.currentCurrencyDecimalDigits,
+                            ),
+                          ],
                           enabled: hasCategories,
                           decoration: const InputDecoration(
                             labelText: 'Límite mensual',
-                            hintText: 'Ej. 500.00',
                           ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Ingresa un límite';
                             }
-
-                            final normalized =
-                                value.trim().replaceAll(',', '.');
-                            final parsed = double.tryParse(normalized);
-
-                            if (parsed == null) {
-                              return 'Monto inválido';
-                            }
-
-                            if (parsed <= 0) {
-                              return 'Debe ser mayor a cero';
-                            }
-
+                            final parsed =
+                                ThousandsInputFormatter.parse(value.trim());
+                            if (parsed == null) return 'Monto inválido';
+                            if (parsed <= 0) return 'Debe ser mayor a cero';
                             return null;
-                          },
-                          onChanged: (value) {
-                            final normalized = value.replaceAll(',', '.');
-                            if (normalized != value) {
-                              _amountController.value =
-                                  _amountController.value.copyWith(
-                                text: normalized,
-                                selection: TextSelection.collapsed(
-                                  offset: normalized.length,
-                                ),
-                              );
-                            }
                           },
                         ),
                         const SizedBox(height: 22),
