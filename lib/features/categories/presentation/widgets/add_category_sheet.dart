@@ -67,11 +67,16 @@ class _AddCategorySheetState extends State<AddCategorySheet> {
 
     final initial = widget.initialCategory;
 
+    final rawName = _nameController.text.trim();
+    final name = rawName.isEmpty
+        ? rawName
+        : rawName[0].toUpperCase() + rawName.substring(1);
+
     final category = CategoryModel(
       id: initial != null
           ? initial.id
           : 'cat-${_selectedKind.value}-${DateTime.now().millisecondsSinceEpoch}',
-      name: _nameController.text.trim(),
+      name: name,
       kind: _selectedKind,
       iconCode: initial != null
           ? initial.iconCode
@@ -129,6 +134,7 @@ class _AddCategorySheetState extends State<AddCategorySheet> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _nameController,
+                    textCapitalization: TextCapitalization.sentences,
                     decoration: const InputDecoration(
                       labelText: 'Nombre',
                       hintText: 'Ej. Mascotas, Viajes, Bonos',
