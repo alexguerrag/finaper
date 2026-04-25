@@ -9,6 +9,7 @@ import '../../../accounts/di/accounts_registry.dart';
 import '../../../accounts/domain/entities/account_entity.dart';
 import '../../../categories/di/categories_registry.dart';
 import '../../../categories/domain/entities/category_entity.dart';
+import '../../../categories/presentation/widgets/add_category_sheet.dart';
 import '../../data/models/transaction_model.dart';
 import '../../di/transactions_registry.dart';
 import '../../domain/entities/transaction_form_preferences_entity.dart';
@@ -60,8 +61,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     if (_isIncome) return _accounts;
     return _accounts.where((a) => (_accountBalances[a.id] ?? 0) > 0).toList();
   }
-
-  int _resetCount = 0;
 
   String? _selectedAccountId;
   String? _selectedCategoryId;
@@ -567,7 +566,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       _selectedDate = _dateOnly(DateTime.now());
       _quickDateOption = _QuickDateOption.today;
       _selectedCategoryId = null;
-      _resetCount++;
       // _selectedAccountId intentionally kept — user likely entering from same account
     });
 
@@ -575,6 +573,39 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       if (!mounted) return;
       _amountFocusNode.requestFocus();
     });
+  }
+
+  Future<void> _openCategoryPicker() async {
+    final result = await showModalBottomSheet<CategoryEntity>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _CategoryPickerSheet(
+        categories: _categories,
+        selectedId: _selectedCategoryId,
+        kind: _currentCategoryKind,
+      ),
+    );
+
+    if (result == null || !mounted) return;
+
+    final isNew = !_categories.any((c) => c.id == result.id);
+    if (isNew) {
+      final fresh = await CategoriesRegistry.module.getCategoriesByKind(
+        kind: _currentCategoryKind,
+      );
+      if (!mounted) return;
+      setState(() {
+        _categories = fresh;
+        _selectedCategoryId = result.id;
+        _rememberCurrentCategorySelection(result.id);
+      });
+    } else {
+      setState(() {
+        _selectedCategoryId = result.id;
+        _rememberCurrentCategorySelection(result.id);
+      });
+    }
   }
 
   AccountEntity? _selectedAccount() {
@@ -710,34 +741,11 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                                 focusNode: _amountFocusNode,
                               ),
                               const SizedBox(height: 16),
-                              DropdownButtonFormField<String>(
-                                key: ValueKey(
-                                  'category-${_isIncome ? 'income' : 'expense'}-$_resetCount-${_selectedCategoryId ?? 'empty'}',
-                                ),
-                                initialValue: _selectedCategoryId,
-                                decoration: const InputDecoration(
-                                  labelText: 'Categoría',
-                                ),
-                                items: _categories
-                                    .map(
-                                      (category) => DropdownMenuItem<String>(
-                                        value: category.id,
-                                        child: Text(category.name),
-                                      ),
-                                    )
-                                    .toList(),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Selecciona una categoría';
-                                  }
-                                  return null;
-                                },
-                                onChanged: (value) {
-                                  setState(() {
-                                    _selectedCategoryId = value;
-                                    _rememberCurrentCategorySelection(value);
-                                  });
-                                },
+                              _CategorySelectorField(
+                                selectedCategory: _selectedCategory(),
+                                onTap: _isLoadingCoreData
+                                    ? null
+                                    : _openCategoryPicker,
                               ),
                               const SizedBox(height: 12),
                               DropdownButtonFormField<String>(
@@ -1023,6 +1031,188 @@ class _QuickDateChip extends StatelessWidget {
                 color: selected ? AppTheme.onSurface : AppTheme.onSurfaceMuted,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategorySelectorField extends StatelessWidget {
+  const _CategorySelectorField({
+    required this.selectedCategory,
+    required this.onTap,
+  });
+
+  final CategoryEntity? selectedCategory;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: InputDecorator(
+        isEmpty: selectedCategory == null,
+        decoration: const InputDecoration(
+          labelText: 'Categoría',
+          suffixIcon: Icon(Icons.arrow_drop_down),
+        ),
+        child: selectedCategory != null
+            ? Text(
+                selectedCategory!.name,
+                style: GoogleFonts.manrope(
+                  fontSize: 16,
+                  color: AppTheme.onSurface,
+                ),
+              )
+            : const SizedBox.shrink(),
+      ),
+    );
+  }
+}
+
+class _CategoryPickerSheet extends StatelessWidget {
+  const _CategoryPickerSheet({
+    required this.categories,
+    required this.selectedId,
+    required this.kind,
+  });
+
+  final List<CategoryEntity> categories;
+  final String? selectedId;
+  final CategoryKind kind;
+
+  Future<void> _handleCreateNew(BuildContext context) async {
+    final result = await showModalBottomSheet<CategoryEntity>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => AddCategorySheet(initialKind: kind),
+    );
+
+    if (result == null || !context.mounted) return;
+
+    try {
+      await CategoriesRegistry.module.createCategory(result);
+      if (!context.mounted) return;
+      Navigator.of(context).pop(result);
+    } catch (e, s) {
+      debugPrint('Quick create category error: $e');
+      debugPrintStack(stackTrace: s);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo crear la categoría.',
+            style: GoogleFonts.manrope(),
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.75,
+        ),
+        decoration: const BoxDecoration(
+          color: AppTheme.surfaceElevated,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 16),
+            Center(
+              child: Container(
+                width: 48,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Seleccionar categoría',
+                  style: GoogleFonts.manrope(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.onSurface,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: categories.length,
+                itemBuilder: (context, index) {
+                  final cat = categories[index];
+                  final isSelected = cat.id == selectedId;
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                    title: Text(
+                      cat.name,
+                      style: GoogleFonts.manrope(
+                        fontSize: 15,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
+                        color: AppTheme.onSurface,
+                      ),
+                    ),
+                    trailing: isSelected
+                        ? const Icon(
+                            Icons.check_rounded,
+                            color: AppTheme.primary,
+                            size: 20,
+                          )
+                        : null,
+                    onTap: () => Navigator.of(context).pop(cat),
+                  );
+                },
+              ),
+            ),
+            Divider(
+              height: 1,
+              color: Colors.white.withValues(alpha: 0.08),
+            ),
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+              leading: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: AppTheme.primary,
+                  size: 18,
+                ),
+              ),
+              title: Text(
+                'Nueva categoría',
+                style: GoogleFonts.manrope(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.primary,
+                ),
+              ),
+              onTap: () => _handleCreateNew(context),
+            ),
+            const SizedBox(height: 12),
           ],
         ),
       ),
