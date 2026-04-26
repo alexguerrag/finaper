@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-
 Future<Database> _openInMemoryDb() async {
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
@@ -181,8 +180,7 @@ void main() {
       expect(rows.first['account_name'], 'Cuenta Pro');
     });
 
-    test(
-        'actualiza counterparty_account_name en transactions de transferencia',
+    test('actualiza counterparty_account_name en transactions de transferencia',
         () async {
       await datasource.updateAccount(_testAccount(name: 'Cuenta Pro'));
 
