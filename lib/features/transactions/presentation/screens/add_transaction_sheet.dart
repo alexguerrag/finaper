@@ -903,7 +903,7 @@ class _AmountHeroField extends StatelessWidget {
           decoration: InputDecoration(
             labelText: 'Monto',
             hintText: hintText,
-            prefixText: '\$ ',
+            prefixText: '${AppFormatters.currentCurrencySymbol} ',
             prefixStyle: GoogleFonts.manrope(
               fontSize: 24,
               fontWeight: FontWeight.w700,
