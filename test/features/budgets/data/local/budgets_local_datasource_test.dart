@@ -8,8 +8,6 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 Future<Database> _openInMemoryDb() async {
-  sqfliteFfiInit();
-  databaseFactory = databaseFactoryFfi;
   final db = await databaseFactoryFfi.openDatabase(inMemoryDatabasePath);
 
   await db.execute('''

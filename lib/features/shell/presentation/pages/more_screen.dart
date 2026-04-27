@@ -28,6 +28,8 @@ class MoreScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
+          const _HowItWorksCard(),
+          const SizedBox(height: 8),
           _MoreTile(
             icon: Icons.savings_outlined,
             label: 'Presupuestos',
@@ -136,6 +138,97 @@ class _MoreTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _HowItWorksCard extends StatelessWidget {
+  const _HowItWorksCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      decoration: BoxDecoration(
+        color: AppTheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.16)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.lightbulb_outline_rounded,
+                  size: 16, color: AppTheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                '¿Cómo funciona Finaper?',
+                style: GoogleFonts.manrope(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const _HowItWorksRow(
+            icon: Icons.account_balance_wallet_rounded,
+            concept: 'Cuentas',
+            description: 'dónde tienes tu dinero',
+          ),
+          const SizedBox(height: 8),
+          const _HowItWorksRow(
+            icon: Icons.receipt_long_rounded,
+            concept: 'Movimientos',
+            description: 'lo que haces con él',
+          ),
+          const SizedBox(height: 8),
+          const _HowItWorksRow(
+            icon: Icons.savings_rounded,
+            concept: 'Presupuestos',
+            description: 'tu control mensual',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HowItWorksRow extends StatelessWidget {
+  const _HowItWorksRow({
+    required this.icon,
+    required this.concept,
+    required this.description,
+  });
+
+  final IconData icon;
+  final String concept;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: AppTheme.onSurfaceMuted),
+        const SizedBox(width: 10),
+        Text(
+          concept,
+          style: GoogleFonts.manrope(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.onSurface,
+          ),
+        ),
+        Text(
+          '  →  $description',
+          style: GoogleFonts.manrope(
+            fontSize: 13,
+            color: AppTheme.onSurfaceMuted,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -74,6 +74,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             children: [
               const SizedBox(height: 16),
 
+              // Icon
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    size: 36,
+                    color: AppTheme.primary,
+                  ),
+                  Positioned(
+                    top: -4,
+                    right: -8,
+                    child: Icon(
+                      Icons.auto_awesome,
+                      size: 14,
+                      color: AppTheme.primary.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
               // Header
               Text(
                 'Bienvenido a Finaper',
@@ -83,28 +105,110 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   color: AppTheme.onSurface,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
-                'Configura tu moneda y región antes de comenzar. Puedes cambiarlas después en Ajustes.',
+                'Empieza a controlar tu dinero',
                 style: GoogleFonts.manrope(
-                  fontSize: 14,
+                  fontSize: 15,
                   color: AppTheme.onSurfaceMuted,
-                  height: 1.5,
+                  height: 1.4,
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Lo primero que debes hacer al entrar es agregar una cuenta con el saldo que tienes hoy. Eso le dará a Finaper el punto de partida para mostrarte tu situación real.',
-                style: GoogleFonts.manrope(
-                  fontSize: 13,
-                  color: AppTheme.primary.withValues(alpha: 0.85),
-                  height: 1.55,
+              const SizedBox(height: 24),
+
+              // Step indicator
+              Row(
+                children: [
+                  Expanded(
+                    child: Divider(
+                      color: Colors.white.withValues(alpha: 0.10),
+                      thickness: 1,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: AppTheme.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Paso 1 de 2',
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            color: AppTheme.onSurfaceMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Divider(
+                      color: Colors.white.withValues(alpha: 0.10),
+                      thickness: 1,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Hint card
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.lightbulb_outline_rounded,
+                      size: 20,
+                      color: AppTheme.primary.withValues(alpha: 0.8),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Después podrás crear tu primera cuenta',
+                            style: GoogleFonts.manrope(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.onSurface,
+                              height: 1.35,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Ej. Banco, Efectivo o Tarjeta',
+                            style: GoogleFonts.manrope(
+                              fontSize: 12,
+                              color: AppTheme.onSurfaceMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
 
               // Currency
-              const _SectionLabel(label: 'Moneda principal'),
+              const _SectionLabel(label: 'Selecciona tu moneda'),
               const SizedBox(height: 8),
               _DropdownCard<String>(
                 value: _selectedCurrency,
@@ -119,7 +223,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               const SizedBox(height: 24),
 
               // Locale
-              const _SectionLabel(label: 'Región / idioma'),
+              const _SectionLabel(label: 'Selecciona tu idioma'),
               const SizedBox(height: 8),
               _DropdownCard<String>(
                 value: _useSystemLocale ? null : _selectedLocale,
@@ -143,7 +247,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               // CTA
               SizedBox(
                 width: double.infinity,
-                child: FilledButton(
+                child: FilledButton.icon(
                   onPressed: _isSaving ? null : _complete,
                   style: FilledButton.styleFrom(
                     backgroundColor: AppTheme.primary,
@@ -153,22 +257,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: _isSaving
+                  icon: _isSaving
                       ? const SizedBox(
-                          width: 22,
-                          height: 22,
+                          width: 18,
+                          height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.2,
                             color: Colors.white,
                           ),
                         )
-                      : Text(
-                          'Comenzar',
-                          style: GoogleFonts.manrope(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
-                          ),
-                        ),
+                      : const Icon(Icons.arrow_forward_rounded, size: 20),
+                  iconAlignment: IconAlignment.end,
+                  label: Text(
+                    'Continuar',
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
               ),
             ],

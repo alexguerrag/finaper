@@ -68,7 +68,6 @@ class DatabaseHelper {
       await _createRecurringTransactionsTable(db);
       await _createAppSettingsTable(db);
       await _createTransactionFormPreferencesTable(db);
-      await _seedAccounts(db);
       await _seedCategories(db);
       await _seedAppSettings(db);
       await _createIndexes(db);
@@ -84,7 +83,6 @@ class DatabaseHelper {
       if (oldVersion < 3) {
         await _createAccountsTable(db);
         await _createCategoriesTable(db);
-        await _seedAccounts(db);
         await _seedCategories(db);
 
         final hasTransactions = await _tableExists(db, 'transactions');
@@ -490,43 +488,6 @@ class DatabaseHelper {
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_recurring_transactions_category_id ON recurring_transactions(category_id)',
     );
-  }
-
-  Future<void> _seedAccounts(Database db) async {
-    final now = DateTime.now().toIso8601String();
-
-    final accounts = <Map<String, dynamic>>[
-      {
-        'id': defaultAccountId,
-        'name': defaultAccountName,
-        'type': 'cash',
-        'icon_code': Icons.account_balance_wallet_rounded.codePoint,
-        'color_value': Colors.blue.toARGB32(),
-        'initial_balance': 0.0,
-        'is_archived': 0,
-        'created_at': now,
-      },
-      {
-        'id': 'acc-savings-main',
-        'name': 'Ahorros',
-        'type': 'savings',
-        'icon_code': Icons.savings_rounded.codePoint,
-        'color_value': Colors.green.toARGB32(),
-        'initial_balance': 0.0,
-        'is_archived': 0,
-        'created_at': now,
-      },
-    ];
-
-    final batch = db.batch();
-    for (final account in accounts) {
-      batch.insert(
-        'accounts',
-        account,
-        conflictAlgorithm: ConflictAlgorithm.ignore,
-      );
-    }
-    await batch.commit(noResult: true);
   }
 
   Future<void> _seedCategories(Database db) async {

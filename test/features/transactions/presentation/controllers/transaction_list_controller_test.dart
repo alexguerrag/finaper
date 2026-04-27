@@ -12,6 +12,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../helpers/locale_test_helper.dart';
+
 // ── fake settings (no SQLite) ────────────────────────────────────────────────
 
 class _FakeSettingsRepo implements AppSettingsRepository {
@@ -97,6 +99,8 @@ final _txOld = _tx(
 );
 
 void main() {
+  setUpAll(() async => initTestLocales());
+
   group('TransactionListController', () {
     late TransactionListController controller;
 
