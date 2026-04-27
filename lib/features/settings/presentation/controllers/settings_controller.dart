@@ -22,14 +22,14 @@ class SettingsController extends ChangeNotifier {
 
   /// Single source of truth for selectable currencies: (code, display label).
   static const List<(String, String)> supportedCurrencies = [
-    ('CLP', 'Peso chileno (CLP)'),
-    ('USD', 'Dólar estadounidense (USD)'),
-    ('EUR', 'Euro (EUR)'),
-    ('ARS', 'Peso argentino (ARS)'),
-    ('BRL', 'Real brasileño (BRL)'),
-    ('COP', 'Peso colombiano (COP)'),
-    ('MXN', 'Peso mexicano (MXN)'),
-    ('PEN', 'Sol peruano (PEN)'),
+    ('CLP', '🇨🇱  Peso chileno (CLP)'),
+    ('USD', '🇺🇸  Dólar estadounidense (USD)'),
+    ('EUR', '🇪🇺  Euro (EUR)'),
+    ('ARS', '🇦🇷  Peso argentino (ARS)'),
+    ('BRL', '🇧🇷  Real brasileño (BRL)'),
+    ('COP', '🇨🇴  Peso colombiano (COP)'),
+    ('MXN', '🇲🇽  Peso mexicano (MXN)'),
+    ('PEN', '🇵🇪  Sol peruano (PEN)'),
   ];
 
   /// Single source of truth for selectable locales: (code, display label).

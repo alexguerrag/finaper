@@ -279,23 +279,29 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   Widget build(BuildContext context) {
     final canPop = Navigator.of(context).canPop();
 
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: FloatingActionButton.extended(
-          onPressed: _openAddTransactionSheet,
-          backgroundColor: AppTheme.primary,
-          foregroundColor: Colors.white,
-          icon: const Icon(Icons.add_rounded),
-          label: Text(
-            'Nueva',
-            style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
-          ),
-        ),
-      ),
-      body: SafeArea(
+    return ListenableBuilder(
+      listenable: _controller,
+      builder: (context, _) {
+        final hasTransactions = _controller.allTransactions.isNotEmpty;
+        return Scaffold(
+          backgroundColor: AppTheme.background,
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          floatingActionButton: hasTransactions
+              ? Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: FloatingActionButton.extended(
+                    onPressed: _openAddTransactionSheet,
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    icon: const Icon(Icons.add_rounded),
+                    label: Text(
+                      'Nueva',
+                      style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                )
+              : null,
+          body: SafeArea(
         child: ListenableBuilder(
           listenable: _controller,
           builder: (context, _) {
@@ -543,6 +549,8 @@ class TransactionsScreenState extends State<TransactionsScreen> {
           },
         ),
       ),
+        );
+      },
     );
   }
 }

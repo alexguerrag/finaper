@@ -7,8 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 Future<Database> _openInMemoryDb() async {
-  sqfliteFfiInit();
-  databaseFactory = databaseFactoryFfi;
   final db = await databaseFactoryFfi.openDatabase(inMemoryDatabasePath);
 
   await db.execute('''
@@ -87,6 +85,11 @@ void main() {
   group('AccountsLocalDataSourceImpl.updateAccount — name propagation', () {
     late Database db;
     late AccountsLocalDataSourceImpl datasource;
+
+    setUpAll(() {
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    });
 
     setUp(() async {
       db = await _openInMemoryDb();

@@ -383,16 +383,65 @@ class _AccountsScreenState extends State<AccountsScreen> {
                   const SizedBox(height: 16),
                   if (_activeBalances.isEmpty)
                     Container(
-                      padding: const EdgeInsets.all(20),
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 32),
                       decoration: BoxDecoration(
                         color: AppTheme.surface,
                         borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.04)),
                       ),
-                      child: Text(
-                        'Todavía no hay cuentas activas.',
-                        style: GoogleFonts.manrope(
-                          color: AppTheme.onSurfaceMuted,
-                        ),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: AppTheme.primary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: const Icon(
+                              Icons.account_balance_wallet_rounded,
+                              size: 30,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Crea tu primera cuenta',
+                            style: GoogleFonts.manrope(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Las cuentas representan dónde tienes tu dinero: banco, efectivo o tarjeta.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.manrope(
+                              fontSize: 13,
+                              height: 1.45,
+                              color: AppTheme.onSurfaceMuted,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          FilledButton.icon(
+                            onPressed: _openAddSheet,
+                            style: FilledButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            icon: const Icon(Icons.add_rounded, size: 18),
+                            label: Text(
+                              'Nueva cuenta',
+                              style:
+                                  GoogleFonts.manrope(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   else

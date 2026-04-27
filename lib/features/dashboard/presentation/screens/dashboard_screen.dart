@@ -191,70 +191,75 @@ class DashboardScreenState extends State<DashboardScreen> {
           ? const Center(
               child: CircularProgressIndicator(),
             )
-          : (summary != null && !summary.hasAccounts)
-              ? _NoAccountsState(onCreateAccount: widget.onOpenAccountsTab)
-              : RefreshIndicator(
-              onRefresh: refreshSummary,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  DashboardFinancialSnapshotWidget(
-                    monthLabel: summary?.monthLabel ?? '',
-                    consolidatedBalance: summary?.consolidatedBalance ?? 0,
-                    netFlow: summary?.monthNetFlow ?? 0,
-                    income: summary?.monthIncome ?? 0,
-                    expense: summary?.monthExpense ?? 0,
-                    canGoToNextMonth: _canGoToNextMonth,
-                    onPreviousMonth: _goToPreviousMonth,
-                    onNextMonth: _goToNextMonth,
-                  ),
-                  const SizedBox(height: 16),
-                  DashboardBudgetSummaryWidget(
-                    month: _selectedMonth,
-                    refreshToken: _refreshVersion,
-                    onManagePressed: _goToBudgets,
-                  ),
-                  const SizedBox(height: 16),
-                  BudgetAlertBannerWidget(
-                    month: _selectedMonth,
-                    refreshToken: _refreshVersion,
-                    onManagePressed: _goToBudgets,
-                  ),
-                  const SizedBox(height: 16),
-                  RecurringAlertBannerWidget(
-                    refreshToken: _refreshVersion,
-                    onManagePressed: _goToRecurring,
-                  ),
-                  const SizedBox(height: 16),
-                  GoalAlertBannerWidget(
-                    refreshToken: _refreshVersion,
-                    onManagePressed: _goToGoals,
-                  ),
-                  const SizedBox(height: 16),
-                  DashboardTopExpenseCategoriesWidget(
-                    categories: summary?.topExpenseCategories ?? const [],
-                    totalExpense: summary?.monthExpense ?? 0,
-                  ),
-                  const SizedBox(height: 16),
-                  TrendChartWidget(
-                    data: summary?.monthlyTrend ?? const [],
-                  ),
-                  const SizedBox(height: 16),
-                  RecentTransactionsWidget(
-                    transactionsOverride: summary?.recentTransactions,
-                    onSeeAll: _goToTransactions,
-                  ),
-                ],
-              ),
-            ),
+          : (summary != null && !summary.hasAccountsWithBalance)
+              ? _NoAccountsState(onGoToAccounts: widget.onOpenAccountsTab)
+              : (summary != null && !summary.hasAnyTransactions)
+                  ? _NoTransactionsState(
+                      onGoToTransactions: widget.onOpenTransactionsTab)
+                  : RefreshIndicator(
+                      onRefresh: refreshSummary,
+                      child: ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          DashboardFinancialSnapshotWidget(
+                            monthLabel: summary?.monthLabel ?? '',
+                            consolidatedBalance:
+                                summary?.consolidatedBalance ?? 0,
+                            netFlow: summary?.monthNetFlow ?? 0,
+                            income: summary?.monthIncome ?? 0,
+                            expense: summary?.monthExpense ?? 0,
+                            canGoToNextMonth: _canGoToNextMonth,
+                            onPreviousMonth: _goToPreviousMonth,
+                            onNextMonth: _goToNextMonth,
+                          ),
+                          const SizedBox(height: 16),
+                          DashboardBudgetSummaryWidget(
+                            month: _selectedMonth,
+                            refreshToken: _refreshVersion,
+                            onManagePressed: _goToBudgets,
+                          ),
+                          const SizedBox(height: 16),
+                          BudgetAlertBannerWidget(
+                            month: _selectedMonth,
+                            refreshToken: _refreshVersion,
+                            onManagePressed: _goToBudgets,
+                          ),
+                          const SizedBox(height: 16),
+                          RecurringAlertBannerWidget(
+                            refreshToken: _refreshVersion,
+                            onManagePressed: _goToRecurring,
+                          ),
+                          const SizedBox(height: 16),
+                          GoalAlertBannerWidget(
+                            refreshToken: _refreshVersion,
+                            onManagePressed: _goToGoals,
+                          ),
+                          const SizedBox(height: 16),
+                          DashboardTopExpenseCategoriesWidget(
+                            categories:
+                                summary?.topExpenseCategories ?? const [],
+                            totalExpense: summary?.monthExpense ?? 0,
+                          ),
+                          const SizedBox(height: 16),
+                          TrendChartWidget(
+                            data: summary?.monthlyTrend ?? const [],
+                          ),
+                          const SizedBox(height: 16),
+                          RecentTransactionsWidget(
+                            transactionsOverride: summary?.recentTransactions,
+                            onSeeAll: _goToTransactions,
+                          ),
+                        ],
+                      ),
+                    ),
     );
   }
 }
 
 class _NoAccountsState extends StatelessWidget {
-  const _NoAccountsState({this.onCreateAccount});
+  const _NoAccountsState({this.onGoToAccounts});
 
-  final Future<void> Function()? onCreateAccount;
+  final Future<void> Function()? onGoToAccounts;
 
   @override
   Widget build(BuildContext context) {
@@ -279,7 +284,7 @@ class _NoAccountsState extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'Primero crea una cuenta',
+              'Configura tu primera cuenta',
               textAlign: TextAlign.center,
               style: GoogleFonts.manrope(
                 fontSize: 22,
@@ -289,7 +294,7 @@ class _NoAccountsState extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'Las cuentas representan dónde tienes tu dinero:\nbanco, efectivo o tarjeta.',
+              'Las cuentas representan dónde tienes tu dinero.\nEj: banco, efectivo o tarjeta.',
               textAlign: TextAlign.center,
               style: GoogleFonts.manrope(
                 fontSize: 14,
@@ -297,27 +302,18 @@ class _NoAccountsState extends StatelessWidget {
                 color: AppTheme.onSurfaceMuted,
               ),
             ),
-            const SizedBox(height: 20),
-            const Wrap(
-              spacing: 8,
-              children: [
-                _ExampleChip(label: 'Banco'),
-                _ExampleChip(label: 'Efectivo'),
-                _ExampleChip(label: 'Tarjeta'),
-              ],
-            ),
             const SizedBox(height: 32),
             FilledButton.icon(
-              onPressed: onCreateAccount,
+              onPressed: onGoToAccounts,
               style: FilledButton.styleFrom(
                 minimumSize: const Size(220, 52),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              icon: const Icon(Icons.add_rounded),
+              icon: const Icon(Icons.account_balance_wallet_rounded),
               label: Text(
-                'Crear cuenta',
+                'Ir a Cuentas',
                 style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
               ),
             ),
@@ -328,26 +324,68 @@ class _NoAccountsState extends StatelessWidget {
   }
 }
 
-class _ExampleChip extends StatelessWidget {
-  const _ExampleChip({required this.label});
+class _NoTransactionsState extends StatelessWidget {
+  const _NoTransactionsState({this.onGoToTransactions});
 
-  final String label;
+  final Future<void> Function()? onGoToTransactions;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.manrope(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: AppTheme.onSurfaceMuted,
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: const Icon(
+                Icons.receipt_long_rounded,
+                size: 36,
+                color: AppTheme.primary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Registra tu primer movimiento',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.manrope(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Los movimientos son tus ingresos y gastos del día a día.\nEj: sueldo, supermercado, transporte.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.manrope(
+                fontSize: 14,
+                height: 1.5,
+                color: AppTheme.onSurfaceMuted,
+              ),
+            ),
+            const SizedBox(height: 32),
+            FilledButton.icon(
+              onPressed: onGoToTransactions,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(220, 52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              icon: const Icon(Icons.add_rounded),
+              label: Text(
+                'Agregar movimiento',
+                style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
         ),
       ),
     );
