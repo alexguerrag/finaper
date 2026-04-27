@@ -634,7 +634,7 @@ class TxEmptyState extends StatelessWidget {
           Text(
             hasActiveFilters
                 ? 'No encontramos movimientos'
-                : 'Todavía no tienes transacciones',
+                : 'Aún no tienes movimientos',
             textAlign: TextAlign.center,
             style: GoogleFonts.manrope(
               fontSize: 16,
@@ -646,10 +646,10 @@ class TxEmptyState extends StatelessWidget {
           Text(
             hasActiveFilters
                 ? 'Prueba con otros filtros o limpia la búsqueda actual.'
-                : 'Comienza registrando tu primer ingreso o gasto.',
+                : 'Aquí verás tus ingresos y gastos diarios.\nEmpieza registrando el primero.',
             textAlign: TextAlign.center,
             style: GoogleFonts.manrope(
-              height: 1.35,
+              height: 1.45,
               color: AppTheme.onSurfaceMuted,
             ),
           ),
@@ -682,7 +682,7 @@ class TxEmptyState extends StatelessWidget {
                 ),
                 icon: const Icon(Icons.add_rounded),
                 label: Text(
-                  'Nueva transacción',
+                  'Agregar movimiento',
                   style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
                 ),
               ),

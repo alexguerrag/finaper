@@ -50,6 +50,7 @@ class DashboardSummaryData {
     required this.topExpenseCategories,
     required this.hasTransactionsInMonth,
     required this.monthlyTrend,
+    required this.hasAccounts,
   });
 
   final double consolidatedBalance;
@@ -64,6 +65,7 @@ class DashboardSummaryData {
   final List<DashboardExpenseCategorySummary> topExpenseCategories;
   final bool hasTransactionsInMonth;
   final List<MonthlyTrendPoint> monthlyTrend;
+  final bool hasAccounts;
 }
 
 class DashboardLocalDataSource {
@@ -186,6 +188,7 @@ class DashboardLocalDataSource {
       topExpenseCategories: topExpenseCategories.take(4).toList(),
       hasTransactionsInMonth: monthTransactions.isNotEmpty,
       monthlyTrend: monthlyTrend,
+      hasAccounts: accountBalances.isNotEmpty,
     );
   }
 

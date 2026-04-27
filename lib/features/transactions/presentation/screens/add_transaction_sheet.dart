@@ -1055,6 +1055,7 @@ class _CategorySelectorField extends StatelessWidget {
         isEmpty: selectedCategory == null,
         decoration: const InputDecoration(
           labelText: 'Categoría',
+          hintText: 'Ej: comida, transporte, sueldo',
           suffixIcon: Icon(Icons.arrow_drop_down),
         ),
         child: selectedCategory != null

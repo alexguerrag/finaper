@@ -191,7 +191,9 @@ class DashboardScreenState extends State<DashboardScreen> {
           ? const Center(
               child: CircularProgressIndicator(),
             )
-          : RefreshIndicator(
+          : (summary != null && !summary.hasAccounts)
+              ? _NoAccountsState(onCreateAccount: widget.onOpenAccountsTab)
+              : RefreshIndicator(
               onRefresh: refreshSummary,
               child: ListView(
                 padding: const EdgeInsets.all(16),
@@ -245,6 +247,109 @@ class DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
+    );
+  }
+}
+
+class _NoAccountsState extends StatelessWidget {
+  const _NoAccountsState({this.onCreateAccount});
+
+  final Future<void> Function()? onCreateAccount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: const Icon(
+                Icons.account_balance_wallet_rounded,
+                size: 36,
+                color: AppTheme.primary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Primero crea una cuenta',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.manrope(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Las cuentas representan dónde tienes tu dinero:\nbanco, efectivo o tarjeta.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.manrope(
+                fontSize: 14,
+                height: 1.5,
+                color: AppTheme.onSurfaceMuted,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Wrap(
+              spacing: 8,
+              children: [
+                _ExampleChip(label: 'Banco'),
+                _ExampleChip(label: 'Efectivo'),
+                _ExampleChip(label: 'Tarjeta'),
+              ],
+            ),
+            const SizedBox(height: 32),
+            FilledButton.icon(
+              onPressed: onCreateAccount,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(220, 52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              icon: const Icon(Icons.add_rounded),
+              label: Text(
+                'Crear cuenta',
+                style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExampleChip extends StatelessWidget {
+  const _ExampleChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.manrope(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: AppTheme.onSurfaceMuted,
+        ),
+      ),
     );
   }
 }
