@@ -51,7 +51,7 @@ class DashboardSummaryData {
     required this.hasTransactionsInMonth,
     required this.monthlyTrend,
     required this.hasAnyTransactions,
-    required this.hasAccountsWithBalance,
+    required this.hasAnyAccounts,
   });
 
   final double consolidatedBalance;
@@ -67,7 +67,7 @@ class DashboardSummaryData {
   final bool hasTransactionsInMonth;
   final List<MonthlyTrendPoint> monthlyTrend;
   final bool hasAnyTransactions;
-  final bool hasAccountsWithBalance;
+  final bool hasAnyAccounts;
 }
 
 class DashboardLocalDataSource {
@@ -191,7 +191,7 @@ class DashboardLocalDataSource {
       hasTransactionsInMonth: monthTransactions.isNotEmpty,
       monthlyTrend: monthlyTrend,
       hasAnyTransactions: transactions.isNotEmpty,
-      hasAccountsWithBalance: accountBalances.any((a) => a.currentBalance != 0),
+      hasAnyAccounts: accountBalances.isNotEmpty,
     );
   }
 
