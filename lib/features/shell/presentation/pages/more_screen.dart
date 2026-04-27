@@ -28,8 +28,7 @@ class MoreScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
-          const _HowItWorksCard(),
-          const SizedBox(height: 8),
+          const _SectionHeader(label: 'Herramientas'),
           _MoreTile(
             icon: Icons.savings_outlined,
             label: 'Presupuestos',
@@ -37,11 +36,18 @@ class MoreScreen extends StatelessWidget {
             onTap: () => _navigate(context, AppRoutes.budgets),
           ),
           _MoreTile(
+            icon: Icons.repeat_rounded,
+            label: 'Recurrentes',
+            subtitle: 'Pagos y cobros programados',
+            onTap: () => _navigate(context, AppRoutes.recurringTransactions),
+          ),
+          _MoreTile(
             icon: Icons.flag_rounded,
             label: 'Metas',
             subtitle: 'Seguimiento de objetivos de ahorro',
             onTap: () => _navigate(context, AppRoutes.goals),
           ),
+          const _SectionHeader(label: 'Configuración'),
           _MoreTile(
             icon: Icons.label_outlined,
             label: 'Categorías',
@@ -49,24 +55,44 @@ class MoreScreen extends StatelessWidget {
             onTap: () => _navigate(context, AppRoutes.categories),
           ),
           _MoreTile(
-            icon: Icons.repeat_rounded,
-            label: 'Recurrentes',
-            subtitle: 'Transacciones programadas',
-            onTap: () => _navigate(context, AppRoutes.recurringTransactions),
+            icon: Icons.settings_outlined,
+            label: 'Ajustes',
+            subtitle: 'Moneda, idioma y preferencias',
+            onTap: () => _navigate(context, AppRoutes.settings),
           ),
+          const _SectionHeader(label: 'Datos'),
           _MoreTile(
             icon: Icons.backup_rounded,
             label: 'Datos y respaldo',
             subtitle: 'Exportar respaldo, CSV y restaurar',
             onTap: () => _navigate(context, AppRoutes.backup),
           ),
-          _MoreTile(
-            icon: Icons.settings_outlined,
-            label: 'Ajustes',
-            subtitle: 'Moneda, idioma y preferencias',
-            onTap: () => _navigate(context, AppRoutes.settings),
-          ),
+          const _SectionHeader(label: 'Ayuda'),
+          const _HowItWorksCard(),
+          const SizedBox(height: 8),
         ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 20, bottom: 4, left: 4),
+      child: Text(
+        label.toUpperCase(),
+        style: GoogleFonts.manrope(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: AppTheme.onSurfaceMuted,
+          letterSpacing: 0.8,
+        ),
       ),
     );
   }
@@ -189,6 +215,24 @@ class _HowItWorksCard extends StatelessWidget {
             icon: Icons.savings_rounded,
             concept: 'Presupuestos',
             description: 'tu control mensual',
+          ),
+          const SizedBox(height: 8),
+          const _HowItWorksRow(
+            icon: Icons.repeat_rounded,
+            concept: 'Recurrentes',
+            description: 'lo que pagas o cobras cada mes',
+          ),
+          const SizedBox(height: 8),
+          const _HowItWorksRow(
+            icon: Icons.flag_rounded,
+            concept: 'Metas',
+            description: 'guarda dinero para algo específico',
+          ),
+          const SizedBox(height: 8),
+          const _HowItWorksRow(
+            icon: Icons.label_outlined,
+            concept: 'Categorías',
+            description: 'clasifica y etiqueta tus movimientos',
           ),
         ],
       ),

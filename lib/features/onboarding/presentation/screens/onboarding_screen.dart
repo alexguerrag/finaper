@@ -116,48 +116,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Step indicator
-              Row(
-                children: [
-                  Expanded(
-                    child: Divider(
-                      color: Colors.white.withValues(alpha: 0.10),
-                      thickness: 1,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(
-                            color: AppTheme.primary,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Paso 1 de 2',
-                          style: GoogleFonts.manrope(
-                            fontSize: 12,
-                            color: AppTheme.onSurfaceMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Divider(
-                      color: Colors.white.withValues(alpha: 0.10),
-                      thickness: 1,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
               // Hint card
               Container(
                 padding: const EdgeInsets.symmetric(
