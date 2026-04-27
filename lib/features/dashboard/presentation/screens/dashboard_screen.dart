@@ -191,7 +191,7 @@ class DashboardScreenState extends State<DashboardScreen> {
           ? const Center(
               child: CircularProgressIndicator(),
             )
-          : (summary != null && !summary.hasAccountsWithBalance)
+          : (summary != null && !summary.hasAnyAccounts)
               ? _NoAccountsState(onGoToAccounts: widget.onOpenAccountsTab)
               : (summary != null && !summary.hasAnyTransactions)
                   ? _NoTransactionsState(
