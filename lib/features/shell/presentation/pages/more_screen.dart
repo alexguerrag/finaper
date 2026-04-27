@@ -9,6 +9,17 @@ class MoreScreen extends StatelessWidget {
 
   final Future<void> Function() onRefreshDashboard;
 
+  void _showHowItWorks(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppTheme.surfaceElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const _HowItWorksSheet(),
+    );
+  }
+
   Future<void> _navigate(BuildContext context, String route) async {
     await Navigator.pushNamed(context, route);
     if (!context.mounted) return;
@@ -68,7 +79,12 @@ class MoreScreen extends StatelessWidget {
             onTap: () => _navigate(context, AppRoutes.backup),
           ),
           const _SectionHeader(label: 'Ayuda'),
-          const _HowItWorksCard(),
+          _MoreTile(
+            icon: Icons.lightbulb_outline_rounded,
+            label: '¿Cómo funciona Finaper?',
+            subtitle: 'Conoce las funcionalidades principales',
+            onTap: () => _showHowItWorks(context),
+          ),
           const SizedBox(height: 8),
         ],
       ),
@@ -168,73 +184,82 @@ class _MoreTile extends StatelessWidget {
   }
 }
 
-class _HowItWorksCard extends StatelessWidget {
-  const _HowItWorksCard();
+class _HowItWorksSheet extends StatelessWidget {
+  const _HowItWorksSheet();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-      decoration: BoxDecoration(
-        color: AppTheme.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.16)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.lightbulb_outline_rounded,
-                  size: 16, color: AppTheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                '¿Cómo funciona Finaper?',
-                style: GoogleFonts.manrope(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.primary,
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const _HowItWorksRow(
-            icon: Icons.account_balance_wallet_rounded,
-            concept: 'Cuentas',
-            description: 'dónde tienes tu dinero',
-          ),
-          const SizedBox(height: 8),
-          const _HowItWorksRow(
-            icon: Icons.receipt_long_rounded,
-            concept: 'Movimientos',
-            description: 'lo que haces con él',
-          ),
-          const SizedBox(height: 8),
-          const _HowItWorksRow(
-            icon: Icons.savings_rounded,
-            concept: 'Presupuestos',
-            description: 'tu control mensual',
-          ),
-          const SizedBox(height: 8),
-          const _HowItWorksRow(
-            icon: Icons.repeat_rounded,
-            concept: 'Recurrentes',
-            description: 'lo que pagas o cobras cada mes',
-          ),
-          const SizedBox(height: 8),
-          const _HowItWorksRow(
-            icon: Icons.flag_rounded,
-            concept: 'Metas',
-            description: 'guarda dinero para algo específico',
-          ),
-          const SizedBox(height: 8),
-          const _HowItWorksRow(
-            icon: Icons.label_outlined,
-            concept: 'Categorías',
-            description: 'clasifica y etiqueta tus movimientos',
-          ),
-        ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                const Icon(Icons.lightbulb_outline_rounded,
+                    size: 18, color: AppTheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  '¿Cómo funciona Finaper?',
+                  style: GoogleFonts.manrope(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const _HowItWorksRow(
+              icon: Icons.account_balance_wallet_rounded,
+              concept: 'Cuentas',
+              description: 'dónde tienes tu dinero',
+            ),
+            const SizedBox(height: 12),
+            const _HowItWorksRow(
+              icon: Icons.receipt_long_rounded,
+              concept: 'Movimientos',
+              description: 'lo que haces con él',
+            ),
+            const SizedBox(height: 12),
+            const _HowItWorksRow(
+              icon: Icons.savings_rounded,
+              concept: 'Presupuestos',
+              description: 'tu control mensual',
+            ),
+            const SizedBox(height: 12),
+            const _HowItWorksRow(
+              icon: Icons.repeat_rounded,
+              concept: 'Recurrentes',
+              description: 'lo que pagas o cobras cada mes',
+            ),
+            const SizedBox(height: 12),
+            const _HowItWorksRow(
+              icon: Icons.flag_rounded,
+              concept: 'Metas',
+              description: 'guarda dinero para algo específico',
+            ),
+            const SizedBox(height: 12),
+            const _HowItWorksRow(
+              icon: Icons.label_outlined,
+              concept: 'Categorías',
+              description: 'clasifica y etiqueta tus movimientos',
+            ),
+          ],
+        ),
       ),
     );
   }
