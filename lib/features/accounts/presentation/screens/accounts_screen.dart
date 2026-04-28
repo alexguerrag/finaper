@@ -18,10 +18,10 @@ class AccountsScreen extends StatefulWidget {
   const AccountsScreen({super.key});
 
   @override
-  State<AccountsScreen> createState() => _AccountsScreenState();
+  State<AccountsScreen> createState() => AccountsScreenState();
 }
 
-class _AccountsScreenState extends State<AccountsScreen> {
+class AccountsScreenState extends State<AccountsScreen> {
   late final GetAccountBalances _getAccountBalances;
   late final CreateAccount _createAccount;
   late final UpdateAccount _updateAccount;
@@ -53,6 +53,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
   }
 
   bool get _canTransfer => _activeBalances.length >= 2;
+
+  Future<void> refresh() => _loadAccountBalances();
 
   Future<void> _loadAccountBalances() async {
     try {
