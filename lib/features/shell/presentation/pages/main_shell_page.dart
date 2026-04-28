@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
-import '../../../accounts/presentation/screens/accounts_screen.dart';
+import '../../../accounts/presentation/screens/accounts_screen.dart' show AccountsScreen, AccountsScreenState;
 import '../../../dashboard/presentation/screens/dashboard_screen.dart';
 import '../../../transactions/presentation/screens/transactions_screen.dart';
 import 'more_screen.dart';
@@ -19,6 +19,9 @@ class _MainShellPageState extends State<MainShellPage> {
   final GlobalKey<DashboardScreenState> _dashboardKey =
       GlobalKey<DashboardScreenState>();
 
+  final GlobalKey<AccountsScreenState> _accountsKey =
+      GlobalKey<AccountsScreenState>();
+
   late final List<Widget> _pages;
 
   @override
@@ -31,7 +34,7 @@ class _MainShellPageState extends State<MainShellPage> {
         onOpenAccountsTab: () => _switchTab(2),
       ),
       const TransactionsScreen(),
-      const AccountsScreen(),
+      AccountsScreen(key: _accountsKey),
       MoreScreen(onRefreshDashboard: _refreshDashboard),
     ];
   }
@@ -51,6 +54,10 @@ class _MainShellPageState extends State<MainShellPage> {
 
     if (index == 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _refreshDashboard());
+    } else if (index == 2) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _accountsKey.currentState?.refresh(),
+      );
     }
   }
 
