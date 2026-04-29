@@ -11,6 +11,7 @@ class DashboardConfig {
       DashboardCardType.totalBalance,
       DashboardCardType.budgetSummary,
       DashboardCardType.expenseBreakdown,
+      DashboardCardType.monthlyComparison,
       DashboardCardType.projection,
       DashboardCardType.insights,
     ],

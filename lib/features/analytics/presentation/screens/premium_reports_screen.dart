@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../dashboard/data/local/dashboard_local_datasource.dart';
+import '../../../dashboard/di/dashboard_registry.dart';
+import '../../../dashboard/presentation/widgets/trend_chart_widget.dart';
 import '../../di/analytics_registry.dart';
 import '../../domain/entities/analytics_insight_entity.dart';
 import '../../domain/entities/month_projection_entity.dart';
@@ -19,6 +22,7 @@ class PremiumReportsScreen extends StatefulWidget {
 class _PremiumReportsScreenState extends State<PremiumReportsScreen> {
   late final PremiumReportsController _controller;
   late final DateTime _month;
+  List<MonthlyTrendPoint>? _trend;
 
   @override
   void initState() {
@@ -27,6 +31,15 @@ class _PremiumReportsScreenState extends State<PremiumReportsScreen> {
     final now = DateTime.now();
     _month = DateTime(now.year, now.month, 1);
     _controller.load(_month);
+    _loadTrend();
+  }
+
+  Future<void> _loadTrend() async {
+    try {
+      final summary = await DashboardRegistry.module.dashboardLocalDataSource
+          .getSummary(month: _month);
+      if (mounted) setState(() => _trend = summary.monthlyTrend);
+    } catch (_) {}
   }
 
   @override
@@ -66,6 +79,14 @@ class _PremiumReportsScreenState extends State<PremiumReportsScreen> {
                 _ProjectionCard(projection: reports.projection),
                 const SizedBox(height: 16),
                 _InsightsCard(insights: reports.insights),
+                if (_trend != null && _trend!.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _ReportCard(
+                    title: 'Tendencia 6 meses',
+                    icon: Icons.show_chart_rounded,
+                    child: TrendChartWidget(data: _trend!),
+                  ),
+                ],
                 const SizedBox(height: 24),
               ],
             ),

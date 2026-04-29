@@ -7,6 +7,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../analytics/di/analytics_registry.dart';
 import '../../../analytics/domain/entities/analytics_insight_entity.dart';
 import '../../../analytics/domain/entities/month_projection_entity.dart';
+import '../../../analytics/domain/entities/monthly_comparison_entity.dart';
 import '../../../analytics/domain/entities/premium_reports_entity.dart';
 import '../../../analytics/domain/usecases/get_premium_reports.dart';
 import '../../../settings/di/settings_registry.dart';
@@ -195,6 +196,9 @@ class DashboardScreenState extends State<DashboardScreen> {
           categories: summary.topExpenseCategories,
           totalExpense: summary.monthExpense,
         ),
+      DashboardCardType.monthlyComparison => _reports != null
+          ? _MonthlyComparisonCard(data: _reports!.comparison)
+          : const SizedBox.shrink(),
       DashboardCardType.projection => _reports != null
           ? _ProjectionCard(data: _reports!.projection)
           : const SizedBox.shrink(),
@@ -292,51 +296,47 @@ class _TotalBalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onGoToAccounts != null
-          ? () => onGoToAccounts!()
-          : null,
+      onTap: onGoToAccounts != null ? () => onGoToAccounts!() : null,
       child: Container(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
         decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'SALDO TOTAL',
-                    style: GoogleFonts.manrope(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.onSurfaceMuted,
-                      letterSpacing: 0.8,
-                    ),
+            Row(
+              children: [
+                Text(
+                  'Saldo total',
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.onSurfaceMuted,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    AppFormatters.formatCurrency(balance),
-                    style: GoogleFonts.manrope(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      height: 1,
-                      letterSpacing: -0.5,
-                      color: AppTheme.onSurface,
-                    ),
+                ),
+                const Spacer(),
+                if (onGoToAccounts != null)
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppTheme.onSurfaceMuted,
+                    size: 18,
                   ),
-                ],
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              AppFormatters.formatCurrency(balance),
+              style: GoogleFonts.manrope(
+                fontSize: 36,
+                fontWeight: FontWeight.w800,
+                height: 1,
+                letterSpacing: -0.8,
+                color: AppTheme.onSurface,
               ),
             ),
-            if (onGoToAccounts != null)
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppTheme.onSurfaceMuted,
-                size: 20,
-              ),
           ],
         ),
       ),
@@ -347,6 +347,152 @@ class _TotalBalanceCard extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Premium cards
 // ---------------------------------------------------------------------------
+
+class _MonthlyComparisonCard extends StatelessWidget {
+  const _MonthlyComparisonCard({required this.data});
+
+  final MonthlyComparisonEntity data;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.compare_arrows_rounded,
+                  size: 14, color: AppTheme.onSurfaceMuted),
+              const SizedBox(width: 6),
+              Text(
+                'COMPARACIÓN MENSUAL',
+                style: GoogleFonts.manrope(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.onSurfaceMuted,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Divider(color: Colors.white10, height: 1),
+          const SizedBox(height: 14),
+          if (!data.hasPreviousMonthData)
+            Text(
+              'Aún no hay suficientes datos para comparar con el mes anterior.',
+              style: GoogleFonts.manrope(
+                fontSize: 13,
+                color: AppTheme.onSurfaceMuted,
+                height: 1.4,
+              ),
+            )
+          else ...[
+            _ComparisonRow(
+              label: 'Ingresos',
+              current: data.currentIncome,
+              delta: data.incomeDelta,
+            ),
+            const SizedBox(height: 10),
+            _ComparisonRow(
+              label: 'Gastos',
+              current: data.currentExpense,
+              delta: data.expenseDelta,
+            ),
+            const SizedBox(height: 10),
+            _ComparisonRow(
+              label: 'Flujo del mes',
+              current: data.currentNetFlow,
+              delta: data.netFlowDelta,
+              bold: true,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ComparisonRow extends StatelessWidget {
+  const _ComparisonRow({
+    required this.label,
+    required this.current,
+    required this.delta,
+    this.bold = false,
+  });
+
+  final String label;
+  final double current;
+  final double delta;
+  final bool bold;
+
+  @override
+  Widget build(BuildContext context) {
+    final isPositive = delta >= 0;
+    final deltaColor = isPositive ? AppTheme.income : AppTheme.expense;
+    final deltaSign = isPositive ? '+' : '';
+    final deltaText =
+        '$deltaSign${AppFormatters.formatCurrency(delta.abs())}';
+
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: GoogleFonts.manrope(
+              fontSize: 13,
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+              color: bold ? AppTheme.onSurface : AppTheme.onSurfaceMuted,
+            ),
+          ),
+        ),
+        Text(
+          AppFormatters.formatCurrency(current.abs()),
+          style: GoogleFonts.manrope(
+            fontSize: 13,
+            fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+            color: AppTheme.onSurface,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: deltaColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isPositive
+                    ? Icons.arrow_upward_rounded
+                    : Icons.arrow_downward_rounded,
+                size: 10,
+                color: deltaColor,
+              ),
+              const SizedBox(width: 2),
+              Text(
+                deltaText,
+                style: GoogleFonts.manrope(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: deltaColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _ProjectionCard extends StatelessWidget {
   const _ProjectionCard({required this.data});
@@ -629,6 +775,11 @@ class _LockedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (title, description, icon) = switch (type) {
+      DashboardCardType.monthlyComparison => (
+          'Comparación mensual',
+          '¿Cómo vas vs el mismo punto del mes anterior?',
+          Icons.compare_arrows_rounded,
+        ),
       DashboardCardType.projection => (
           'Proyección de cierre',
           '¿Terminarás el mes en positivo o negativo?',

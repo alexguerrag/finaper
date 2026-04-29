@@ -46,18 +46,6 @@ class MoreScreen extends StatelessWidget {
         children: [
           const _SectionHeader(label: 'Herramientas'),
           _MoreTile(
-            icon: hasPremiumAccess
-                ? Icons.bar_chart_rounded
-                : Icons.lock_outline_rounded,
-            label: 'Reportes',
-            subtitle: hasPremiumAccess
-                ? 'Análisis avanzado de tus finanzas'
-                : 'Disponible en Premium',
-            onTap: hasPremiumAccess
-                ? () => _navigate(context, AppRoutes.premiumReports)
-                : () {},
-          ),
-          _MoreTile(
             icon: Icons.savings_outlined,
             label: 'Presupuestos',
             subtitle: 'Límites de gasto por categoría',
@@ -74,6 +62,18 @@ class MoreScreen extends StatelessWidget {
             label: 'Metas',
             subtitle: 'Seguimiento de objetivos de ahorro',
             onTap: () => _navigate(context, AppRoutes.goals),
+          ),
+          _MoreTile(
+            icon: hasPremiumAccess
+                ? Icons.bar_chart_rounded
+                : Icons.lock_outline_rounded,
+            label: 'Reportes',
+            subtitle: hasPremiumAccess
+                ? 'Análisis avanzado de tus finanzas'
+                : 'Disponible en Premium',
+            onTap: hasPremiumAccess
+                ? () => _navigate(context, AppRoutes.premiumReports)
+                : () {},
           ),
           const _SectionHeader(label: 'Configuración'),
           _MoreTile(
