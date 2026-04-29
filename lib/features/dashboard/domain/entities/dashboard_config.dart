@@ -8,7 +8,6 @@ class DashboardConfig {
   static const DashboardConfig defaultConfig = DashboardConfig(
     activeCards: [
       DashboardCardType.monthlyFlow,
-      DashboardCardType.totalBalance,
       DashboardCardType.budgetSummary,
       DashboardCardType.expenseBreakdown,
       DashboardCardType.monthlyComparison,

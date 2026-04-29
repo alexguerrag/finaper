@@ -8,21 +8,25 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
   const DashboardFinancialSnapshotWidget({
     super.key,
     required this.monthLabel,
+    required this.consolidatedBalance,
     required this.netFlow,
     required this.income,
     required this.expense,
     required this.canGoToNextMonth,
     required this.onPreviousMonth,
     required this.onNextMonth,
+    this.onGoToAccounts,
   });
 
   final String monthLabel;
+  final double consolidatedBalance;
   final double netFlow;
   final double income;
   final double expense;
   final bool canGoToNextMonth;
   final VoidCallback onPreviousMonth;
   final VoidCallback onNextMonth;
+  final VoidCallback? onGoToAccounts;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +50,41 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
             canGoToNextMonth: canGoToNextMonth,
             onPreviousMonth: onPreviousMonth,
             onNextMonth: onNextMonth,
+          ),
+          const SizedBox(height: 18),
+          GestureDetector(
+            onTap: onGoToAccounts,
+            child: Row(
+              children: [
+                Text(
+                  'Saldo total',
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.onSurfaceMuted,
+                  ),
+                ),
+                if (onGoToAccounts != null) ...[
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 14,
+                    color: AppTheme.onSurfaceMuted,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            AppFormatters.formatCurrency(consolidatedBalance),
+            style: GoogleFonts.manrope(
+              fontSize: 36,
+              fontWeight: FontWeight.w800,
+              height: 1,
+              letterSpacing: -0.8,
+              color: AppTheme.onSurface,
+            ),
           ),
           const SizedBox(height: 16),
           const Divider(color: Colors.white10, height: 1),

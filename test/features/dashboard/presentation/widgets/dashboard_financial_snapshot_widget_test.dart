@@ -26,8 +26,9 @@ void main() {
 
   group('DashboardFinancialSnapshotWidget', () {
     testWidgets(
-      'renderiza métricas del mes sin saldo total',
+      'renderiza saldo total y métricas del mes',
       (tester) async {
+        final formattedBalance = AppFormatters.formatCurrency(1380);
         final formattedExpense = AppFormatters.formatCurrency(120);
         final formattedZero = AppFormatters.formatCurrency(0);
 
@@ -35,6 +36,7 @@ void main() {
           _buildTestableWidget(
             child: DashboardFinancialSnapshotWidget(
               monthLabel: 'abril de 2026',
+              consolidatedBalance: 1380,
               netFlow: -120,
               income: 0,
               expense: 120,
@@ -48,16 +50,15 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('abril de 2026'), findsOneWidget);
+        expect(find.text('Saldo total'), findsOneWidget);
         expect(find.text('Flujo del mes'), findsOneWidget);
         expect(find.text('Ingresos'), findsOneWidget);
         expect(find.text('Gastos'), findsOneWidget);
 
+        expect(find.text(formattedBalance), findsOneWidget);
         expect(find.text('-$formattedExpense'), findsOneWidget);
         expect(find.text(formattedZero), findsOneWidget);
         expect(find.text(formattedExpense), findsOneWidget);
-
-        // Balance is now in _TotalBalanceCard, not here
-        expect(find.text('Saldo total'), findsNothing);
       },
     );
   });

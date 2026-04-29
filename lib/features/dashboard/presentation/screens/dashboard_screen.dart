@@ -176,12 +176,16 @@ class DashboardScreenState extends State<DashboardScreen> {
     return switch (type) {
       DashboardCardType.monthlyFlow => DashboardFinancialSnapshotWidget(
           monthLabel: summary.monthLabel,
+          consolidatedBalance: summary.consolidatedBalance,
           netFlow: summary.monthNetFlow,
           income: summary.monthIncome,
           expense: summary.monthExpense,
           canGoToNextMonth: _canGoToNextMonth,
           onPreviousMonth: _goToPreviousMonth,
           onNextMonth: _goToNextMonth,
+          onGoToAccounts: widget.onOpenAccountsTab != null
+              ? () => widget.onOpenAccountsTab!()
+              : null,
         ),
       DashboardCardType.totalBalance => _TotalBalanceCard(
           balance: summary.consolidatedBalance,
