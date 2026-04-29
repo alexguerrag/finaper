@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../core/errors/app_exception.dart';
 import '../../core/logging/app_logger.dart';
 import '../../features/accounts/di/accounts_module.dart';
+import '../../features/analytics/di/analytics_module.dart';
 import '../../features/budgets/di/budgets_module.dart';
 import '../../features/categories/di/categories_module.dart';
 import '../../features/dashboard/di/dashboard_module.dart';
@@ -48,6 +49,7 @@ class AppBootstrapController extends ChangeNotifier {
       final recurringTransactionsModule = RecurringTransactionsModule();
       final exportModule = ExportModule();
       final dashboardModule = DashboardModule();
+      final analyticsModule = AnalyticsModule();
 
       AppRegistry.registerModule(settingsModule);
       AppRegistry.registerModule(transactionsModule);
@@ -58,6 +60,7 @@ class AppBootstrapController extends ChangeNotifier {
       AppRegistry.registerModule(recurringTransactionsModule);
       AppRegistry.registerModule(exportModule);
       AppRegistry.registerModule(dashboardModule);
+      AppRegistry.registerModule(analyticsModule);
 
       AppLocator.register<SettingsModule>(settingsModule);
       AppLocator.register<TransactionsModule>(transactionsModule);
@@ -69,6 +72,7 @@ class AppBootstrapController extends ChangeNotifier {
           recurringTransactionsModule);
       AppLocator.register<ExportModule>(exportModule);
       AppLocator.register<DashboardModule>(dashboardModule);
+      AppLocator.register<AnalyticsModule>(analyticsModule);
 
       final composer = AppComposer();
       await composer.compose();

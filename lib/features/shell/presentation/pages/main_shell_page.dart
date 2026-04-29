@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../accounts/presentation/screens/accounts_screen.dart' show AccountsScreen, AccountsScreenState;
+import '../../../analytics/di/analytics_registry.dart';
 import '../../../dashboard/presentation/screens/dashboard_screen.dart';
 import '../../../transactions/presentation/screens/transactions_screen.dart';
 import 'more_screen.dart';
@@ -35,7 +36,11 @@ class _MainShellPageState extends State<MainShellPage> {
       ),
       const TransactionsScreen(),
       AccountsScreen(key: _accountsKey),
-      MoreScreen(onRefreshDashboard: _refreshDashboard),
+      MoreScreen(
+        onRefreshDashboard: _refreshDashboard,
+        hasPremiumAccess:
+            AnalyticsRegistry.module.entitlementService.hasPremiumAccess,
+      ),
     ];
   }
 
