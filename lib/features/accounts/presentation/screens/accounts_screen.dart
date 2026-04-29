@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/enums/account_type.dart';
 import '../../../../core/formatters/app_formatters.dart';
+import '../../../../core/icons/app_icon_catalog.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/account_model.dart';
 import '../../di/accounts_registry.dart';
@@ -525,10 +526,7 @@ class AccountsScreenState extends State<AccountsScreen> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Icon(
-                          IconData(
-                            account.iconCode,
-                            fontFamily: 'MaterialIcons',
-                          ),
+                          AppIconCatalog.resolve(account.iconCode),
                           color: account.color,
                         ),
                       ),

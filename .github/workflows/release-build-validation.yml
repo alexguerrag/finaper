@@ -1,0 +1,61 @@
+name: Release Build Validation
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test with coverage
+        run: flutter test --coverage
+
+      - name: Generate throwaway keystore for CI signing
+        run: |
+          keytool -genkeypair \
+            -alias ci-key \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 1 \
+            -storepass ci-password \
+            -keypass ci-password \
+            -dname "CN=CI,O=CI,C=US" \
+            -storetype PKCS12 \
+            -keystore /tmp/ci-keystore.p12
+          cat <<EOF > android/key.properties
+          keyAlias=ci-key
+          keyPassword=ci-password
+          storeFile=/tmp/ci-keystore.p12
+          storePassword=ci-password
+          EOF
+
+      - name: Build App Bundle (release — validates tree-shaking)
+        run: flutter build appbundle --release
+
+      - name: Upload App Bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-appbundle-ci
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 7
