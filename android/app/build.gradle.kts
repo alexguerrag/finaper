@@ -14,6 +14,10 @@ if (keyPropertiesFile.exists()) {
     keyProperties.load(FileInputStream(keyPropertiesFile))
 }
 
+fun requireKeyProperty(name: String): String =
+    (keyProperties[name] as String?)?.takeIf { it.isNotBlank() }
+        ?: error("Release signing requires '$name' in key.properties. Aborting build.")
+
 android {
     namespace = "com.alexguerrag.finaper"
     compileSdk = flutter.compileSdkVersion
@@ -31,10 +35,13 @@ android {
 
     signingConfigs {
         create("release") {
-            keyAlias = keyProperties["keyAlias"] as String?
-            keyPassword = keyProperties["keyPassword"] as String?
-            storeFile = keyProperties["storeFile"]?.let { file(it) }
-            storePassword = keyProperties["storePassword"] as String?
+            if (!keyPropertiesFile.exists()) {
+                error("key.properties not found. Release builds require a valid signing configuration.")
+            }
+            keyAlias = requireKeyProperty("keyAlias")
+            keyPassword = requireKeyProperty("keyPassword")
+            storeFile = file(requireKeyProperty("storeFile"))
+            storePassword = requireKeyProperty("storePassword")
         }
     }
 
@@ -48,11 +55,7 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (keyPropertiesFile.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
