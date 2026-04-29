@@ -115,6 +115,7 @@ void main() {
         );
         await tester.pump();
 
+        expect(find.text('Reportes'), findsOneWidget);
         expect(find.text('Metas'), findsOneWidget);
         expect(find.text('Categorías'), findsOneWidget);
         expect(find.text('Recurrentes'), findsOneWidget);
@@ -140,7 +141,7 @@ void main() {
                   NavigationDestination(
                     icon: Icon(Icons.dashboard_outlined),
                     selectedIcon: Icon(Icons.dashboard_rounded),
-                    label: 'Dashboard',
+                    label: 'Inicio',
                     tooltip: 'Resumen financiero',
                   ),
                   NavigationDestination(
@@ -150,10 +151,10 @@ void main() {
                     tooltip: 'Transacciones',
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.savings_outlined),
-                    selectedIcon: Icon(Icons.savings_rounded),
-                    label: 'Presupuestos',
-                    tooltip: 'Presupuestos del mes',
+                    icon: Icon(Icons.account_balance_wallet_outlined),
+                    selectedIcon: Icon(Icons.account_balance_wallet_rounded),
+                    label: 'Cuentas',
+                    tooltip: 'Mis cuentas',
                   ),
                   NavigationDestination(
                     icon: Icon(Icons.grid_view_rounded),

@@ -64,9 +64,7 @@ void main() {
   });
 }
 
-Widget _buildTestableWidget({
-  required Widget child,
-}) {
+Widget _buildTestableWidget({required Widget child}) {
   return MaterialApp(
     theme: AppTheme.darkTheme,
     home: Scaffold(
@@ -95,14 +93,10 @@ class _FakeAppSettingsRepository implements AppSettingsRepository {
   AppSettingsEntity _settings = AppSettingsEntity.defaults();
 
   @override
-  Future<AppSettingsEntity> getAppSettings() async {
-    return _settings;
-  }
+  Future<AppSettingsEntity> getAppSettings() async => _settings;
 
   @override
-  Future<AppSettingsEntity> saveAppSettings(
-    AppSettingsEntity settings,
-  ) async {
+  Future<AppSettingsEntity> saveAppSettings(AppSettingsEntity settings) async {
     _settings = settings;
     return _settings;
   }

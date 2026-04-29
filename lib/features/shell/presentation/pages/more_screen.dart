@@ -5,9 +5,14 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class MoreScreen extends StatelessWidget {
-  const MoreScreen({super.key, required this.onRefreshDashboard});
+  const MoreScreen({
+    super.key,
+    required this.onRefreshDashboard,
+    this.hasPremiumAccess = false,
+  });
 
   final Future<void> Function() onRefreshDashboard;
+  final bool hasPremiumAccess;
 
   void _showHowItWorks(BuildContext context) {
     showModalBottomSheet<void>(
@@ -57,6 +62,18 @@ class MoreScreen extends StatelessWidget {
             label: 'Metas',
             subtitle: 'Seguimiento de objetivos de ahorro',
             onTap: () => _navigate(context, AppRoutes.goals),
+          ),
+          _MoreTile(
+            icon: hasPremiumAccess
+                ? Icons.bar_chart_rounded
+                : Icons.lock_outline_rounded,
+            label: 'Reportes',
+            subtitle: hasPremiumAccess
+                ? 'Análisis avanzado de tus finanzas'
+                : 'Disponible en Premium',
+            onTap: hasPremiumAccess
+                ? () => _navigate(context, AppRoutes.premiumReports)
+                : () {},
           ),
           const _SectionHeader(label: 'Configuración'),
           _MoreTile(

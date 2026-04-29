@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../features/accounts/presentation/screens/accounts_screen.dart';
+import '../../features/analytics/presentation/screens/premium_reports_screen.dart';
 import '../../features/budgets/presentation/screens/budgets_screen.dart';
 import '../../features/categories/presentation/screens/categories_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
@@ -26,6 +27,7 @@ class AppRoutes {
   static const String recurringTransactions = '/recurring-transactions';
   static const String settings = '/settings';
   static const String backup = '/backup';
+  static const String premiumReports = '/premium-reports';
 
   static Map<String, WidgetBuilder> get routes => {
         initial: (_) => const OnboardingScreen(),
@@ -40,5 +42,6 @@ class AppRoutes {
         recurringTransactions: (_) => const RecurringTransactionsScreen(),
         settings: (_) => const SettingsScreen(),
         backup: (_) => const BackupScreen(),
+        premiumReports: (_) => const PremiumReportsScreen(),
       };
 }

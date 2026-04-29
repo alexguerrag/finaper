@@ -15,6 +15,7 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
     required this.canGoToNextMonth,
     required this.onPreviousMonth,
     required this.onNextMonth,
+    this.onGoToAccounts,
   });
 
   final String monthLabel;
@@ -25,6 +26,7 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
   final bool canGoToNextMonth;
   final VoidCallback onPreviousMonth;
   final VoidCallback onNextMonth;
+  final VoidCallback? onGoToAccounts;
 
   @override
   Widget build(BuildContext context) {
@@ -59,14 +61,30 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            AppFormatters.formatCurrency(consolidatedBalance),
-            style: GoogleFonts.manrope(
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              height: 1,
-              letterSpacing: -0.8,
-              color: AppTheme.onSurface,
+          GestureDetector(
+            onTap: onGoToAccounts,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    AppFormatters.formatCurrency(consolidatedBalance),
+                    style: GoogleFonts.manrope(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w800,
+                      height: 1,
+                      letterSpacing: -0.8,
+                      color: AppTheme.onSurface,
+                    ),
+                  ),
+                ),
+                if (onGoToAccounts != null)
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: AppTheme.onSurfaceMuted,
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
