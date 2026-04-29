@@ -66,24 +66,23 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  AppFormatters.formatCurrency(consolidatedBalance),
-                  style: GoogleFonts.manrope(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w800,
-                    height: 1,
-                    letterSpacing: -0.8,
-                    color: AppTheme.onSurface,
+                Expanded(
+                  child: Text(
+                    AppFormatters.formatCurrency(consolidatedBalance),
+                    style: GoogleFonts.manrope(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w800,
+                      height: 1,
+                      letterSpacing: -0.8,
+                      color: AppTheme.onSurface,
+                    ),
                   ),
                 ),
                 if (onGoToAccounts != null)
-                  const Padding(
-                    padding: EdgeInsets.only(left: 6),
-                    child: Icon(
-                      Icons.chevron_right_rounded,
-                      size: 20,
-                      color: AppTheme.onSurfaceMuted,
-                    ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: AppTheme.onSurfaceMuted,
                   ),
               ],
             ),
