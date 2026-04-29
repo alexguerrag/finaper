@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/formatters/app_formatters.dart';
+import '../../../../core/icons/app_icon_catalog.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/goal_model.dart';
 import '../../di/goals_registry.dart';
@@ -470,10 +471,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Icon(
-                                IconData(
-                                  goal.iconCode,
-                                  fontFamily: 'MaterialIcons',
-                                ),
+                                AppIconCatalog.resolve(goal.iconCode),
                                 color: accentColor,
                               ),
                             ),

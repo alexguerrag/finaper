@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/enums/category_kind.dart';
+import '../../../../core/icons/app_icon_catalog.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/category_model.dart';
 import '../../di/categories_registry.dart';
@@ -424,8 +425,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Icon(
-                                IconData(category.iconCode,
-                                    fontFamily: 'MaterialIcons'),
+                                AppIconCatalog.resolve(category.iconCode),
                                 color: category.color,
                               ),
                             ),

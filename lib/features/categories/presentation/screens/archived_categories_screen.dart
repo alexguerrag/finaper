@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/enums/category_kind.dart';
+import '../../../../core/icons/app_icon_catalog.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../di/categories_registry.dart';
 import '../../domain/entities/category_entity.dart';
@@ -188,10 +189,7 @@ class _ArchivedCategoriesScreenState extends State<ArchivedCategoriesScreen> {
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: Icon(
-                              IconData(
-                                category.iconCode,
-                                fontFamily: 'MaterialIcons',
-                              ),
+                              AppIconCatalog.resolve(category.iconCode),
                               color: category.color.withValues(alpha: 0.5),
                             ),
                           ),
