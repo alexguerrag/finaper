@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 6–11 (API 23–30) Auto Backup rules.
+  Excludes all sensitive financial data from Google Drive auto-backup.
+  Superseded by data_extraction_rules.xml on Android 12+.
+-->
+<full-backup-content>
+    <!-- SQLite database with all financial data -->
+    <exclude domain="database" path="finaper.db" />
+    <!-- Flutter shared_preferences -->
+    <exclude domain="sharedpref" />
+    <!-- Internal app files (exports, temp files) -->
+    <exclude domain="file" />
+    <!-- External storage files -->
+    <exclude domain="external" />
+</full-backup-content>

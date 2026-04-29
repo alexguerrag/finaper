@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ (API 31+) backup and data-transfer rules.
+  Excludes all sensitive financial data from cloud backup and device-to-device transfers.
+  The JSON/CSV export files in Documents are excluded separately via the 'file' domain.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- SQLite database with all financial data -->
+        <exclude domain="database" path="finaper.db" />
+        <!-- Flutter shared_preferences (may contain user settings with sensitive values) -->
+        <exclude domain="sharedpref" />
+        <!-- Any internal files written by the app -->
+        <exclude domain="file" />
+        <!-- External storage files (export files, if any) -->
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="database" path="finaper.db" />
+        <exclude domain="sharedpref" />
+        <exclude domain="file" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>
