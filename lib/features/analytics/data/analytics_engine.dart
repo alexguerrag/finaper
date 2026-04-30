@@ -314,25 +314,21 @@ class AnalyticsEngine {
 
   static CashFlowEntity buildCashFlow({
     required List<TransactionEntity> transactions,
-    required DateTime month,
+    required LedgerPeriod period,
   }) {
     final now = DateTime.now();
-    final isCurrentMonth =
-        month.year == now.year && month.month == now.month;
-    final daysInPeriod =
-        isCurrentMonth ? now.day : _daysInMonth(month.year, month.month);
+    final today = DateTime(now.year, now.month, now.day);
+    final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    final monthStart = DateTime(month.year, month.month, 1);
-    final monthEnd = DateTime(month.year, month.month + 1, 1);
+    final start = _periodStart(period, today, now);
+    final daysInPeriod = endOfToday.difference(start).inDays + 1;
 
     final incomeTxs = <TransactionEntity>[];
     final expenseTxs = <TransactionEntity>[];
 
     for (final tx in transactions) {
       if (tx.isTransfer) continue;
-      if (tx.date.isBefore(monthStart) || !tx.date.isBefore(monthEnd)) {
-        continue;
-      }
+      if (tx.date.isBefore(start) || tx.date.isAfter(endOfToday)) continue;
       if (tx.isIncome) {
         incomeTxs.add(tx);
       } else {
@@ -365,11 +361,7 @@ class AnalyticsEngine {
     final today = DateTime(now.year, now.month, now.day);
     final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    final DateTime start = switch (period) {
-      LedgerPeriod.days7 => today.subtract(const Duration(days: 6)),
-      LedgerPeriod.days30 => today.subtract(const Duration(days: 29)),
-      LedgerPeriod.thisMonth => DateTime(now.year, now.month, 1),
-    };
+    final start = _periodStart(period, today, now);
 
     final incomeByCategory = <String, ({double amount, int count})>{};
     final expenseByCategory = <String, ({double amount, int count})>{};
@@ -409,6 +401,17 @@ class AnalyticsEngine {
       incomeRows: incomeRows,
       expenseRows: expenseRows,
     );
+  }
+
+  static DateTime _periodStart(
+      LedgerPeriod period, DateTime today, DateTime now) {
+    return switch (period) {
+      LedgerPeriod.days7 => today.subtract(const Duration(days: 6)),
+      LedgerPeriod.days30 => today.subtract(const Duration(days: 29)),
+      LedgerPeriod.weeks12 => today.subtract(const Duration(days: 83)),
+      LedgerPeriod.months6 => DateTime(now.year, now.month - 6, now.day),
+      LedgerPeriod.year1 => DateTime(now.year - 1, now.month, now.day),
+    };
   }
 
   static int _daysInMonth(int year, int month) =>

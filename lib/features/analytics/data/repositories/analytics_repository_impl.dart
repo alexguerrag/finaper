@@ -47,7 +47,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     );
     final cashFlow = AnalyticsEngine.buildCashFlow(
       transactions: transactions,
-      month: month,
+      period: ledgerPeriod,
     );
     final ledger = AnalyticsEngine.buildLedger(
       transactions: transactions,

@@ -60,22 +60,30 @@ class _PremiumReportsScreenState extends State<PremiumReportsScreen> {
           final reports = _controller.reports;
           if (reports == null) return const SizedBox.shrink();
 
-          return RefreshIndicator(
-            onRefresh: () => _controller.load(_month),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-              children: [
-                _SavingsRateCard(data: reports.savingsRate),
-                const SizedBox(height: 16),
-                _CashFlowCard(data: reports.cashFlow),
-                const SizedBox(height: 16),
-                _LedgerCard(
-                  data: reports.ledger,
-                  currentPeriod: _controller.ledgerPeriod,
-                  onPeriodChanged: _controller.setLedgerPeriod,
+          final period = _controller.ledgerPeriod;
+
+          return Column(
+            children: [
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () => _controller.load(_month),
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    children: [
+                      _SavingsRateCard(data: reports.savingsRate),
+                      const SizedBox(height: 16),
+                      _CashFlowCard(data: reports.cashFlow, period: period),
+                      const SizedBox(height: 16),
+                      _LedgerCard(data: reports.ledger, period: period),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+              _PeriodBar(
+                current: period,
+                onChanged: _controller.setLedgerPeriod,
+              ),
+            ],
           );
         },
       ),
@@ -86,15 +94,11 @@ class _PremiumReportsScreenState extends State<PremiumReportsScreen> {
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
 class _ReportCard extends StatelessWidget {
-  const _ReportCard({
-    required this.title,
-    required this.child,
-    this.trailing,
-  });
+  const _ReportCard({required this.title, required this.child, this.subtitle});
 
   final String title;
   final Widget child;
-  final Widget? trailing;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -109,19 +113,28 @@ class _ReportCard extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: GoogleFonts.manrope(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.onSurface,
-                    ),
+                Text(
+                  title,
+                  style: GoogleFonts.manrope(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.onSurface,
                   ),
                 ),
-                if (trailing != null) trailing!,
+                if (subtitle != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle!,
+                    style: GoogleFonts.manrope(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.onSurfaceMuted,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -246,25 +259,27 @@ class _SavingsRateCard extends StatelessWidget {
 // ── Tabla de flujo de efectivo ────────────────────────────────────────────────
 
 class _CashFlowCard extends StatelessWidget {
-  const _CashFlowCard({required this.data});
+  const _CashFlowCard({required this.data, required this.period});
 
   final CashFlowEntity data;
+  final LedgerPeriod period;
 
   @override
   Widget build(BuildContext context) {
     final hasData = data.income.count > 0 || data.expense.count > 0;
 
     if (!hasData) {
-      return const _ReportCard(
+      return _ReportCard(
         title: 'Flujo de efectivo',
         child: _NoDataState(
-          message: 'Sin movimientos registrados este mes.',
+          message: 'Sin movimientos en el período seleccionado.',
         ),
       );
     }
 
     return _ReportCard(
       title: 'Flujo de efectivo',
+      subtitle: _periodLabel(period),
       child: Column(
         children: [
           _CashFlowTable(data: data),
@@ -432,21 +447,10 @@ class _CashFlowTable extends StatelessWidget {
 // ── Libro de ingresos y gastos ────────────────────────────────────────────────
 
 class _LedgerCard extends StatelessWidget {
-  const _LedgerCard({
-    required this.data,
-    required this.currentPeriod,
-    required this.onPeriodChanged,
-  });
+  const _LedgerCard({required this.data, required this.period});
 
   final LedgerEntity data;
-  final LedgerPeriod currentPeriod;
-  final void Function(LedgerPeriod) onPeriodChanged;
-
-  static const _periods = [
-    (LedgerPeriod.days7, '7 días'),
-    (LedgerPeriod.days30, '30 días'),
-    (LedgerPeriod.thisMonth, 'Este mes'),
-  ];
+  final LedgerPeriod period;
 
   @override
   Widget build(BuildContext context) {
@@ -455,11 +459,7 @@ class _LedgerCard extends StatelessWidget {
 
     return _ReportCard(
       title: 'Libro de ingresos y gastos',
-      trailing: _PeriodSelector(
-        current: currentPeriod,
-        periods: _periods,
-        onChanged: onPeriodChanged,
-      ),
+      subtitle: _periodLabel(period),
       child: hasData
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -515,53 +515,76 @@ class _LedgerCard extends StatelessWidget {
   }
 }
 
-class _PeriodSelector extends StatelessWidget {
-  const _PeriodSelector({
-    required this.current,
-    required this.periods,
-    required this.onChanged,
-  });
+String _periodLabel(LedgerPeriod period) => switch (period) {
+      LedgerPeriod.days7 => 'Últimos 7 días',
+      LedgerPeriod.days30 => 'Últimos 30 días',
+      LedgerPeriod.weeks12 => 'Últimas 12 semanas',
+      LedgerPeriod.months6 => 'Últimos 6 meses',
+      LedgerPeriod.year1 => 'Último año',
+    };
+
+class _PeriodBar extends StatelessWidget {
+  const _PeriodBar({required this.current, required this.onChanged});
 
   final LedgerPeriod current;
-  final List<(LedgerPeriod, String)> periods;
   final void Function(LedgerPeriod) onChanged;
+
+  static const _options = [
+    (LedgerPeriod.days7, '7D'),
+    (LedgerPeriod.days30, '30D'),
+    (LedgerPeriod.weeks12, '12S'),
+    (LedgerPeriod.months6, '6M'),
+    (LedgerPeriod.year1, '1A'),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: periods.map((entry) {
-        final (period, label) = entry;
-        final selected = current == period;
-        return GestureDetector(
-          onTap: () => onChanged(period),
-          child: Container(
-            margin: const EdgeInsets.only(left: 4),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: selected
-                  ? AppTheme.primary.withValues(alpha: 0.18)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: selected
-                    ? AppTheme.primary.withValues(alpha: 0.5)
-                    : Colors.white.withValues(alpha: 0.1),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+      ),
+      child: Row(
+        children: _options.map((entry) {
+          final (period, label) = entry;
+          final selected = current == period;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(period),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                padding: const EdgeInsets.symmetric(vertical: 9),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppTheme.primary.withValues(alpha: 0.15)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: selected
+                        ? AppTheme.primary.withValues(alpha: 0.5)
+                        : Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.manrope(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: selected
+                        ? AppTheme.primary
+                        : AppTheme.onSurfaceMuted,
+                  ),
+                ),
               ),
             ),
-            child: Text(
-              label,
-              style: GoogleFonts.manrope(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color:
-                    selected ? AppTheme.primary : AppTheme.onSurfaceMuted,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
+          );
+        }).toList(),
+      ),
     );
   }
 }

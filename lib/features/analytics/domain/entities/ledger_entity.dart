@@ -1,4 +1,4 @@
-enum LedgerPeriod { days7, days30, thisMonth }
+enum LedgerPeriod { days7, days30, weeks12, months6, year1 }
 
 class LedgerCategoryRow {
   const LedgerCategoryRow({
