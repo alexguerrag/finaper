@@ -296,8 +296,28 @@ class AccountsScreenState extends State<AccountsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasAccounts = _activeBalances.isNotEmpty;
     return Scaffold(
       backgroundColor: AppTheme.background,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: hasAccounts
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: FloatingActionButton.extended(
+                onPressed: _openAddSheet,
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+                extendedPadding:
+                    const EdgeInsetsDirectional.symmetric(horizontal: 12),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: Text(
+                  'Nueva',
+                  style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+                ),
+              ),
+            )
+          : null,
       appBar: AppBar(
         title: Text(
           'Cuentas',
@@ -311,24 +331,12 @@ class AccountsScreenState extends State<AccountsScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Saldo real por cuenta derivado desde saldo inicial y movimientos registrados.',
-                          style: GoogleFonts.manrope(
-                            fontSize: 13,
-                            color: AppTheme.onSurfaceMuted,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      FilledButton.icon(
-                        onPressed: _openAddSheet,
-                        icon: const Icon(Icons.add_rounded),
-                        label: const Text('Nueva'),
-                      ),
-                    ],
+                  Text(
+                    'Saldo real por cuenta derivado desde saldo inicial y movimientos registrados.',
+                    style: GoogleFonts.manrope(
+                      fontSize: 13,
+                      color: AppTheme.onSurfaceMuted,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   FilledButton.tonalIcon(

@@ -293,7 +293,10 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                     onPressed: _openAddTransactionSheet,
                     backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.white,
-                    icon: const Icon(Icons.add_rounded),
+                    extendedPadding:
+                        const EdgeInsetsDirectional.symmetric(horizontal: 12),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    icon: const Icon(Icons.add_rounded, size: 18),
                     label: Text(
                       'Nueva',
                       style: GoogleFonts.manrope(fontWeight: FontWeight.w700),

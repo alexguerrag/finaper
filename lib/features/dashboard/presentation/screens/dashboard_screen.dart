@@ -701,7 +701,7 @@ class _InsightsCard extends StatelessWidget {
                   size: 14, color: AppTheme.onSurfaceMuted),
               const SizedBox(width: 6),
               Text(
-                'INSIGHTS',
+                'ANÁLISIS',
                 style: GoogleFonts.manrope(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -716,7 +716,7 @@ class _InsightsCard extends StatelessWidget {
           const SizedBox(height: 14),
           if (insights.isEmpty)
             Text(
-              'Aún no hay suficientes datos para generar insights.',
+              'Aún no hay suficientes datos para generar análisis.',
               style: GoogleFonts.manrope(
                 fontSize: 13,
                 color: AppTheme.onSurfaceMuted,
@@ -790,7 +790,7 @@ class _LockedCard extends StatelessWidget {
           Icons.trending_up_rounded,
         ),
       DashboardCardType.insights => (
-          'Insights automáticos',
+          'Análisis',
           'Recomendaciones basadas en tus finanzas.',
           Icons.lightbulb_outline_rounded,
         ),
@@ -917,7 +917,7 @@ class _UpgradeSheet extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Desbloquea proyecciones de cierre, insights automáticos y más para tener mayor control de tus finanzas.',
+              'Desbloquea proyecciones de cierre, análisis automático y más para tener mayor control de tus finanzas.',
               textAlign: TextAlign.center,
               style: GoogleFonts.manrope(
                 fontSize: 13,
