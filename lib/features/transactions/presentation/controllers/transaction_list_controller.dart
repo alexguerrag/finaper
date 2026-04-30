@@ -170,7 +170,7 @@ class TransactionListController extends ChangeNotifier {
 
   Future<void> _fetchAccounts() async {
     try {
-      final accounts = await _getAccounts(includeArchived: false);
+      final accounts = await _getAccounts(includeArchived: true);
       _accounts = accounts;
       _notify();
     } catch (e, s) {
