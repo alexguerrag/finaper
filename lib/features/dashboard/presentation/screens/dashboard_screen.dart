@@ -8,6 +8,7 @@ import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../analytics/di/analytics_registry.dart';
 import '../../../analytics/domain/entities/analytics_insight_entity.dart';
+import '../../../analytics/domain/entities/ledger_entity.dart';
 import '../../../analytics/domain/entities/month_projection_entity.dart';
 import '../../../analytics/domain/entities/monthly_comparison_entity.dart';
 import '../../../analytics/domain/entities/premium_reports_entity.dart';
@@ -84,7 +85,10 @@ class DashboardScreenState extends State<DashboardScreen> {
       PremiumReportsEntity? reports;
       if (_hasPremiumAccess) {
         try {
-          reports = await _getPremiumReports(month: _selectedMonth);
+          reports = await _getPremiumReports(
+            month: _selectedMonth,
+            ledgerPeriod: LedgerPeriod.days30,
+          );
         } catch (_) {
           // Analytics failure is non-fatal — Free cards still render.
         }

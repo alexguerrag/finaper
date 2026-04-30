@@ -50,7 +50,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('abril de 2026'), findsOneWidget);
-        expect(find.text('Saldo total'), findsOneWidget);
+        expect(find.text('Saldo actual'), findsOneWidget);
         expect(find.text('Flujo del mes'), findsOneWidget);
         expect(find.text('Ingresos'), findsOneWidget);
         expect(find.text('Gastos'), findsOneWidget);

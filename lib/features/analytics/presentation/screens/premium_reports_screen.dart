@@ -3,13 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/formatters/app_formatters.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../dashboard/data/local/dashboard_local_datasource.dart';
-import '../../../dashboard/di/dashboard_registry.dart';
-import '../../../dashboard/presentation/widgets/trend_chart_widget.dart';
 import '../../di/analytics_registry.dart';
-import '../../domain/entities/analytics_insight_entity.dart';
-import '../../domain/entities/month_projection_entity.dart';
-import '../../domain/entities/monthly_comparison_entity.dart';
+import '../../domain/entities/cash_flow_entity.dart';
+import '../../domain/entities/ledger_entity.dart';
+import '../../domain/entities/savings_rate_entity.dart';
 import '../controllers/premium_reports_controller.dart';
 
 class PremiumReportsScreen extends StatefulWidget {
@@ -22,7 +19,6 @@ class PremiumReportsScreen extends StatefulWidget {
 class _PremiumReportsScreenState extends State<PremiumReportsScreen> {
   late final PremiumReportsController _controller;
   late final DateTime _month;
-  List<MonthlyTrendPoint>? _trend;
 
   @override
   void initState() {
@@ -31,15 +27,6 @@ class _PremiumReportsScreenState extends State<PremiumReportsScreen> {
     final now = DateTime.now();
     _month = DateTime(now.year, now.month, 1);
     _controller.load(_month);
-    _loadTrend();
-  }
-
-  Future<void> _loadTrend() async {
-    try {
-      final summary = await DashboardRegistry.module.dashboardLocalDataSource
-          .getSummary(month: _month);
-      if (mounted) setState(() => _trend = summary.monthlyTrend);
-    } catch (_) {}
   }
 
   @override
@@ -47,9 +34,13 @@ class _PremiumReportsScreenState extends State<PremiumReportsScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
+        backgroundColor: AppTheme.background,
         title: Text(
           'Reportes',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+          style: GoogleFonts.manrope(
+            fontWeight: FontWeight.w800,
+            color: AppTheme.onSurface,
+          ),
         ),
       ),
       body: ListenableBuilder(
@@ -69,27 +60,30 @@ class _PremiumReportsScreenState extends State<PremiumReportsScreen> {
           final reports = _controller.reports;
           if (reports == null) return const SizedBox.shrink();
 
-          return RefreshIndicator(
-            onRefresh: () => _controller.load(_month),
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _ComparisonCard(comparison: reports.comparison),
-                const SizedBox(height: 16),
-                _ProjectionCard(projection: reports.projection),
-                const SizedBox(height: 16),
-                _InsightsCard(insights: reports.insights),
-                if (_trend != null && _trend!.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  _ReportCard(
-                    title: 'Tendencia 6 meses',
-                    icon: Icons.show_chart_rounded,
-                    child: TrendChartWidget(data: _trend!),
+          final period = _controller.ledgerPeriod;
+
+          return Column(
+            children: [
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () => _controller.load(_month),
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    children: [
+                      _SavingsRateCard(data: reports.savingsRate),
+                      const SizedBox(height: 16),
+                      _CashFlowCard(data: reports.cashFlow, period: period),
+                      const SizedBox(height: 16),
+                      _LedgerCard(data: reports.ledger, period: period),
+                    ],
                   ),
-                ],
-                const SizedBox(height: 24),
-              ],
-            ),
+                ),
+              ),
+              _PeriodBar(
+                current: period,
+                onChanged: _controller.setLedgerPeriod,
+              ),
+            ],
           );
         },
       ),
@@ -100,54 +94,54 @@ class _PremiumReportsScreenState extends State<PremiumReportsScreen> {
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
 class _ReportCard extends StatelessWidget {
-  const _ReportCard({
-    required this.title,
-    required this.icon,
-    required this.child,
-    this.trailing,
-  });
+  const _ReportCard({required this.title, required this.child, this.subtitle});
 
   final String title;
-  final IconData icon;
   final Widget child;
-  final Widget? trailing;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.outline),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-            child: Row(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(icon, size: 18, color: AppTheme.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: GoogleFonts.manrope(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.onSurface,
-                    ),
+                Text(
+                  title,
+                  style: GoogleFonts.manrope(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.onSurface,
                   ),
                 ),
-                if (trailing != null) trailing!,
+                if (subtitle != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle!,
+                    style: GoogleFonts.manrope(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.onSurfaceMuted,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          Divider(
-              height: 1, color: Colors.white.withValues(alpha: 0.06)),
+          const SizedBox(height: 14),
+          Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             child: child,
           ),
         ],
@@ -163,19 +157,285 @@ class _NoDataState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Icon(Icons.info_outline_rounded,
-            size: 16, color: AppTheme.onSurfaceMuted),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            message,
+    return Text(
+      message,
+      style: GoogleFonts.manrope(
+        fontSize: 13,
+        color: AppTheme.onSurfaceMuted,
+        height: 1.5,
+      ),
+    );
+  }
+}
+
+// ── Tasa de ahorro ────────────────────────────────────────────────────────────
+
+class _SavingsRateCard extends StatelessWidget {
+  const _SavingsRateCard({required this.data});
+
+  final SavingsRateEntity data;
+
+  @override
+  Widget build(BuildContext context) {
+    if (data.income == 0) {
+      return const _ReportCard(
+        title: 'Tasa de ahorro',
+        child: _NoDataState(
+          message: 'Sin ingresos registrados este mes.',
+        ),
+      );
+    }
+
+    final isPositive = data.rate >= 0;
+    final rateColor = isPositive ? const Color(0xFF35E879) : AppTheme.expense;
+    final rateText =
+        '${isPositive ? '' : '−'}${data.rate.abs().toStringAsFixed(1)}%';
+
+    final delta = data.rateDelta;
+
+    return _ReportCard(
+      title: 'Tasa de ahorro',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                rateText,
+                style: GoogleFonts.manrope(
+                  fontSize: 40,
+                  fontWeight: FontWeight.w800,
+                  color: rateColor,
+                  height: 1,
+                ),
+              ),
+              if (delta != null) ...[
+                const SizedBox(width: 12),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: _DeltaBadge(delta: delta, higherIsGood: true),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isPositive
+                ? 'Ahorraste ${AppFormatters.formatCurrency(data.savedAmount)} de tus ingresos'
+                : 'Gastaste más de lo que ingresaste este mes',
             style: GoogleFonts.manrope(
               fontSize: 13,
               color: AppTheme.onSurfaceMuted,
-              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
+          const SizedBox(height: 14),
+          _AmountRow(
+            label: 'Ingresos del mes',
+            amount: data.income,
+            color: const Color(0xFF35E879),
+          ),
+          const SizedBox(height: 8),
+          _AmountRow(
+            label: 'Gastos del mes',
+            amount: data.expense,
+            color: AppTheme.expense,
+          ),
+          const SizedBox(height: 8),
+          _AmountRow(
+            label: 'Resultado',
+            amount: data.savedAmount,
+            color: rateColor,
+            bold: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Tabla de flujo de efectivo ────────────────────────────────────────────────
+
+class _CashFlowCard extends StatelessWidget {
+  const _CashFlowCard({required this.data, required this.period});
+
+  final CashFlowEntity data;
+  final LedgerPeriod period;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasData = data.income.count > 0 || data.expense.count > 0;
+
+    if (!hasData) {
+      return _ReportCard(
+        title: 'Flujo de efectivo',
+        child: _NoDataState(
+          message: 'Sin movimientos en el período seleccionado.',
+        ),
+      );
+    }
+
+    return _ReportCard(
+      title: 'Flujo de efectivo',
+      subtitle: _periodLabel(period),
+      child: Column(
+        children: [
+          _CashFlowTable(data: data),
+          const SizedBox(height: 16),
+          Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
+          const SizedBox(height: 14),
+          _AmountRow(
+            label: 'Flujo neto del mes',
+            amount: data.netFlow,
+            color: data.netFlow >= 0 ? const Color(0xFF35E879) : AppTheme.expense,
+            bold: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CashFlowTable extends StatelessWidget {
+  const _CashFlowTable({required this.data});
+
+  final CashFlowEntity data;
+
+  @override
+  Widget build(BuildContext context) {
+    return Table(
+      columnWidths: const {
+        0: FlexColumnWidth(2),
+        1: FlexColumnWidth(1.5),
+        2: FlexColumnWidth(1.5),
+      },
+      children: [
+        _tableHeader(),
+        _tableRow(
+          label: 'Cantidad',
+          income: data.income.count.toString(),
+          expense: data.expense.count.toString(),
+          incomeColor: AppTheme.onSurface,
+          expenseColor: AppTheme.onSurface,
+          isShaded: true,
+        ),
+        _tableRow(
+          label: 'Promedio / día',
+          income: AppFormatters.formatCurrency(data.income.dailyAverage),
+          expense: AppFormatters.formatCurrency(data.expense.dailyAverage),
+          incomeColor: const Color(0xFF35E879),
+          expenseColor: AppTheme.expense,
+        ),
+        _tableRow(
+          label: 'Promedio / registro',
+          income: AppFormatters.formatCurrency(
+              data.income.perTransactionAverage),
+          expense: AppFormatters.formatCurrency(
+              data.expense.perTransactionAverage),
+          incomeColor: const Color(0xFF35E879),
+          expenseColor: AppTheme.expense,
+          isShaded: true,
+        ),
+        _tableRow(
+          label: 'Total',
+          income: AppFormatters.formatCurrency(data.income.total),
+          expense: AppFormatters.formatCurrency(data.expense.total),
+          incomeColor: const Color(0xFF35E879),
+          expenseColor: AppTheme.expense,
+          bold: true,
+        ),
+      ],
+    );
+  }
+
+  TableRow _tableHeader() {
+    return TableRow(
+      children: [
+        const SizedBox.shrink(),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            'Ingresos',
+            textAlign: TextAlign.right,
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF35E879),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            'Gastos',
+            textAlign: TextAlign.right,
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.expense,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  TableRow _tableRow({
+    required String label,
+    required String income,
+    required String expense,
+    required Color incomeColor,
+    required Color expenseColor,
+    bool isShaded = false,
+    bool bold = false,
+  }) {
+    final weight =
+        bold ? FontWeight.w800 : FontWeight.w500;
+    final labelColor =
+        bold ? AppTheme.onSurface : AppTheme.onSurfaceMuted;
+
+    return TableRow(
+      decoration: isShaded
+          ? BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(6),
+            )
+          : null,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Text(
+            label,
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              fontWeight: weight,
+              color: labelColor,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Text(
+            income,
+            textAlign: TextAlign.right,
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              fontWeight: weight,
+              color: incomeColor,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Text(
+            expense,
+            textAlign: TextAlign.right,
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              fontWeight: weight,
+              color: expenseColor,
             ),
           ),
         ),
@@ -184,122 +444,181 @@ class _NoDataState extends StatelessWidget {
   }
 }
 
-// ── Comparación mensual ───────────────────────────────────────────────────────
+// ── Libro de ingresos y gastos ────────────────────────────────────────────────
 
-class _ComparisonCard extends StatelessWidget {
-  const _ComparisonCard({required this.comparison});
+class _LedgerCard extends StatelessWidget {
+  const _LedgerCard({required this.data, required this.period});
 
-  final MonthlyComparisonEntity comparison;
+  final LedgerEntity data;
+  final LedgerPeriod period;
 
   @override
   Widget build(BuildContext context) {
-    if (!comparison.hasPreviousMonthData) {
-      return const _ReportCard(
-        title: 'Comparación mensual',
-        icon: Icons.compare_arrows_rounded,
-        child: _NoDataState(
-          message:
-              'Aún no hay suficientes datos para comparar con el mes anterior.',
-        ),
-      );
-    }
+    final hasData =
+        data.incomeRows.isNotEmpty || data.expenseRows.isNotEmpty;
 
     return _ReportCard(
-      title: 'Comparación mensual',
-      icon: Icons.compare_arrows_rounded,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _DeltaRow(
-            label: 'Ingresos',
-            delta: comparison.incomeDelta,
-            positiveIsGood: true,
-          ),
-          const SizedBox(height: 10),
-          _DeltaRow(
-            label: 'Gastos',
-            delta: comparison.expenseDelta,
-            positiveIsGood: false,
-          ),
-          const SizedBox(height: 10),
-          _DeltaRow(
-            label: 'Flujo neto',
-            delta: comparison.netFlowDelta,
-            positiveIsGood: true,
-          ),
-          if (comparison.topRising.isNotEmpty ||
-              comparison.topFalling.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Divider(
-                height: 1, color: Colors.white.withValues(alpha: 0.06)),
-            const SizedBox(height: 14),
-          ],
-          if (comparison.topRising.isNotEmpty) ...[
-            const _CategorySectionLabel(label: 'Mayores alzas'),
-            const SizedBox(height: 8),
-            ...comparison.topRising.map(
-              (d) => _CategoryDeltaRow(delta: d, isRising: true),
+      title: 'Libro de ingresos y gastos',
+      subtitle: _periodLabel(period),
+      child: hasData
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (data.incomeRows.isNotEmpty) ...[
+                  _LedgerSectionHeader(
+                    label: 'Ingresos',
+                    total: data.totalIncome,
+                    color: const Color(0xFF35E879),
+                  ),
+                  const SizedBox(height: 8),
+                  ...data.incomeRows.map(
+                    (r) => _LedgerRow(
+                      row: r,
+                      color: const Color(0xFF35E879),
+                    ),
+                  ),
+                ],
+                if (data.incomeRows.isNotEmpty && data.expenseRows.isNotEmpty)
+                  const SizedBox(height: 16),
+                if (data.expenseRows.isNotEmpty) ...[
+                  _LedgerSectionHeader(
+                    label: 'Gastos',
+                    total: data.totalExpense,
+                    color: AppTheme.expense,
+                  ),
+                  const SizedBox(height: 8),
+                  ...data.expenseRows.map(
+                    (r) => _LedgerRow(
+                      row: r,
+                      color: AppTheme.expense,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                Divider(
+                    height: 1, color: Colors.white.withValues(alpha: 0.06)),
+                const SizedBox(height: 14),
+                _AmountRow(
+                  label: 'Flujo del período',
+                  amount: data.netFlow,
+                  color: data.netFlow >= 0
+                      ? const Color(0xFF35E879)
+                      : AppTheme.expense,
+                  bold: true,
+                ),
+              ],
+            )
+          : const _NoDataState(
+              message: 'Sin movimientos en el período seleccionado.',
             ),
-          ],
-          if (comparison.topFalling.isNotEmpty) ...[
-            if (comparison.topRising.isNotEmpty) const SizedBox(height: 12),
-            const _CategorySectionLabel(label: 'Mayores bajas'),
-            const SizedBox(height: 8),
-            ...comparison.topFalling.map(
-              (d) => _CategoryDeltaRow(delta: d, isRising: false),
+    );
+  }
+}
+
+String _periodLabel(LedgerPeriod period) => switch (period) {
+      LedgerPeriod.days7 => 'Últimos 7 días',
+      LedgerPeriod.days30 => 'Últimos 30 días',
+      LedgerPeriod.weeks12 => 'Últimas 12 semanas',
+      LedgerPeriod.months6 => 'Últimos 6 meses',
+      LedgerPeriod.year1 => 'Último año',
+    };
+
+class _PeriodBar extends StatelessWidget {
+  const _PeriodBar({required this.current, required this.onChanged});
+
+  final LedgerPeriod current;
+  final void Function(LedgerPeriod) onChanged;
+
+  static const _options = [
+    (LedgerPeriod.days7, '7D'),
+    (LedgerPeriod.days30, '30D'),
+    (LedgerPeriod.weeks12, '12S'),
+    (LedgerPeriod.months6, '6M'),
+    (LedgerPeriod.year1, '1A'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+      ),
+      child: Row(
+        children: _options.map((entry) {
+          final (period, label) = entry;
+          final selected = current == period;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(period),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                padding: const EdgeInsets.symmetric(vertical: 9),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppTheme.primary.withValues(alpha: 0.15)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: selected
+                        ? AppTheme.primary.withValues(alpha: 0.5)
+                        : Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.manrope(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: selected
+                        ? AppTheme.primary
+                        : AppTheme.onSurfaceMuted,
+                  ),
+                ),
+              ),
             ),
-          ],
-        ],
+          );
+        }).toList(),
       ),
     );
   }
 }
 
-class _DeltaRow extends StatelessWidget {
-  const _DeltaRow({
+class _LedgerSectionHeader extends StatelessWidget {
+  const _LedgerSectionHeader({
     required this.label,
-    required this.delta,
-    required this.positiveIsGood,
+    required this.total,
+    required this.color,
   });
 
   final String label;
-  final double delta;
-  final bool positiveIsGood;
+  final double total;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final isPositive = delta >= 0;
-    final isGood = positiveIsGood ? isPositive : !isPositive;
-    final color = delta == 0
-        ? AppTheme.onSurfaceMuted
-        : isGood
-            ? AppTheme.success
-            : AppTheme.expense;
-    final icon = isPositive
-        ? Icons.arrow_upward_rounded
-        : Icons.arrow_downward_rounded;
-
     return Row(
       children: [
-        Expanded(
-          child: Text(
-            label,
-            style: GoogleFonts.manrope(
-              fontSize: 13,
-              color: AppTheme.onSurfaceMuted,
-            ),
+        Text(
+          label,
+          style: GoogleFonts.manrope(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.onSurfaceMuted,
+            letterSpacing: 0.4,
           ),
         ),
-        if (delta != 0)
-          Icon(icon, size: 14, color: color),
-        const SizedBox(width: 4),
+        const Spacer(),
         Text(
-          delta == 0
-              ? '—'
-              : '${delta > 0 ? '+' : ''}${AppFormatters.formatCurrency(delta)}',
+          AppFormatters.formatCurrency(total),
           style: GoogleFonts.manrope(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
             color: color,
           ),
         ),
@@ -308,45 +627,21 @@ class _DeltaRow extends StatelessWidget {
   }
 }
 
-class _CategorySectionLabel extends StatelessWidget {
-  const _CategorySectionLabel({required this.label});
+class _LedgerRow extends StatelessWidget {
+  const _LedgerRow({required this.row, required this.color});
 
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label.toUpperCase(),
-      style: GoogleFonts.manrope(
-        fontSize: 10,
-        fontWeight: FontWeight.w700,
-        color: AppTheme.onSurfaceMuted,
-        letterSpacing: 0.6,
-      ),
-    );
-  }
-}
-
-class _CategoryDeltaRow extends StatelessWidget {
-  const _CategoryDeltaRow({required this.delta, required this.isRising});
-
-  final CategoryDelta delta;
-  final bool isRising;
+  final LedgerCategoryRow row;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final color = isRising ? AppTheme.expense : AppTheme.success;
-    final pct = delta.deltaPercent == -100
-        ? '−100%'
-        : '${delta.deltaPercent > 0 ? '+' : ''}${delta.deltaPercent.toStringAsFixed(0)}%';
-
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
           Expanded(
             child: Text(
-              delta.categoryName,
+              row.categoryName,
               style: GoogleFonts.manrope(
                 fontSize: 13,
                 color: AppTheme.onSurface,
@@ -354,7 +649,15 @@ class _CategoryDeltaRow extends StatelessWidget {
             ),
           ),
           Text(
-            pct,
+            '${row.count} mov.',
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              color: AppTheme.onSurfaceMuted,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            AppFormatters.formatCurrency(row.amount),
             style: GoogleFonts.manrope(
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -367,126 +670,20 @@ class _CategoryDeltaRow extends StatelessWidget {
   }
 }
 
-// ── Proyección ────────────────────────────────────────────────────────────────
+// ── Shared row widgets ────────────────────────────────────────────────────────
 
-class _ProjectionCard extends StatelessWidget {
-  const _ProjectionCard({required this.projection});
-
-  final MonthProjectionEntity projection;
-
-  @override
-  Widget build(BuildContext context) {
-    final reliabilityColor = switch (projection.reliability) {
-      ProjectionReliability.low => AppTheme.expense,
-      ProjectionReliability.medium => AppTheme.warning,
-      ProjectionReliability.high => AppTheme.success,
-    };
-    final reliabilityLabel = switch (projection.reliability) {
-      ProjectionReliability.low =>
-        'Baja confiabilidad · Pocos días de datos',
-      ProjectionReliability.medium => 'Confiabilidad media',
-      ProjectionReliability.high => 'Alta confiabilidad',
-    };
-
-    return _ReportCard(
-      title: 'Proyección de cierre',
-      icon: Icons.trending_up_rounded,
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: reliabilityColor.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          reliabilityLabel,
-          style: GoogleFonts.manrope(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: reliabilityColor,
-          ),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Día ${projection.daysElapsed} de ${projection.totalDays}',
-            style: GoogleFonts.manrope(
-              fontSize: 12,
-              color: AppTheme.onSurfaceMuted,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _ProjectionRow(
-            label: 'Gasto actual',
-            value: projection.currentExpense,
-            isProjected: false,
-          ),
-          const SizedBox(height: 8),
-          _ProjectionRow(
-            label: 'Gasto proyectado',
-            value: projection.projectedExpense,
-            isProjected: true,
-            color: AppTheme.expense,
-          ),
-          const SizedBox(height: 8),
-          _ProjectionRow(
-            label: 'Ingreso proyectado',
-            value: projection.projectedIncome,
-            isProjected: true,
-            color: AppTheme.income,
-          ),
-          const SizedBox(height: 8),
-          _ProjectionRow(
-            label: 'Flujo proyectado',
-            value: projection.projectedNetFlow,
-            isProjected: true,
-            color: projection.projectedNetFlow >= 0
-                ? AppTheme.success
-                : AppTheme.expense,
-          ),
-          if (projection.budgetsAtRisk.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                const Icon(Icons.warning_amber_rounded,
-                    size: 15, color: AppTheme.warning),
-                const SizedBox(width: 6),
-                Text(
-                  'Presupuestos en riesgo',
-                  style: GoogleFonts.manrope(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.warning,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            ...projection.budgetsAtRisk.map(
-              (r) => _BudgetRiskRow(risk: r),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _ProjectionRow extends StatelessWidget {
-  const _ProjectionRow({
+class _AmountRow extends StatelessWidget {
+  const _AmountRow({
     required this.label,
-    required this.value,
-    required this.isProjected,
-    this.color,
+    required this.amount,
+    required this.color,
+    this.bold = false,
   });
 
   final String label;
-  final double value;
-  final bool isProjected;
-  final Color? color;
+  final double amount;
+  final Color color;
+  final bool bold;
 
   @override
   Widget build(BuildContext context) {
@@ -497,16 +694,17 @@ class _ProjectionRow extends StatelessWidget {
             label,
             style: GoogleFonts.manrope(
               fontSize: 13,
-              color: AppTheme.onSurfaceMuted,
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+              color: bold ? AppTheme.onSurface : AppTheme.onSurfaceMuted,
             ),
           ),
         ),
         Text(
-          AppFormatters.formatCurrency(value),
+          AppFormatters.formatCurrency(amount),
           style: GoogleFonts.manrope(
             fontSize: 13,
-            fontWeight: isProjected ? FontWeight.w700 : FontWeight.w500,
-            color: color ?? AppTheme.onSurface,
+            fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+            color: color,
           ),
         ),
       ],
@@ -514,111 +712,33 @@ class _ProjectionRow extends StatelessWidget {
   }
 }
 
-class _BudgetRiskRow extends StatelessWidget {
-  const _BudgetRiskRow({required this.risk});
+class _DeltaBadge extends StatelessWidget {
+  const _DeltaBadge({required this.delta, required this.higherIsGood});
 
-  final BudgetRisk risk;
+  final double delta;
+  final bool higherIsGood;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              risk.categoryName,
-              style: GoogleFonts.manrope(
-                fontSize: 13,
-                color: AppTheme.onSurface,
-              ),
-            ),
-          ),
-          Text(
-            '+${risk.overagePercent.toStringAsFixed(0)}% sobre límite',
-            style: GoogleFonts.manrope(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.warning,
-            ),
-          ),
-        ],
+    final isPositive = delta >= 0;
+    final isGood = higherIsGood ? isPositive : !isPositive;
+    final color = isGood ? const Color(0xFF35E879) : AppTheme.expense;
+    final sign = isPositive ? '+' : '';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
-    );
-  }
-}
-
-// ── Análisis ──────────────────────────────────────────────────────────────────
-
-class _InsightsCard extends StatelessWidget {
-  const _InsightsCard({required this.insights});
-
-  final List<AnalyticsInsightEntity> insights;
-
-  @override
-  Widget build(BuildContext context) {
-    if (insights.isEmpty) {
-      return const _ReportCard(
-        title: 'Análisis',
-        icon: Icons.lightbulb_outline_rounded,
-        child: _NoDataState(
-          message:
-              'Registra más movimientos para ver análisis automático.',
+      child: Text(
+        '$sign${delta.toStringAsFixed(1)}pp vs mes anterior',
+        style: GoogleFonts.manrope(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: color,
         ),
-      );
-    }
-
-    return _ReportCard(
-      title: 'Análisis',
-      icon: Icons.lightbulb_outline_rounded,
-      child: Column(
-        children: insights
-            .map((i) => _InsightRow(insight: i))
-            .toList(),
-      ),
-    );
-  }
-}
-
-class _InsightRow extends StatelessWidget {
-  const _InsightRow({required this.insight});
-
-  final AnalyticsInsightEntity insight;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = switch (insight.severity) {
-      InsightSeverity.positive => AppTheme.success,
-      InsightSeverity.warning => AppTheme.warning,
-      InsightSeverity.neutral => AppTheme.onSurfaceMuted,
-    };
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 5),
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              insight.message,
-              style: GoogleFonts.manrope(
-                fontSize: 13,
-                color: AppTheme.onSurface,
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
