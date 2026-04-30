@@ -207,7 +207,10 @@ class DashboardScreenState extends State<DashboardScreen> {
           totalExpense: summary.monthExpense,
         ),
       DashboardCardType.monthlyComparison => _reports != null
-          ? _MonthlyComparisonCard(data: _reports!.comparison)
+          ? _MonthlyComparisonCard(
+              data: _reports!.comparison,
+              month: _selectedMonth,
+            )
           : const SizedBox.shrink(),
       DashboardCardType.projection => _reports != null
           ? _ProjectionCard(data: _reports!.projection)
@@ -359,9 +362,10 @@ class _TotalBalanceCard extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _MonthlyComparisonCard extends StatefulWidget {
-  const _MonthlyComparisonCard({required this.data});
+  const _MonthlyComparisonCard({required this.data, required this.month});
 
   final MonthlyComparisonEntity data;
+  final DateTime month;
 
   @override
   State<_MonthlyComparisonCard> createState() =>
@@ -382,9 +386,10 @@ class _MonthlyComparisonCardState extends State<_MonthlyComparisonCard> {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final currentName = _monthNames[now.month - 1];
-    final previousName = _monthNames[(now.month - 2 + 12) % 12];
+    final month = widget.month;
+    final currentName = _monthNames[month.month - 1];
+    final previousMonth = DateTime(month.year, month.month - 1, 1);
+    final previousName = _monthNames[previousMonth.month - 1];
     final data = widget.data;
 
     return Container(
