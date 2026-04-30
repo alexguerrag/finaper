@@ -1,5 +1,6 @@
 import '../../../budgets/domain/repositories/budgets_repository.dart';
 import '../../../transactions/domain/repositories/transactions_repository.dart';
+import '../../domain/entities/ledger_entity.dart';
 import '../../domain/entities/premium_reports_entity.dart';
 import '../../domain/repositories/analytics_repository.dart';
 import '../analytics_engine.dart';
@@ -15,7 +16,10 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
   final BudgetsRepository _budgetsRepository;
 
   @override
-  Future<PremiumReportsEntity> getReports({required DateTime month}) async {
+  Future<PremiumReportsEntity> getReports({
+    required DateTime month,
+    required LedgerPeriod ledgerPeriod,
+  }) async {
     final monthKey =
         '${month.year}-${month.month.toString().padLeft(2, '0')}';
 
@@ -37,12 +41,27 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       transactions: transactions,
       month: month,
     );
+    final savingsRate = AnalyticsEngine.buildSavingsRate(
+      transactions: transactions,
+      month: month,
+    );
+    final cashFlow = AnalyticsEngine.buildCashFlow(
+      transactions: transactions,
+      month: month,
+    );
+    final ledger = AnalyticsEngine.buildLedger(
+      transactions: transactions,
+      period: ledgerPeriod,
+    );
 
     return PremiumReportsEntity(
       comparison: comparison,
       projection: projection,
       insights: insights,
       month: month,
+      savingsRate: savingsRate,
+      cashFlow: cashFlow,
+      ledger: ledger,
     );
   }
 }

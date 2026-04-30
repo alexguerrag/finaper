@@ -1,8 +1,11 @@
 import '../../budgets/domain/entities/budget_entity.dart';
 import '../../transactions/domain/entities/transaction_entity.dart';
 import '../domain/entities/analytics_insight_entity.dart';
+import '../domain/entities/cash_flow_entity.dart';
+import '../domain/entities/ledger_entity.dart';
 import '../domain/entities/month_projection_entity.dart';
 import '../domain/entities/monthly_comparison_entity.dart';
+import '../domain/entities/savings_rate_entity.dart';
 
 class AnalyticsEngine {
   const AnalyticsEngine._();
@@ -257,6 +260,155 @@ class AnalyticsEngine {
     }
 
     return insights.take(5).toList();
+  }
+
+  static SavingsRateEntity buildSavingsRate({
+    required List<TransactionEntity> transactions,
+    required DateTime month,
+  }) {
+    final currentStart = DateTime(month.year, month.month, 1);
+    final currentEnd = DateTime(month.year, month.month + 1, 1);
+    final previousStart = DateTime(month.year, month.month - 1, 1);
+
+    double currentIncome = 0, currentExpense = 0;
+    double previousIncome = 0, previousExpense = 0;
+    bool hasPreviousTxs = false;
+
+    for (final tx in transactions) {
+      if (tx.isTransfer) continue;
+      if (!tx.date.isBefore(currentStart) && tx.date.isBefore(currentEnd)) {
+        if (tx.isIncome) {
+          currentIncome += tx.amount;
+        } else {
+          currentExpense += tx.amount;
+        }
+      } else if (!tx.date.isBefore(previousStart) &&
+          tx.date.isBefore(currentStart)) {
+        hasPreviousTxs = true;
+        if (tx.isIncome) {
+          previousIncome += tx.amount;
+        } else {
+          previousExpense += tx.amount;
+        }
+      }
+    }
+
+    final savedAmount = currentIncome - currentExpense;
+    final rate =
+        currentIncome > 0 ? (savedAmount / currentIncome * 100) : 0.0;
+
+    double? previousRate;
+    if (hasPreviousTxs && previousIncome > 0) {
+      previousRate =
+          (previousIncome - previousExpense) / previousIncome * 100;
+    }
+
+    return SavingsRateEntity(
+      rate: rate,
+      income: currentIncome,
+      expense: currentExpense,
+      savedAmount: savedAmount,
+      previousRate: previousRate,
+    );
+  }
+
+  static CashFlowEntity buildCashFlow({
+    required List<TransactionEntity> transactions,
+    required DateTime month,
+  }) {
+    final now = DateTime.now();
+    final isCurrentMonth =
+        month.year == now.year && month.month == now.month;
+    final daysInPeriod =
+        isCurrentMonth ? now.day : _daysInMonth(month.year, month.month);
+
+    final monthStart = DateTime(month.year, month.month, 1);
+    final monthEnd = DateTime(month.year, month.month + 1, 1);
+
+    final incomeTxs = <TransactionEntity>[];
+    final expenseTxs = <TransactionEntity>[];
+
+    for (final tx in transactions) {
+      if (tx.isTransfer) continue;
+      if (tx.date.isBefore(monthStart) || !tx.date.isBefore(monthEnd)) {
+        continue;
+      }
+      if (tx.isIncome) {
+        incomeTxs.add(tx);
+      } else {
+        expenseTxs.add(tx);
+      }
+    }
+
+    CashFlowSummary summarise(List<TransactionEntity> txs, int days) {
+      final total = txs.fold(0.0, (s, t) => s + t.amount);
+      return CashFlowSummary(
+        count: txs.length,
+        total: total,
+        dailyAverage: days > 0 ? total / days : 0,
+        perTransactionAverage: txs.isNotEmpty ? total / txs.length : 0,
+      );
+    }
+
+    return CashFlowEntity(
+      income: summarise(incomeTxs, daysInPeriod),
+      expense: summarise(expenseTxs, daysInPeriod),
+      daysInPeriod: daysInPeriod,
+    );
+  }
+
+  static LedgerEntity buildLedger({
+    required List<TransactionEntity> transactions,
+    required LedgerPeriod period,
+  }) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+    final DateTime start = switch (period) {
+      LedgerPeriod.days7 => today.subtract(const Duration(days: 6)),
+      LedgerPeriod.days30 => today.subtract(const Duration(days: 29)),
+      LedgerPeriod.thisMonth => DateTime(now.year, now.month, 1),
+    };
+
+    final incomeByCategory = <String, ({double amount, int count})>{};
+    final expenseByCategory = <String, ({double amount, int count})>{};
+
+    for (final tx in transactions) {
+      if (tx.isTransfer) continue;
+      if (tx.date.isBefore(start) || tx.date.isAfter(endOfToday)) continue;
+
+      final map = tx.isIncome ? incomeByCategory : expenseByCategory;
+      final existing = map[tx.category];
+      map[tx.category] = (
+        amount: (existing?.amount ?? 0) + tx.amount,
+        count: (existing?.count ?? 0) + 1,
+      );
+    }
+
+    List<LedgerCategoryRow> toRows(
+        Map<String, ({double amount, int count})> map) {
+      final rows = map.entries
+          .map((e) => LedgerCategoryRow(
+                categoryName: e.key,
+                amount: e.value.amount,
+                count: e.value.count,
+              ))
+          .toList()
+        ..sort((a, b) => b.amount.compareTo(a.amount));
+      return rows;
+    }
+
+    final incomeRows = toRows(incomeByCategory);
+    final expenseRows = toRows(expenseByCategory);
+
+    return LedgerEntity(
+      period: period,
+      totalIncome: incomeRows.fold(0.0, (s, r) => s + r.amount),
+      totalExpense: expenseRows.fold(0.0, (s, r) => s + r.amount),
+      incomeRows: incomeRows,
+      expenseRows: expenseRows,
+    );
   }
 
   static int _daysInMonth(int year, int month) =>
