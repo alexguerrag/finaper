@@ -548,7 +548,7 @@ class _BudgetRiskRow extends StatelessWidget {
   }
 }
 
-// ── Insights ──────────────────────────────────────────────────────────────────
+// ── Análisis ──────────────────────────────────────────────────────────────────
 
 class _InsightsCard extends StatelessWidget {
   const _InsightsCard({required this.insights});
@@ -559,17 +559,17 @@ class _InsightsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (insights.isEmpty) {
       return const _ReportCard(
-        title: 'Insights',
+        title: 'Análisis',
         icon: Icons.lightbulb_outline_rounded,
         child: _NoDataState(
           message:
-              'Registra más movimientos para ver insights automáticos.',
+              'Registra más movimientos para ver análisis automático.',
         ),
       );
     }
 
     return _ReportCard(
-      title: 'Insights',
+      title: 'Análisis',
       icon: Icons.lightbulb_outline_rounded,
       child: Column(
         children: insights
