@@ -417,7 +417,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                       children: [
                         TxTypeFilterChip(
                           label: 'Todas',
-                          count: c.allTransactions.length,
+                          count: c.totalCount,
                           selected: c.typeFilter == TransactionTypeFilter.all,
                           onTap: () =>
                               c.setTypeFilter(TransactionTypeFilter.all),
@@ -453,7 +453,8 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                         children: c.accounts.map((account) {
                           final selected = c.selectedAccountId == account.id;
                           final count = c.allTransactions
-                              .where((t) => t.accountId == account.id)
+                              .where((t) =>
+                                  t.accountId == account.id && !t.isTransfer)
                               .length;
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),

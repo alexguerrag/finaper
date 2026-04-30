@@ -60,17 +60,20 @@ class TransactionListController extends ChangeNotifier {
   String? get selectedAccountId => _selectedAccountId;
   TransactionListFilterState get advancedFilter => _advancedFilter;
 
-  // ── computed: totals over raw data (unfiltered) ───────────────────────────
+  // ── computed: totals over raw data (unfiltered, transfers excluded) ──────
   double get totalIncome => _allTransactions
-      .where((e) => e.isIncome)
+      .where((e) => e.isIncome && !e.isTransfer)
       .fold(0.0, (s, e) => s + e.amount);
 
   double get totalExpense => _allTransactions
-      .where((e) => !e.isIncome)
+      .where((e) => !e.isIncome && !e.isTransfer)
       .fold(0.0, (s, e) => s + e.amount);
 
-  int get incomeCount => _allTransactions.where((e) => e.isIncome).length;
-  int get expenseCount => _allTransactions.where((e) => !e.isIncome).length;
+  int get totalCount => _allTransactions.where((e) => !e.isTransfer).length;
+  int get incomeCount =>
+      _allTransactions.where((e) => e.isIncome && !e.isTransfer).length;
+  int get expenseCount =>
+      _allTransactions.where((e) => !e.isIncome && !e.isTransfer).length;
 
   // ── computed: cached visible + grouped ────────────────────────────────────
   List<TransactionModel> get visibleTransactions =>
@@ -80,11 +83,11 @@ class TransactionListController extends ChangeNotifier {
       _cachedGrouped ??= _computeGrouped();
 
   double get visibleIncome => visibleTransactions
-      .where((e) => e.isIncome)
+      .where((e) => e.isIncome && !e.isTransfer)
       .fold(0.0, (s, e) => s + e.amount);
 
   double get visibleExpense => visibleTransactions
-      .where((e) => !e.isIncome)
+      .where((e) => !e.isIncome && !e.isTransfer)
       .fold(0.0, (s, e) => s + e.amount);
 
   // ── filter state queries ──────────────────────────────────────────────────
@@ -317,7 +320,7 @@ class TransactionListController extends ChangeNotifier {
   }
 
   List<TransactionModel> _computeVisible() {
-    var items = List<TransactionModel>.from(_allTransactions);
+    var items = _allTransactions.where((e) => !e.isTransfer).toList();
 
     if (_typeFilter == TransactionTypeFilter.income) {
       items = items.where((e) => e.isIncome).toList();
