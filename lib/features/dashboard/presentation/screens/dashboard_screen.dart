@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -314,7 +316,7 @@ class _TotalBalanceCard extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  'Saldo total',
+                  'Saldo actual',
                   style: GoogleFonts.manrope(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -357,64 +359,85 @@ class _MonthlyComparisonCard extends StatelessWidget {
 
   final MonthlyComparisonEntity data;
 
+  static const _monthNames = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  ];
+
+  // ── semantic color palette ─────────────────────────────────────────────────
+  static const _colorTitle     = Color(0xFFF4F7FA);
+  static const _colorSubtitle  = Color(0xFF9AA4B2);
+  static const _colorDivider   = Color(0xFF2A333D);
+
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final currentName = _monthNames[now.month - 1];
+    final previousName = _monthNames[(now.month - 2 + 12) % 12];
+
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(
+            color: _colorDivider.withValues(alpha: 0.6)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.compare_arrows_rounded,
-                  size: 14, color: AppTheme.onSurfaceMuted),
-              const SizedBox(width: 6),
-              Text(
-                'COMPARACIÓN MENSUAL',
-                style: GoogleFonts.manrope(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.onSurfaceMuted,
-                  letterSpacing: 0.8,
-                ),
-              ),
-            ],
+          Text(
+            'Comparación mensual',
+            style: GoogleFonts.manrope(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: _colorTitle,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            '$currentName vs $previousName',
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: _colorSubtitle,
+            ),
           ),
           const SizedBox(height: 14),
-          const Divider(color: Colors.white10, height: 1),
-          const SizedBox(height: 14),
+          Divider(
+              color: _colorDivider.withValues(alpha: 0.55), height: 1),
+          const SizedBox(height: 16),
           if (!data.hasPreviousMonthData)
             Text(
               'Aún no hay suficientes datos para comparar con el mes anterior.',
               style: GoogleFonts.manrope(
                 fontSize: 13,
-                color: AppTheme.onSurfaceMuted,
+                color: _colorSubtitle,
                 height: 1.4,
               ),
             )
           else ...[
-            _ComparisonRow(
-              label: 'Ingresos',
-              current: data.currentIncome,
+            _ComparisonSection(
+              sectionLabel: 'Ingresos',
               delta: data.incomeDelta,
+              previous: data.previousIncome,
+              current: data.currentIncome,
+              previousLabel: previousName,
+              currentLabel: currentName,
+              isExpense: false,
             ),
-            const SizedBox(height: 10),
-            _ComparisonRow(
-              label: 'Gastos',
-              current: data.currentExpense,
+            const SizedBox(height: 16),
+            Divider(
+                color: _colorDivider.withValues(alpha: 0.55), height: 1),
+            const SizedBox(height: 16),
+            _ComparisonSection(
+              sectionLabel: 'Gastos',
               delta: data.expenseDelta,
-            ),
-            const SizedBox(height: 10),
-            _ComparisonRow(
-              label: 'Flujo del mes',
-              current: data.currentNetFlow,
-              delta: data.netFlowDelta,
-              bold: true,
+              previous: data.previousExpense,
+              current: data.currentExpense,
+              previousLabel: previousName,
+              currentLabel: currentName,
+              isExpense: true,
             ),
           ],
         ],
@@ -423,74 +446,165 @@ class _MonthlyComparisonCard extends StatelessWidget {
   }
 }
 
-class _ComparisonRow extends StatelessWidget {
-  const _ComparisonRow({
-    required this.label,
-    required this.current,
+class _ComparisonSection extends StatelessWidget {
+  const _ComparisonSection({
+    required this.sectionLabel,
     required this.delta,
-    this.bold = false,
+    required this.previous,
+    required this.current,
+    required this.previousLabel,
+    required this.currentLabel,
+    required this.isExpense,
   });
 
-  final String label;
-  final double current;
+  final String sectionLabel;
   final double delta;
-  final bool bold;
+  final double previous;
+  final double current;
+  final String previousLabel;
+  final String currentLabel;
+  final bool isExpense;
+
+  // ── semantic colors ────────────────────────────────────────────────────────
+  static const _colorSectionLabel = Color(0xFFB7C0CC);
+  static const _colorNeutral      = Color(0xFFD4DAE3);
+  static const _colorSubtext      = Color(0xFF8B949E);
+  static const _colorPositive     = Color(0xFF35E879);
+  static const _colorNegIncome    = Color(0xFFFF6B63);
+  static const _colorNegExpense   = Color(0xFFFF5F57);
+  static const _colorPrevText     = Color(0xFFAAB4C0);
+  static const _colorCurrText     = Color(0xFFF4F7FA);
+  static const _colorPrevBar      = Color(0xFF7E8895);
+  static const _colorIncomeBar    = Color(0xFF35E879);
+  static const _colorExpenseBar   = Color(0xFFFF5F57);
+
+  Color get _headlineColor {
+    if (delta == 0) return _colorNeutral;
+    final increased = delta > 0;
+    if (isExpense) return increased ? _colorNegExpense : _colorPositive;
+    return increased ? _colorPositive : _colorNegIncome;
+  }
+
+  Color get _currentBarColor =>
+      isExpense ? _colorExpenseBar : _colorIncomeBar;
+
+  String get _headlineText {
+    if (delta == 0) return 'Igual que el mes anterior';
+    final amount = AppFormatters.formatCurrency(delta.abs());
+    final verb = isExpense ? 'Gastaste' : 'Ingresaste';
+    return '$verb $amount ${delta > 0 ? 'más' : 'menos'}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isPositive = delta >= 0;
-    final deltaColor = isPositive ? AppTheme.income : AppTheme.expense;
-    final deltaSign = isPositive ? '+' : '';
-    final deltaText =
-        '$deltaSign${AppFormatters.formatCurrency(delta.abs())}';
+    final maxVal = math.max(previous, current);
+    final prevProgress = maxVal > 0 ? previous / maxVal : 0.0;
+    final currProgress = maxVal > 0 ? current / maxVal : 0.0;
 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          sectionLabel,
+          style: GoogleFonts.manrope(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: _colorSectionLabel,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          _headlineText,
+          style: GoogleFonts.manrope(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: _headlineColor,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          'De ${AppFormatters.formatCurrency(previous)} a ${AppFormatters.formatCurrency(current)}',
+          style: GoogleFonts.manrope(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: _colorSubtext,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _BarRow(
+          label: previousLabel,
+          amount: previous,
+          progress: prevProgress,
+          barColor: _colorPrevBar,
+          textColor: _colorPrevText,
+        ),
+        const SizedBox(height: 7),
+        _BarRow(
+          label: currentLabel,
+          amount: current,
+          progress: currProgress,
+          barColor: _currentBarColor,
+          textColor: _colorCurrText,
+        ),
+      ],
+    );
+  }
+}
+
+class _BarRow extends StatelessWidget {
+  const _BarRow({
+    required this.label,
+    required this.amount,
+    required this.progress,
+    required this.barColor,
+    required this.textColor,
+  });
+
+  final String label;
+  final double amount;
+  final double progress;
+  final Color barColor;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
+        SizedBox(
+          width: 52,
           child: Text(
             label,
             style: GoogleFonts.manrope(
-              fontSize: 13,
-              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-              color: bold ? AppTheme.onSurface : AppTheme.onSurfaceMuted,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: textColor,
             ),
           ),
         ),
-        Text(
-          AppFormatters.formatCurrency(current.abs()),
-          style: GoogleFonts.manrope(
-            fontSize: 13,
-            fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-            color: AppTheme.onSurface,
+        SizedBox(
+          width: 76,
+          child: Text(
+            AppFormatters.formatCurrency(amount),
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
           ),
         ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: deltaColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isPositive
-                    ? Icons.arrow_upward_rounded
-                    : Icons.arrow_downward_rounded,
-                size: 10,
-                color: deltaColor,
-              ),
-              const SizedBox(width: 2),
-              Text(
-                deltaText,
-                style: GoogleFonts.manrope(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: deltaColor,
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: FractionallySizedBox(
+              widthFactor: progress.clamp(0.0, 1.0),
+              child: Container(
+                height: 8,
+                decoration: BoxDecoration(
+                  color: barColor,
+                  borderRadius: BorderRadius.circular(999),
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ],
@@ -526,17 +640,13 @@ class _ProjectionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.trending_up_rounded,
-                  size: 14, color: AppTheme.onSurfaceMuted),
-              const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'PROYECCIÓN DE CIERRE',
+                  'Proyección de cierre',
                   style: GoogleFonts.manrope(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.onSurfaceMuted,
-                    letterSpacing: 0.8,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.onSurface,
                   ),
                 ),
               ),
@@ -560,6 +670,10 @@ class _ProjectionCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 14),
+          const Divider(color: Colors.white10, height: 1),
+          const SizedBox(height: 14),
+          _ProjectionProgressBars(data: data),
           const SizedBox(height: 14),
           const Divider(color: Colors.white10, height: 1),
           const SizedBox(height: 14),
@@ -678,6 +792,121 @@ class _ProjectionRow extends StatelessWidget {
   }
 }
 
+class _ProjectionProgressBars extends StatelessWidget {
+  const _ProjectionProgressBars({required this.data});
+
+  final MonthProjectionEntity data;
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = data.daysElapsed / data.totalDays.clamp(1, 31);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ProgressBarRow(
+          label: 'Ingresos',
+          current: data.currentIncome,
+          projected: data.projectedIncome,
+          color: AppTheme.income,
+        ),
+        const SizedBox(height: 10),
+        _ProgressBarRow(
+          label: 'Gastos',
+          current: data.currentExpense,
+          projected: data.projectedExpense,
+          color: AppTheme.expense,
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: pct.clamp(0.0, 1.0),
+                  minHeight: 4,
+                  backgroundColor: Colors.white12,
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Colors.white30),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Día ${data.daysElapsed} de ${data.totalDays}',
+              style: GoogleFonts.manrope(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.onSurfaceMuted,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ProgressBarRow extends StatelessWidget {
+  const _ProgressBarRow({
+    required this.label,
+    required this.current,
+    required this.projected,
+    required this.color,
+  });
+
+  final String label;
+  final double current;
+  final double projected;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress =
+        projected > 0 ? (current / projected).clamp(0.0, 1.0) : 0.0;
+    final pctText = '${(progress * 100).toStringAsFixed(0)}%';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.manrope(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.onSurfaceMuted,
+                ),
+              ),
+            ),
+            Text(
+              pctText,
+              style: GoogleFonts.manrope(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 6,
+            backgroundColor: color.withValues(alpha: 0.15),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _InsightsCard extends StatelessWidget {
   const _InsightsCard({required this.insights});
 
@@ -695,21 +924,13 @@ class _InsightsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.lightbulb_outline_rounded,
-                  size: 14, color: AppTheme.onSurfaceMuted),
-              const SizedBox(width: 6),
-              Text(
-                'ANÁLISIS',
-                style: GoogleFonts.manrope(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.onSurfaceMuted,
-                  letterSpacing: 0.8,
-                ),
-              ),
-            ],
+          Text(
+            'Análisis',
+            style: GoogleFonts.manrope(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.onSurface,
+            ),
           ),
           const SizedBox(height: 14),
           const Divider(color: Colors.white10, height: 1),

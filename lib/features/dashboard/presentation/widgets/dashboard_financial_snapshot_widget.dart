@@ -53,7 +53,7 @@ class DashboardFinancialSnapshotWidget extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Text(
-            'Saldo total',
+            'Saldo actual',
             style: GoogleFonts.manrope(
               fontSize: 12,
               fontWeight: FontWeight.w700,

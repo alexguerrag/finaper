@@ -81,8 +81,8 @@ class _TrendChartWidgetState extends State<TrendChartWidget>
                       Text(
                         'Tendencia 6 meses',
                         style: GoogleFonts.manrope(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
                           color: AppTheme.onSurface,
                         ),
                       ),
