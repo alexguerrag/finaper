@@ -358,34 +358,41 @@ class _TotalBalanceCard extends StatelessWidget {
 // Premium cards
 // ---------------------------------------------------------------------------
 
-class _MonthlyComparisonCard extends StatelessWidget {
+class _MonthlyComparisonCard extends StatefulWidget {
   const _MonthlyComparisonCard({required this.data});
 
   final MonthlyComparisonEntity data;
+
+  @override
+  State<_MonthlyComparisonCard> createState() =>
+      _MonthlyComparisonCardState();
+}
+
+class _MonthlyComparisonCardState extends State<_MonthlyComparisonCard> {
+  bool _showExpense = true;
 
   static const _monthNames = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
   ];
 
-  // ── semantic color palette ─────────────────────────────────────────────────
-  static const _colorTitle     = Color(0xFFF4F7FA);
-  static const _colorSubtitle  = Color(0xFF9AA4B2);
-  static const _colorDivider   = Color(0xFF2A333D);
+  static const _colorTitle    = Color(0xFFF4F7FA);
+  static const _colorSubtitle = Color(0xFF9AA4B2);
+  static const _colorDivider  = Color(0xFF2A333D);
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final currentName = _monthNames[now.month - 1];
     final previousName = _monthNames[(now.month - 2 + 12) % 12];
+    final data = widget.data;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-            color: _colorDivider.withValues(alpha: 0.6)),
+        border: Border.all(color: _colorDivider.withValues(alpha: 0.6)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,9 +414,6 @@ class _MonthlyComparisonCard extends StatelessWidget {
               color: _colorSubtitle,
             ),
           ),
-          const SizedBox(height: 14),
-          Divider(
-              color: _colorDivider.withValues(alpha: 0.55), height: 1),
           const SizedBox(height: 16),
           if (!data.hasPreviousMonthData)
             Text(
@@ -421,27 +425,32 @@ class _MonthlyComparisonCard extends StatelessWidget {
               ),
             )
           else ...[
-            _ComparisonSection(
-              sectionLabel: 'Ingresos',
-              delta: data.incomeDelta,
-              previous: data.previousIncome,
-              current: data.currentIncome,
-              previousLabel: previousName,
-              currentLabel: currentName,
-              isExpense: false,
+            _ComparisonToggle(
+              showExpense: _showExpense,
+              onChanged: (v) => setState(() => _showExpense = v),
             ),
-            const SizedBox(height: 16),
-            Divider(
-                color: _colorDivider.withValues(alpha: 0.55), height: 1),
-            const SizedBox(height: 16),
-            _ComparisonSection(
-              sectionLabel: 'Gastos',
-              delta: data.expenseDelta,
-              previous: data.previousExpense,
-              current: data.currentExpense,
-              previousLabel: previousName,
-              currentLabel: currentName,
-              isExpense: true,
+            const SizedBox(height: 20),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              child: _showExpense
+                  ? _ComparisonSection(
+                      key: const ValueKey('expense'),
+                      delta: data.expenseDelta,
+                      previous: data.previousExpense,
+                      current: data.currentExpense,
+                      previousLabel: previousName,
+                      currentLabel: currentName,
+                      isExpense: true,
+                    )
+                  : _ComparisonSection(
+                      key: const ValueKey('income'),
+                      delta: data.incomeDelta,
+                      previous: data.previousIncome,
+                      current: data.currentIncome,
+                      previousLabel: previousName,
+                      currentLabel: currentName,
+                      isExpense: false,
+                    ),
             ),
           ],
         ],
@@ -450,9 +459,72 @@ class _MonthlyComparisonCard extends StatelessWidget {
   }
 }
 
+class _ComparisonToggle extends StatelessWidget {
+  const _ComparisonToggle({
+    required this.showExpense,
+    required this.onChanged,
+  });
+
+  final bool showExpense;
+  final void Function(bool) onChanged;
+
+  static const _colorExpense = Color(0xFFFF5F57);
+  static const _colorIncome  = Color(0xFF35E879);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 38,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          _pill('Gastos',   selected: showExpense,  color: _colorExpense,
+              onTap: () => onChanged(true)),
+          _pill('Ingresos', selected: !showExpense, color: _colorIncome,
+              onTap: () => onChanged(false)),
+        ],
+      ),
+    );
+  }
+
+  Widget _pill(String label,
+      {required bool selected,
+      required Color color,
+      required VoidCallback onTap}) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: selected ? color.withValues(alpha: 0.18) : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+            border: selected
+                ? Border.all(color: color.withValues(alpha: 0.45))
+                : null,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: GoogleFonts.manrope(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: selected ? color : const Color(0xFF8B949E),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ComparisonSection extends StatelessWidget {
   const _ComparisonSection({
-    required this.sectionLabel,
+    super.key,
     required this.delta,
     required this.previous,
     required this.current,
@@ -461,7 +533,6 @@ class _ComparisonSection extends StatelessWidget {
     required this.isExpense,
   });
 
-  final String sectionLabel;
   final double delta;
   final double previous;
   final double current;
@@ -470,7 +541,6 @@ class _ComparisonSection extends StatelessWidget {
   final bool isExpense;
 
   // ── semantic colors ────────────────────────────────────────────────────────
-  static const _colorSectionLabel = Color(0xFFB7C0CC);
   static const _colorNeutral      = Color(0xFFD4DAE3);
   static const _colorSubtext      = Color(0xFF8B949E);
   static const _colorPositive     = Color(0xFF35E879);
@@ -508,14 +578,6 @@ class _ComparisonSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          sectionLabel,
-          style: GoogleFonts.manrope(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: _colorSectionLabel,
-          ),
-        ),
         const SizedBox(height: 5),
         Text(
           _headlineText,
