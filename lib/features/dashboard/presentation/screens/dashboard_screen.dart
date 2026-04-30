@@ -701,7 +701,7 @@ class _InsightsCard extends StatelessWidget {
                   size: 14, color: AppTheme.onSurfaceMuted),
               const SizedBox(width: 6),
               Text(
-                'INSIGHTS',
+                'ANÁLISIS',
                 style: GoogleFonts.manrope(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
