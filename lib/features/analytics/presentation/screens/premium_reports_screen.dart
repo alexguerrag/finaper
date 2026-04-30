@@ -287,7 +287,7 @@ class _CashFlowCard extends StatelessWidget {
           Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
           const SizedBox(height: 14),
           _AmountRow(
-            label: 'Flujo neto del mes',
+            label: 'Flujo neto del período',
             amount: data.netFlow,
             color: data.netFlow >= 0 ? const Color(0xFF35E879) : AppTheme.expense,
             bold: true,
