@@ -78,6 +78,15 @@ class DashboardTopExpenseCategoriesWidget extends StatelessWidget {
               color: AppTheme.onSurface,
             ),
           ),
+          const SizedBox(height: 3),
+          Text(
+            'Top 5 · mes en curso',
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.onSurfaceMuted,
+            ),
+          ),
           const SizedBox(height: 14),
           _ExpenseTotalHeader(totalAmount: totalExpense),
           const SizedBox(height: 16),
@@ -90,6 +99,19 @@ class DashboardTopExpenseCategoriesWidget extends StatelessWidget {
               ),
             ),
           ),
+          Builder(builder: (context) {
+            final listedTotal =
+                sorted.fold(0.0, (s, c) => s + c.amount);
+            final remainder = totalExpense - listedTotal;
+            if (remainder <= 0) return const SizedBox.shrink();
+            final remainderPct = totalExpense > 0
+                ? remainder / totalExpense
+                : 0.0;
+            return _OtherCategoriesRow(
+              amount: remainder,
+              percentage: remainderPct,
+            );
+          }),
         ],
       ),
     );
@@ -221,6 +243,78 @@ class _ExpenseCategoryBarRow extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           AppFormatters.formatCurrency(category.amount),
+          style: GoogleFonts.manrope(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.onSurfaceMuted,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OtherCategoriesRow extends StatelessWidget {
+  const _OtherCategoriesRow({
+    required this.amount,
+    required this.percentage,
+  });
+
+  final double amount;
+  final double percentage;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: AppTheme.onSurfaceMuted.withValues(alpha: 0.4),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Otras categorías',
+                style: GoogleFonts.manrope(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.onSurface,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              '${(percentage * 100).round()}%',
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.onSurfaceMuted,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: percentage.clamp(0, 1).toDouble(),
+            minHeight: 9,
+            backgroundColor: Colors.white.withValues(alpha: 0.06),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              AppTheme.onSurfaceMuted.withValues(alpha: 0.35),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          AppFormatters.formatCurrency(amount),
           style: GoogleFonts.manrope(
             fontSize: 12,
             fontWeight: FontWeight.w600,
