@@ -1,7 +1,7 @@
 enum ProjectionReliability {
-  low, // daysElapsed < 7 — too few data points
-  medium, // 7 <= daysElapsed < 20
-  high, // daysElapsed >= 20
+  low,    // day 1–9  — not enough data, income not extrapolated
+  medium, // day 10–15 — estimating, show with caution badge
+  high,   // day 16+  — reliable enough to show confidently
 }
 
 class BudgetRisk {
@@ -29,6 +29,7 @@ class MonthProjectionEntity {
     required this.totalDays,
     required this.reliability,
     required this.budgetsAtRisk,
+    required this.isSanityFailed,
   });
 
   final double currentExpense;
@@ -40,4 +41,14 @@ class MonthProjectionEntity {
   final int totalDays;
   final ProjectionReliability reliability;
   final List<BudgetRisk> budgetsAtRisk;
+
+  /// True when the projected income exceeds 3× the user's historical monthly
+  /// average — signals an unreliable extrapolation (e.g. large one-off income
+  /// recorded early in the month).
+  final bool isSanityFailed;
+
+  /// Whether the UI should display projected amounts.
+  /// Hidden when there is too little data (LOW) or the sanity check fails.
+  bool get showProjectedAmounts =>
+      reliability != ProjectionReliability.low && !isSanityFailed;
 }
