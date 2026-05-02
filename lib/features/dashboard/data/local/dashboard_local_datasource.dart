@@ -187,7 +187,7 @@ class DashboardLocalDataSource {
         value: selectedMonth,
         localeCode: localeCode,
       ),
-      topExpenseCategories: topExpenseCategories.take(5).toList(),
+      topExpenseCategories: topExpenseCategories.take(6).toList(),
       hasTransactionsInMonth: monthTransactions.isNotEmpty,
       monthlyTrend: monthlyTrend,
       hasAnyTransactions: transactions.isNotEmpty,

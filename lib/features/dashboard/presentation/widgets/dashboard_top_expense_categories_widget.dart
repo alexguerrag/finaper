@@ -79,14 +79,20 @@ class DashboardTopExpenseCategoriesWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 3),
-          Text(
-            'Top 5 · mes en curso',
-            style: GoogleFonts.manrope(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.onSurfaceMuted,
-            ),
-          ),
+          Builder(builder: (context) {
+            final listedTotal =
+                sorted.fold(0.0, (s, c) => s + c.amount);
+            final hasOthers = totalExpense - listedTotal > 0;
+            final count = sorted.length + (hasOthers ? 1 : 0);
+            return Text(
+              'Top $count - Mes en curso',
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.onSurfaceMuted,
+              ),
+            );
+          }),
           const SizedBox(height: 14),
           _ExpenseTotalHeader(totalAmount: totalExpense),
           const SizedBox(height: 16),
