@@ -688,32 +688,28 @@ class _ProjectionCard extends StatelessWidget {
 
   final MonthProjectionEntity data;
 
+  static const _colorAmber   = Color(0xFFF5A623);
+  static const _colorDivider = Color(0xFF2A333D);
+
   @override
   Widget build(BuildContext context) {
-    final isPositive = data.projectedNetFlow >= 0;
-    final flowColor = isPositive ? AppTheme.income : AppTheme.expense;
-
-    final (reliabilityLabel, reliabilityColor) = switch (data.reliability) {
-      ProjectionReliability.low => ('Baja confianza', AppTheme.expense),
-      ProjectionReliability.medium => ('Confianza media', const Color(0xFFF5A623)),
-      ProjectionReliability.high => ('Alta confianza', AppTheme.income),
-    };
-
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: _colorDivider.withValues(alpha: 0.6)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Title row + badge
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Text(
-                  'Proyección de cierre',
+                  'Proyección del mes',
                   style: GoogleFonts.manrope(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
@@ -721,141 +717,328 @@ class _ProjectionCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: reliabilityColor.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                      color: reliabilityColor.withValues(alpha: 0.28)),
-                ),
+              if (_badge() != null) _badge()!,
+            ],
+          ),
+          const SizedBox(height: 3),
+          // Subtitle + day counter
+          Row(
+            children: [
+              Expanded(
                 child: Text(
-                  reliabilityLabel,
+                  'Basado en tus movimientos',
                   style: GoogleFonts.manrope(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: reliabilityColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.onSurfaceMuted,
                   ),
+                ),
+              ),
+              Text(
+                'Día ${data.daysElapsed} de ${data.totalDays}',
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.onSurfaceMuted,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          const Divider(color: Colors.white10, height: 1),
-          const SizedBox(height: 14),
-          _ProjectionProgressBars(data: data),
-          const SizedBox(height: 14),
-          const Divider(color: Colors.white10, height: 1),
-          const SizedBox(height: 14),
-          _ProjectionRow(
-            label: 'Cierre estimado',
-            value: _formatSigned(data.projectedNetFlow),
-            color: flowColor,
-            large: true,
-          ),
-          const SizedBox(height: 8),
-          _ProjectionRow(
-            label: 'Ingresos proyectados',
-            value: AppFormatters.formatCurrency(data.projectedIncome),
-            color: AppTheme.income,
-          ),
-          const SizedBox(height: 8),
-          _ProjectionRow(
-            label: 'Gastos proyectados',
-            value: AppFormatters.formatCurrency(data.projectedExpense),
-            color: AppTheme.expense,
-          ),
-          if (data.budgetsAtRisk.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            const Divider(color: Colors.white10, height: 1),
-            const SizedBox(height: 10),
-            Text(
-              'Presupuestos en riesgo',
-              style: GoogleFonts.manrope(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.onSurfaceMuted,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...data.budgetsAtRisk.take(2).map(
-                  (r) => Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.warning_amber_rounded,
-                            size: 14, color: Color(0xFFF5A623)),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            r.categoryName,
-                            style: GoogleFonts.manrope(
-                              fontSize: 12,
-                              color: AppTheme.onSurface,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          '+${r.overagePercent.toStringAsFixed(0)}%',
-                          style: GoogleFonts.manrope(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.expense,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+          const SizedBox(height: 16),
+          if (!data.showProjectedAmounts)
+            _NoProjectionState(isSanityFailed: data.isSanityFailed)
+          else ...[
+            _ProjectionResultCard(data: data),
+            const SizedBox(height: 12),
+            _ProjectionMetricPair(data: data),
+            if (data.budgetsAtRisk.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _BudgetsAtRiskSection(budgets: data.budgetsAtRisk),
+            ],
+            if (data.reliability == ProjectionReliability.medium) ...[
+              const SizedBox(height: 12),
+              const _ProjectionFooter(),
+            ],
           ],
         ],
       ),
     );
   }
 
-  String _formatSigned(double value) {
-    final f = AppFormatters.formatCurrency(value.abs());
-    if (value > 0) return '+$f';
-    if (value < 0) return '-$f';
-    return AppFormatters.formatCurrency(0);
+  Widget? _badge() {
+    if (data.isSanityFailed) {
+      return _BadgePill(
+        label: 'Estimación en revisión',
+        color: AppTheme.expense,
+        icon: Icons.warning_amber_rounded,
+      );
+    }
+    return switch (data.reliability) {
+      ProjectionReliability.medium => _BadgePill(
+          label: 'Estimación en desarrollo',
+          color: _colorAmber,
+          icon: Icons.timelapse_rounded,
+        ),
+      _ => null,
+    };
   }
 }
 
-class _ProjectionRow extends StatelessWidget {
-  const _ProjectionRow({
+class _BadgePill extends StatelessWidget {
+  const _BadgePill({
     required this.label,
-    required this.value,
     required this.color,
-    this.large = false,
+    required this.icon,
   });
 
   final String label;
-  final String value;
   final Color color;
-  final bool large;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NoProjectionState extends StatelessWidget {
+  const _NoProjectionState({required this.isSanityFailed});
+
+  final bool isSanityFailed;
+
+  @override
+  Widget build(BuildContext context) {
+    final message = isSanityFailed
+        ? 'Los datos de este mes son inusuales. Volveremos a calcular cuando tengamos más movimientos.'
+        : 'Aún no tenemos suficiente información para estimar tu cierre de mes.';
+    final icon = isSanityFailed
+        ? Icons.warning_amber_rounded
+        : Icons.hourglass_top_rounded;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: AppTheme.onSurfaceMuted),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: GoogleFonts.manrope(
+                fontSize: 13,
+                color: AppTheme.onSurfaceMuted,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProjectionResultCard extends StatelessWidget {
+  const _ProjectionResultCard({required this.data});
+
+  final MonthProjectionEntity data;
+
+  static const _colorGreen = Color(0xFF35E879);
+
+  @override
+  Widget build(BuildContext context) {
+    final isPositive = data.projectedNetFlow >= 0;
+    final resultColor = isPositive ? _colorGreen : AppTheme.expense;
+    final sign = data.projectedNetFlow > 0
+        ? '+'
+        : (data.projectedNetFlow < 0 ? '-' : '');
+    final formattedAmount =
+        '$sign${AppFormatters.formatCurrency(data.projectedNetFlow.abs())}';
+    final subtitle = isPositive
+        ? 'Podrías terminar el mes en positivo 👍'
+        : 'Podrías terminar el mes en negativo ⚠️';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F1923),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.trending_up_rounded,
+                        size: 15, color: _colorGreen),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Resultado estimado',
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: _colorGreen,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  formattedAmount,
+                  style: GoogleFonts.manrope(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: resultColor,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    color: AppTheme.onSurfaceMuted,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 80,
+            height: 64,
+            child: CustomPaint(
+              painter: _ProjectionCurvePainter(
+                color: resultColor,
+                isPositive: isPositive,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProjectionCurvePainter extends CustomPainter {
+  const _ProjectionCurvePainter({
+    required this.color,
+    required this.isPositive,
+  });
+
+  final Color color;
+  final bool isPositive;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final startY = isPositive ? size.height * 0.85 : size.height * 0.15;
+    final endY   = isPositive ? size.height * 0.05 : size.height * 0.95;
+
+    final path = Path()
+      ..moveTo(0, startY)
+      ..cubicTo(
+        size.width * 0.35, startY,
+        size.width * 0.65, endY,
+        size.width, endY,
+      );
+
+    final fillPath = Path.from(path)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+
+    canvas.drawPath(
+      fillPath,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            color.withValues(alpha: 0.28),
+            color.withValues(alpha: 0.0),
+          ],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+        ..style = PaintingStyle.fill,
+    );
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color
+        ..strokeWidth = 2
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round,
+    );
+
+    canvas.drawCircle(
+      Offset(size.width, endY),
+      4,
+      Paint()..color = color,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ProjectionCurvePainter old) =>
+      old.color != color || old.isPositive != isPositive;
+}
+
+class _ProjectionMetricPair extends StatelessWidget {
+  const _ProjectionMetricPair({required this.data});
+
+  final MonthProjectionEntity data;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Expanded(
-          child: Text(
-            label,
-            style: GoogleFonts.manrope(
-              fontSize: large ? 14 : 13,
-              fontWeight: large ? FontWeight.w700 : FontWeight.w500,
-              color: large ? AppTheme.onSurface : AppTheme.onSurfaceMuted,
-            ),
+          child: _ProjectionMetricCard(
+            label: 'Ingresos proyectados',
+            amount: data.projectedIncome,
+            icon: Icons.arrow_downward_rounded,
+            color: const Color(0xFF35E879),
           ),
         ),
-        Text(
-          value,
-          style: GoogleFonts.manrope(
-            fontSize: large ? 20 : 13,
-            fontWeight: large ? FontWeight.w800 : FontWeight.w600,
-            color: color,
+        const SizedBox(width: 10),
+        Expanded(
+          child: _ProjectionMetricCard(
+            label: 'Gastos proyectados',
+            amount: data.projectedExpense,
+            icon: Icons.arrow_upward_rounded,
+            color: AppTheme.expense,
           ),
         ),
       ],
@@ -863,117 +1046,170 @@ class _ProjectionRow extends StatelessWidget {
   }
 }
 
-class _ProjectionProgressBars extends StatelessWidget {
-  const _ProjectionProgressBars({required this.data});
-
-  final MonthProjectionEntity data;
-
-  @override
-  Widget build(BuildContext context) {
-    final pct = data.daysElapsed / data.totalDays.clamp(1, 31);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _ProgressBarRow(
-          label: 'Ingresos',
-          current: data.currentIncome,
-          projected: data.projectedIncome,
-          color: AppTheme.income,
-        ),
-        const SizedBox(height: 10),
-        _ProgressBarRow(
-          label: 'Gastos',
-          current: data.currentExpense,
-          projected: data.projectedExpense,
-          color: AppTheme.expense,
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: pct.clamp(0.0, 1.0),
-                  minHeight: 4,
-                  backgroundColor: Colors.white12,
-                  valueColor:
-                      const AlwaysStoppedAnimation<Color>(Colors.white30),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'Día ${data.daysElapsed} de ${data.totalDays}',
-              style: GoogleFonts.manrope(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.onSurfaceMuted,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _ProgressBarRow extends StatelessWidget {
-  const _ProgressBarRow({
+class _ProjectionMetricCard extends StatelessWidget {
+  const _ProjectionMetricCard({
     required this.label,
-    required this.current,
-    required this.projected,
+    required this.amount,
+    required this.icon,
     required this.color,
   });
 
   final String label;
-  final double current;
-  final double projected;
+  final double amount;
+  final IconData icon;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final progress =
-        projected > 0 ? (current / projected).clamp(0.0, 1.0) : 0.0;
-    final pctText = '${(progress * 100).toStringAsFixed(0)}%';
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 15, color: color),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.onSurfaceMuted,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            AppFormatters.formatCurrency(amount),
+            style: GoogleFonts.manrope(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: GoogleFonts.manrope(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.onSurfaceMuted,
+class _BudgetsAtRiskSection extends StatelessWidget {
+  const _BudgetsAtRiskSection({required this.budgets});
+
+  final List<BudgetRisk> budgets;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.expense.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.expense.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Presupuestos en riesgo',
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.expense,
+              letterSpacing: 0.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...budgets.take(2).map(
+                (r) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded,
+                          size: 13, color: Color(0xFFF5A623)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          r.categoryName,
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            color: AppTheme.onSurface,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '+${r.overagePercent.toStringAsFixed(0)}%',
+                        style: GoogleFonts.manrope(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.expense,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProjectionFooter extends StatelessWidget {
+  const _ProjectionFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline_rounded,
+              size: 16, color: Color(0xFF8B949E)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '¿Por qué es una estimación?',
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Aún estamos analizando tus patrones. A más movimientos, más precisa será la proyección.',
+                  style: GoogleFonts.manrope(
+                    fontSize: 11,
+                    color: AppTheme.onSurfaceMuted,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
-            Text(
-              pctText,
-              style: GoogleFonts.manrope(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 6,
-            backgroundColor: color.withValues(alpha: 0.15),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
