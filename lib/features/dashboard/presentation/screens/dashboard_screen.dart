@@ -833,7 +833,7 @@ class _NoProjectionState extends StatelessWidget {
   Widget build(BuildContext context) {
     final message = isSanityFailed
         ? 'Los datos de este mes son inusuales. Volveremos a calcular cuando tengamos más movimientos.'
-        : 'Aún es pronto para estimar tu cierre. Con más movimientos será más preciso.';
+        : 'Aún es pronto para estimar tu cierre. Continúa registrando movimientos y pronto sabrás tu proyección.';
     final icon = isSanityFailed
         ? Icons.warning_amber_rounded
         : Icons.timelapse_rounded;
