@@ -143,13 +143,29 @@ class AnalyticsEngine {
     }
 
     final ProjectionReliability reliability;
-    if (daysElapsed < 7) {
+    if (daysElapsed < 10) {
       reliability = ProjectionReliability.low;
-    } else if (daysElapsed < 20) {
+    } else if (daysElapsed < 16) {
       reliability = ProjectionReliability.medium;
     } else {
       reliability = ProjectionReliability.high;
     }
+
+    // Income: don't extrapolate before day 10 — a single large income early
+    // in the month would otherwise produce absurd projections.
+    final projectedIncome = reliability == ProjectionReliability.low
+        ? currentIncome
+        : currentIncome * factor;
+    final projectedExpense = currentExpense * factor;
+    final projectedNetFlow = projectedIncome - projectedExpense;
+
+    // Sanity check: if the projected income exceeds 3× the user's historical
+    // monthly average, the extrapolation is likely unreliable.
+    final isSanityFailed = _isSanityFailed(
+      projectedIncome: projectedIncome,
+      transactions: transactions,
+      currentMonthStart: monthStart,
+    );
 
     final budgetsAtRisk = <BudgetRisk>[];
     for (final budget in budgets) {
@@ -169,14 +185,15 @@ class AnalyticsEngine {
 
     return MonthProjectionEntity(
       currentExpense: currentExpense,
-      projectedExpense: currentExpense * factor,
+      projectedExpense: projectedExpense,
       currentIncome: currentIncome,
-      projectedIncome: currentIncome * factor,
-      projectedNetFlow: (currentIncome - currentExpense) * factor,
+      projectedIncome: projectedIncome,
+      projectedNetFlow: projectedNetFlow,
       daysElapsed: daysElapsed,
       totalDays: totalDays,
       reliability: reliability,
       budgetsAtRisk: budgetsAtRisk,
+      isSanityFailed: isSanityFailed,
     );
   }
 
@@ -401,6 +418,36 @@ class AnalyticsEngine {
       incomeRows: incomeRows,
       expenseRows: expenseRows,
     );
+  }
+
+  static bool _isSanityFailed({
+    required double projectedIncome,
+    required List<TransactionEntity> transactions,
+    required DateTime currentMonthStart,
+  }) {
+    if (projectedIncome <= 0) return false;
+
+    final monthlyTotals = <String, double>{};
+    for (final tx in transactions) {
+      if (tx.isTransfer || !tx.isIncome) continue;
+      if (!tx.date.isBefore(currentMonthStart)) continue;
+      final key =
+          '${tx.date.year}-${tx.date.month.toString().padLeft(2, '0')}';
+      monthlyTotals[key] = (monthlyTotals[key] ?? 0) + tx.amount;
+    }
+
+    if (monthlyTotals.isEmpty) return false;
+
+    final sortedKeys = monthlyTotals.keys.toList()..sort();
+    final recentKeys = sortedKeys.length > 3
+        ? sortedKeys.sublist(sortedKeys.length - 3)
+        : sortedKeys;
+    final avg = recentKeys
+            .map((k) => monthlyTotals[k]!)
+            .reduce((a, b) => a + b) /
+        recentKeys.length;
+
+    return avg > 0 && projectedIncome > avg * 3;
   }
 
   static DateTime _periodStart(
