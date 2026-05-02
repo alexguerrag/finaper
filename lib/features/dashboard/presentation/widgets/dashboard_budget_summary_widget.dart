@@ -221,7 +221,7 @@ class _DashboardBudgetSummaryWidgetState
           Text(
             isExceeded
                 ? 'Vas ${AppFormatters.formatCurrency(balance.abs())} por encima del límite total.'
-                : 'Te quedan ${AppFormatters.formatCurrency(balance)} dentro del límite total.',
+                : 'Te quedan ${AppFormatters.formatCurrency(balance)}',
             style: GoogleFonts.manrope(
               fontSize: 13,
               fontWeight: FontWeight.w700,
