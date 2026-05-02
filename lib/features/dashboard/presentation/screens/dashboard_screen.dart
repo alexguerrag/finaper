@@ -689,6 +689,7 @@ class _ProjectionCard extends StatelessWidget {
   final MonthProjectionEntity data;
 
   static const _colorAmber   = Color(0xFFF5A623);
+  static const _colorGreen   = Color(0xFF35E879);
   static const _colorDivider = Color(0xFF2A333D);
 
   @override
@@ -705,11 +706,13 @@ class _ProjectionCard extends StatelessWidget {
         children: [
           // Title row + badge
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Text(
                   'Proyección del mes',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.manrope(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
@@ -717,7 +720,10 @@ class _ProjectionCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (_badge() != null) _badge()!,
+              if (_badge() != null) ...[
+                const SizedBox(width: 8),
+                _badge()!,
+              ],
             ],
           ),
           const SizedBox(height: 3),
@@ -766,18 +772,20 @@ class _ProjectionCard extends StatelessWidget {
   }
 
   Widget? _badge() {
+    if (data.reliability == ProjectionReliability.low) {
+      return const _BadgePill(label: 'En curso', color: _colorAmber);
+    }
     if (data.isSanityFailed) {
-      return _BadgePill(
-        label: 'Estimación en revisión',
-        color: AppTheme.expense,
-        icon: Icons.warning_amber_rounded,
-      );
+      return const _BadgePill(label: 'En\nrevisión', color: _colorAmber);
     }
     return switch (data.reliability) {
-      ProjectionReliability.medium => _BadgePill(
-          label: 'Estimación en desarrollo',
+      ProjectionReliability.medium => const _BadgePill(
+          label: 'Confianza\nmedia',
           color: _colorAmber,
-          icon: Icons.timelapse_rounded,
+        ),
+      ProjectionReliability.high => const _BadgePill(
+          label: 'Confianza\nalta',
+          color: _colorGreen,
         ),
       _ => null,
     };
@@ -788,12 +796,10 @@ class _BadgePill extends StatelessWidget {
   const _BadgePill({
     required this.label,
     required this.color,
-    required this.icon,
   });
 
   final String label;
   final Color color;
-  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -801,23 +807,18 @@ class _BadgePill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: GoogleFonts.manrope(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ],
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.manrope(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
+          height: 1.3,
+        ),
       ),
     );
   }
@@ -832,10 +833,10 @@ class _NoProjectionState extends StatelessWidget {
   Widget build(BuildContext context) {
     final message = isSanityFailed
         ? 'Los datos de este mes son inusuales. Volveremos a calcular cuando tengamos más movimientos.'
-        : 'Aún no tenemos suficiente información para estimar tu cierre de mes.';
+        : 'Aún es pronto para estimar tu cierre. Con más movimientos será más preciso.';
     final icon = isSanityFailed
         ? Icons.warning_amber_rounded
-        : Icons.hourglass_top_rounded;
+        : Icons.timelapse_rounded;
 
     return Container(
       padding: const EdgeInsets.all(16),
