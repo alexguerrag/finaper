@@ -752,7 +752,10 @@ class _ProjectionCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           if (!data.showProjectedAmounts)
-            _NoProjectionState(isSanityFailed: data.isSanityFailed)
+            _NoProjectionState(
+              isSanityFailed: data.isSanityFailed &&
+                  data.reliability != ProjectionReliability.low,
+            )
           else ...[
             _ProjectionResultCard(data: data),
             const SizedBox(height: 12),
