@@ -156,6 +156,19 @@ class DashboardScreenState extends State<DashboardScreen> {
 
   DateTime _monthStart(DateTime value) => DateTime(value.year, value.month, 1);
 
+  static const _monthNames = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  ];
+
+  String _buildMonthLabel(DashboardSummaryData summary) {
+    final now = DateTime.now();
+    final isCurrentMonth =
+        _selectedMonth.year == now.year && _selectedMonth.month == now.month;
+    if (!isCurrentMonth) return summary.monthLabel;
+    return '${now.day} de ${_monthNames[now.month - 1]} de ${now.year}';
+  }
+
   void _showUpgradeSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
@@ -181,7 +194,7 @@ class DashboardScreenState extends State<DashboardScreen> {
 
     return switch (type) {
       DashboardCardType.monthlyFlow => DashboardFinancialSnapshotWidget(
-          monthLabel: summary.monthLabel,
+          monthLabel: _buildMonthLabel(summary),
           consolidatedBalance: summary.consolidatedBalance,
           netFlow: summary.monthNetFlow,
           income: summary.monthIncome,
