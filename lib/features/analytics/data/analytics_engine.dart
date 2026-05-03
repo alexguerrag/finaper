@@ -13,12 +13,31 @@ class AnalyticsEngine {
   static MonthlyComparisonEntity buildComparison({
     required List<TransactionEntity> transactions,
     required DateTime month,
+    DateTime? today,
   }) {
+    final now = today ?? DateTime.now();
     final currentStart = DateTime(month.year, month.month, 1);
-    final currentEnd = DateTime(month.year, month.month + 1, 1);
-    // Dart normalises month=0 → December of previous year automatically.
     final previousStart = DateTime(month.year, month.month - 1, 1);
-    final previousEnd = currentStart;
+
+    final isCurrentMonth =
+        month.year == now.year && month.month == now.month;
+
+    final DateTime currentEnd;
+    final DateTime previousEnd;
+    final int? cutoffDay;
+
+    if (isCurrentMonth) {
+      cutoffDay = now.day;
+      currentEnd = DateTime(month.year, month.month, now.day + 1);
+      // Cap previous-month cutoff to the last day that month actually has.
+      final lastDayOfPrevMonth = DateTime(month.year, month.month, 0).day;
+      final prevCutoff = now.day < lastDayOfPrevMonth ? now.day : lastDayOfPrevMonth;
+      previousEnd = DateTime(month.year, month.month - 1, prevCutoff + 1);
+    } else {
+      cutoffDay = null;
+      currentEnd = DateTime(month.year, month.month + 1, 1);
+      previousEnd = currentStart;
+    }
 
     final currentTxs = transactions
         .where((t) =>
@@ -105,6 +124,7 @@ class AnalyticsEngine {
           (previousIncome - previousExpense),
       topRising: topRising,
       topFalling: topFalling,
+      cutoffDay: cutoffDay,
     );
   }
 

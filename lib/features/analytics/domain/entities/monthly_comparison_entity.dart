@@ -30,6 +30,7 @@ class MonthlyComparisonEntity {
     required this.netFlowDelta,
     required this.topRising,
     required this.topFalling,
+    this.cutoffDay,
   });
 
   final bool hasPreviousMonthData;
@@ -50,4 +51,8 @@ class MonthlyComparisonEntity {
   // Max 2 each. topFalling includes eliminated categories (deltaPercent = -100).
   final List<CategoryDelta> topRising;
   final List<CategoryDelta> topFalling;
+
+  /// Day of the month through which both months are compared (day-to-day mode).
+  /// Null means a full-month comparison (used for historical months).
+  final int? cutoffDay;
 }

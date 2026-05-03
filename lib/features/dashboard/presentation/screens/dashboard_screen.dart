@@ -412,7 +412,9 @@ class _MonthlyComparisonCardState extends State<_MonthlyComparisonCard> {
           ),
           const SizedBox(height: 3),
           Text(
-            '$currentName vs $previousName',
+            data.cutoffDay != null
+                ? 'Hasta el día ${data.cutoffDay} · $currentName vs $previousName'
+                : '$currentName vs $previousName',
             style: GoogleFonts.manrope(
               fontSize: 12,
               fontWeight: FontWeight.w500,
