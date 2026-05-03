@@ -26,17 +26,8 @@ class SettingsController extends ChangeNotifier {
     ('PEN', '🇵🇪  Sol peruano (PEN)'),
   ];
 
-  /// Single source of truth for selectable locales: (code, display label).
-  static const List<(String, String)> supportedLocaleOptions = [
-    ('es_CL', 'Español (Chile)'),
-    ('es_ES', 'Español (España)'),
-    ('es_AR', 'Español (Argentina)'),
-    ('es_MX', 'Español (México)'),
-    ('es_CO', 'Español (Colombia)'),
-    ('es_PE', 'Español (Perú)'),
-    ('en_US', 'English (United States)'),
-    ('pt_BR', 'Português (Brasil)'),
-  ];
+  static const List<(String, String)> supportedLocaleOptions =
+      AppSupportedLocales.options;
 
   final GetAppSettings _getAppSettings;
   final SaveAppSettings _saveAppSettings;

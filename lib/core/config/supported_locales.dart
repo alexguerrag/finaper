@@ -17,4 +17,16 @@ class AppSupportedLocales {
     Locale('en', 'US'),
     Locale('pt', 'BR'),
   ];
+
+  /// Display labels for each locale — order matches [all].
+  static const List<(String, String)> options = [
+    ('es_CL', 'Español (Chile)'),
+    ('es_ES', 'Español (España)'),
+    ('es_AR', 'Español (Argentina)'),
+    ('es_MX', 'Español (México)'),
+    ('es_CO', 'Español (Colombia)'),
+    ('es_PE', 'Español (Perú)'),
+    ('en_US', 'English (United States)'),
+    ('pt_BR', 'Português (Brasil)'),
+  ];
 }
