@@ -156,17 +156,12 @@ class DashboardScreenState extends State<DashboardScreen> {
 
   DateTime _monthStart(DateTime value) => DateTime(value.year, value.month, 1);
 
-  static const _monthNames = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-  ];
-
   String _buildMonthLabel(DashboardSummaryData summary) {
     final now = DateTime.now();
     final isCurrentMonth =
         _selectedMonth.year == now.year && _selectedMonth.month == now.month;
     if (!isCurrentMonth) return summary.monthLabel;
-    return '${now.day} de ${_monthNames[now.month - 1]} de ${now.year}';
+    return AppFormatters.formatDayMonthYear(now);
   }
 
   void _showUpgradeSheet(BuildContext context) {

@@ -134,6 +134,53 @@ class AppFormatters {
     }
   }
 
+  static String formatDayMonthYear(DateTime value) {
+    return formatDayMonthYearWith(
+      value: value,
+      localeCode: _resolvedLocaleCode,
+    );
+  }
+
+  static String formatDayMonthYearWith({
+    required DateTime value,
+    required String localeCode,
+  }) {
+    final normalizedLocale = _normalizeLocaleCode(localeCode);
+
+    try {
+      return DateFormat.yMMMMd(normalizedLocale).format(value);
+    } catch (e, s) {
+      if (_isLocaleDataNotInitializedError(e)) {
+        return _fallbackDayMonthYear(value: value, localeCode: normalizedLocale);
+      }
+
+      debugPrint('formatDayMonthYearWith error: $e');
+      debugPrintStack(stackTrace: s);
+      return _fallbackDayMonthYear(value: value, localeCode: normalizedLocale);
+    }
+  }
+
+  static String _fallbackDayMonthYear({
+    required DateTime value,
+    required String localeCode,
+  }) {
+    final locale = localeCode.toLowerCase();
+
+    if (locale.startsWith('es')) {
+      return '${value.day} de ${_spanishMonthNames[value.month - 1]} de ${value.year}';
+    }
+
+    if (locale.startsWith('en')) {
+      return '${_englishMonthNames[value.month - 1]} ${value.day}, ${value.year}';
+    }
+
+    if (locale.startsWith('pt')) {
+      return '${value.day} de ${_portugueseMonthNames[value.month - 1]} de ${value.year}';
+    }
+
+    return '${value.day}/${value.month}/${value.year}';
+  }
+
   static String formatShortDate(DateTime value) {
     return formatShortDateWith(
       value: value,
