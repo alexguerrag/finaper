@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/config/supported_locales.dart';
 import '../../domain/entities/app_settings_entity.dart';
 import '../../domain/usecases/get_app_settings.dart';
 import '../../domain/usecases/save_app_settings.dart';
@@ -11,14 +12,7 @@ class SettingsController extends ChangeNotifier {
   })  : _getAppSettings = getAppSettings,
         _saveAppSettings = saveAppSettings;
 
-  static const List<Locale> supportedLocales = [
-    Locale.fromSubtags(languageCode: 'es', countryCode: 'CL'),
-    Locale.fromSubtags(languageCode: 'es', countryCode: 'ES'),
-    Locale.fromSubtags(languageCode: 'es', countryCode: 'AR'),
-    Locale.fromSubtags(languageCode: 'es', countryCode: 'MX'),
-    Locale.fromSubtags(languageCode: 'en', countryCode: 'US'),
-    Locale.fromSubtags(languageCode: 'pt', countryCode: 'BR'),
-  ];
+  static const List<Locale> supportedLocales = AppSupportedLocales.all;
 
   /// Single source of truth for selectable currencies: (code, display label).
   static const List<(String, String)> supportedCurrencies = [
@@ -38,6 +32,8 @@ class SettingsController extends ChangeNotifier {
     ('es_ES', 'Español (España)'),
     ('es_AR', 'Español (Argentina)'),
     ('es_MX', 'Español (México)'),
+    ('es_CO', 'Español (Colombia)'),
+    ('es_PE', 'Español (Perú)'),
     ('en_US', 'English (United States)'),
     ('pt_BR', 'Português (Brasil)'),
   ];
