@@ -15,8 +15,6 @@ Future<void> main() async {
       themeMode: ThemeMode.dark,
       theme: AppTheme.darkTheme,
       darkTheme: AppTheme.darkTheme,
-      // Bootstrap locale until SettingsController loads and app.dart overrides it.
-      locale: const Locale('es', 'CL'),
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       supportedLocales: AppSupportedLocales.all,
       home: const AppBootstrapEntry(),
