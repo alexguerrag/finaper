@@ -115,10 +115,12 @@ class TransactionListController extends ChangeNotifier {
 
   double get totalNet => totalIncome - totalExpense;
 
+  double get visibleNet => visibleIncome - visibleExpense;
+
   double get summaryValue {
     if (_typeFilter == TransactionTypeFilter.expense) return visibleExpense;
     if (_typeFilter == TransactionTypeFilter.income) return visibleIncome;
-    return totalNet;
+    return visibleNet;
   }
 
   bool get shouldShowSummary =>

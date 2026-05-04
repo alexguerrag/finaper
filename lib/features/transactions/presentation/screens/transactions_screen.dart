@@ -499,9 +499,9 @@ class TransactionsScreenState extends State<TransactionsScreen> {
                     const SizedBox(height: 18),
                     TxAdaptiveSummaryCard(
                       filter: c.typeFilter,
-                      totalIncome: c.totalIncome,
-                      totalExpense: c.totalExpense,
-                      totalNet: c.totalNet,
+                      totalIncome: c.visibleIncome,
+                      totalExpense: c.visibleExpense,
+                      totalNet: c.visibleNet,
                       visibleCount: c.visibleTransactions.length,
                       summaryValue: c.summaryValue,
                       onClearFilters:
