@@ -6,6 +6,7 @@ import 'package:finaper/features/settings/domain/usecases/get_app_settings.dart'
 import 'package:finaper/features/settings/domain/usecases/save_app_settings.dart';
 import 'package:finaper/features/settings/presentation/controllers/settings_controller.dart';
 import 'package:finaper/features/transactions/data/models/transaction_model.dart';
+import 'package:finaper/features/transactions/domain/entities/transaction_entry_type.dart';
 import 'package:finaper/features/transactions/presentation/controllers/transaction_list_controller.dart';
 import 'package:finaper/features/transactions/presentation/widgets/transaction_filters_sheet.dart';
 import 'package:flutter/material.dart';
@@ -294,6 +295,101 @@ void main() {
           TransactionSortOption.newestFirst);
       expect(controller.hasActiveFilters, isFalse);
       expect(controller.visibleTransactions.length, 3);
+    });
+
+    // ── visible summary (bug fix: filtros deben reflejarse en resumen) ────
+
+    test('sin filtros: visibleIncome == totalIncome, visibleExpense == totalExpense', () {
+      expect(controller.visibleIncome, controller.totalIncome);
+      expect(controller.visibleExpense, controller.totalExpense);
+      expect(controller.visibleNet, controller.totalNet);
+    });
+
+    test('summaryValue usa visibleNet cuando typeFilter=all sin filtros', () {
+      expect(controller.summaryValue, controller.visibleNet);
+    });
+
+    test('filtro por cuenta: visibleIncome/visibleExpense solo de esa cuenta', () {
+      final txAcc2Income = _tx(
+        id: 'acc2-inc',
+        description: 'Ingreso cuenta 2',
+        amount: 3000,
+        isIncome: true,
+        date: _today,
+        accountId: 'acc2',
+        accountName: 'Cuenta 2',
+      );
+      final txAcc2Expense = _tx(
+        id: 'acc2-exp',
+        description: 'Gasto cuenta 2',
+        amount: 500,
+        isIncome: false,
+        date: _today,
+        accountId: 'acc2',
+        accountName: 'Cuenta 2',
+      );
+      controller.setTransactions(
+          [_txIncome, _txExpense, _txOld, txAcc2Income, txAcc2Expense]);
+      controller.setSelectedAccount('acc2');
+
+      expect(controller.visibleIncome, 3000.0);
+      expect(controller.visibleExpense, 500.0);
+      expect(controller.visibleNet, 2500.0);
+      // totales globales no deben cambiar
+      expect(controller.totalIncome, 4000.0);
+      expect(controller.totalExpense, 1200.0);
+    });
+
+    test('filtro por fecha: visibleIncome/visibleExpense solo del período', () {
+      controller.setAdvancedFilter(
+        controller.advancedFilter.copyWith(
+          dateFilter: TransactionDateFilterOption.last7Days,
+        ),
+      );
+      // _txOld está a 40 días → excluido
+      expect(controller.visibleIncome, 1000.0);  // _txIncome (hoy)
+      expect(controller.visibleExpense, 200.0);   // _txExpense (ayer)
+      expect(controller.visibleNet, 800.0);
+      // totalExpense global sigue incluyendo _txOld
+      expect(controller.totalExpense, 700.0);
+    });
+
+    test('filtro por búsqueda: visibleIncome/visibleExpense reflejan resultados', () {
+      controller.setSearchQuery('Supermercado');
+      expect(controller.visibleIncome, 0.0);
+      expect(controller.visibleExpense, 200.0);
+      expect(controller.visibleNet, -200.0);
+    });
+
+    test('filtro typeFilter=income: summaryValue == visibleIncome', () {
+      controller.setTypeFilter(TransactionTypeFilter.income);
+      expect(controller.summaryValue, controller.visibleIncome);
+      expect(controller.summaryValue, 1000.0);
+    });
+
+    test('filtro typeFilter=expense: summaryValue == visibleExpense', () {
+      controller.setTypeFilter(TransactionTypeFilter.expense);
+      expect(controller.summaryValue, controller.visibleExpense);
+      expect(controller.summaryValue, 700.0);
+    });
+
+    test('transferencias excluidas de visibleIncome y visibleExpense', () {
+      final txTransfer = TransactionModel(
+        id: 'transfer-1',
+        description: 'Transferencia',
+        category: 'Transferencia',
+        amount: 9999,
+        isIncome: false,
+        date: _today,
+        createdAt: _today,
+        note: '',
+        entryType: TransactionEntryType.transferOut,
+        transferGroupId: 'tg1',
+      );
+      controller.setTransactions([_txIncome, _txExpense, txTransfer]);
+      expect(controller.visibleIncome, 1000.0);
+      expect(controller.visibleExpense, 200.0);
+      expect(controller.visibleNet, 800.0);
     });
 
     // ── cache ─────────────────────────────────────────────────────────────
