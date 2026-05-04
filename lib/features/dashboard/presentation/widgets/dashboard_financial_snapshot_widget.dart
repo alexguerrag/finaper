@@ -222,7 +222,7 @@ class _SnapshotMetricRow extends StatelessWidget {
           child: Text(
             label,
             style: GoogleFonts.manrope(
-              fontSize: 13,
+              fontSize: bold ? 15 : 13,
               fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
               color: bold ? AppTheme.onSurface : AppTheme.onSurfaceMuted,
             ),
@@ -231,7 +231,7 @@ class _SnapshotMetricRow extends StatelessWidget {
         Text(
           value,
           style: GoogleFonts.manrope(
-            fontSize: 13,
+            fontSize: bold ? 16 : 13,
             fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
             color: color,
           ),
