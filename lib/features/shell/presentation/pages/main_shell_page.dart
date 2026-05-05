@@ -38,8 +38,7 @@ class _MainShellPageState extends State<MainShellPage> {
       AccountsScreen(key: _accountsKey),
       MoreScreen(
         onRefreshDashboard: _refreshDashboard,
-        hasPremiumAccess:
-            AnalyticsRegistry.module.entitlementService.hasPremiumAccess,
+        entitlementController: AnalyticsRegistry.module.entitlementController,
       ),
     ];
   }

@@ -1,5 +1,11 @@
 import 'package:finaper/app/di/app_locator.dart';
 import 'package:finaper/app/routes/app_routes.dart';
+import 'package:finaper/features/analytics/domain/entities/entitlement_status.dart';
+import 'package:finaper/features/analytics/domain/repositories/entitlement_repository.dart';
+import 'package:finaper/features/analytics/domain/usecases/clear_entitlement_cache.dart';
+import 'package:finaper/features/analytics/domain/usecases/get_entitlement_status.dart';
+import 'package:finaper/features/analytics/domain/usecases/refresh_entitlement.dart';
+import 'package:finaper/features/analytics/presentation/controllers/entitlement_controller.dart';
 import 'package:finaper/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:finaper/features/settings/di/settings_module.dart';
 import 'package:finaper/features/settings/domain/entities/app_settings_entity.dart';
@@ -11,6 +17,30 @@ import 'package:finaper/features/shell/presentation/pages/more_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+// ---------------------------------------------------------------------------
+// Fake entitlement — sin RevenueCat ni SharedPreferences
+// ---------------------------------------------------------------------------
+
+class _FakeEntitlementRepository implements EntitlementRepository {
+  @override
+  EntitlementStatus get cachedStatus => EntitlementStatus.free;
+
+  @override
+  Future<EntitlementStatus> refresh() async => EntitlementStatus.free;
+
+  @override
+  Future<void> clearCache() async {}
+}
+
+EntitlementController _fakeEntitlementController() {
+  final repo = _FakeEntitlementRepository();
+  return EntitlementController(
+    getEntitlementStatus: GetEntitlementStatus(repo),
+    refreshEntitlement: RefreshEntitlement(repo),
+    clearEntitlementCache: ClearEntitlementCache(repo),
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Fake repository — no SQLite required
@@ -112,7 +142,10 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
-            home: MoreScreen(onRefreshDashboard: () async {}),
+            home: MoreScreen(
+              onRefreshDashboard: () async {},
+              entitlementController: _fakeEntitlementController(),
+            ),
           ),
         );
         await tester.pump();
