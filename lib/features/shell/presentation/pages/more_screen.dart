@@ -3,16 +3,28 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../analytics/presentation/controllers/entitlement_controller.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({
     super.key,
     required this.onRefreshDashboard,
-    this.hasPremiumAccess = false,
+    required this.entitlementController,
   });
 
   final Future<void> Function() onRefreshDashboard;
-  final bool hasPremiumAccess;
+  final EntitlementController entitlementController;
+
+  void _showUpgradeSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppTheme.surfaceElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const _UpgradeSheet(),
+    );
+  }
 
   void _showHowItWorks(BuildContext context) {
     showModalBottomSheet<void>(
@@ -33,78 +45,85 @@ class MoreScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      appBar: AppBar(
-        title: Text(
-          'Más',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
-        ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        children: [
-          const _SectionHeader(label: 'Herramientas'),
-          _MoreTile(
-            icon: Icons.savings_outlined,
-            label: 'Presupuestos',
-            subtitle: 'Límites de gasto por categoría',
-            onTap: () => _navigate(context, AppRoutes.budgets),
+    return ListenableBuilder(
+      listenable: entitlementController,
+      builder: (context, _) {
+        final hasPremium = entitlementController.hasPremiumAccess;
+        return Scaffold(
+          backgroundColor: AppTheme.background,
+          appBar: AppBar(
+            title: Text(
+              'Más',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
           ),
-          _MoreTile(
-            icon: Icons.repeat_rounded,
-            label: 'Recurrentes',
-            subtitle: 'Pagos y cobros programados',
-            onTap: () => _navigate(context, AppRoutes.recurringTransactions),
+          body: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            children: [
+              const _SectionHeader(label: 'Herramientas'),
+              _MoreTile(
+                icon: Icons.savings_outlined,
+                label: 'Presupuestos',
+                subtitle: 'Límites de gasto por categoría',
+                onTap: () => _navigate(context, AppRoutes.budgets),
+              ),
+              _MoreTile(
+                icon: Icons.repeat_rounded,
+                label: 'Recurrentes',
+                subtitle: 'Pagos y cobros programados',
+                onTap: () =>
+                    _navigate(context, AppRoutes.recurringTransactions),
+              ),
+              _MoreTile(
+                icon: Icons.flag_rounded,
+                label: 'Metas',
+                subtitle: 'Seguimiento de objetivos de ahorro',
+                onTap: () => _navigate(context, AppRoutes.goals),
+              ),
+              _MoreTile(
+                icon: hasPremium
+                    ? Icons.bar_chart_rounded
+                    : Icons.lock_outline_rounded,
+                label: 'Reportes',
+                subtitle: hasPremium
+                    ? 'Análisis avanzado de tus finanzas'
+                    : 'Disponible en Premium',
+                onTap: hasPremium
+                    ? () => _navigate(context, AppRoutes.premiumReports)
+                    : () => _showUpgradeSheet(context),
+              ),
+              const _SectionHeader(label: 'Configuración'),
+              _MoreTile(
+                icon: Icons.label_outlined,
+                label: 'Categorías',
+                subtitle: 'Organiza tus movimientos por tipo',
+                onTap: () => _navigate(context, AppRoutes.categories),
+              ),
+              _MoreTile(
+                icon: Icons.settings_outlined,
+                label: 'Ajustes',
+                subtitle: 'Moneda, idioma y preferencias',
+                onTap: () => _navigate(context, AppRoutes.settings),
+              ),
+              const _SectionHeader(label: 'Datos'),
+              _MoreTile(
+                icon: Icons.backup_rounded,
+                label: 'Datos y respaldo',
+                subtitle: 'Exportar respaldo, CSV y restaurar',
+                onTap: () => _navigate(context, AppRoutes.backup),
+              ),
+              const _SectionHeader(label: 'Ayuda'),
+              _MoreTile(
+                icon: Icons.lightbulb_outline_rounded,
+                label: '¿Cómo funciona Finaper?',
+                subtitle: 'Conoce las funcionalidades principales',
+                onTap: () => _showHowItWorks(context),
+              ),
+              const SizedBox(height: 8),
+            ],
           ),
-          _MoreTile(
-            icon: Icons.flag_rounded,
-            label: 'Metas',
-            subtitle: 'Seguimiento de objetivos de ahorro',
-            onTap: () => _navigate(context, AppRoutes.goals),
-          ),
-          _MoreTile(
-            icon: hasPremiumAccess
-                ? Icons.bar_chart_rounded
-                : Icons.lock_outline_rounded,
-            label: 'Reportes',
-            subtitle: hasPremiumAccess
-                ? 'Análisis avanzado de tus finanzas'
-                : 'Disponible en Premium',
-            onTap: hasPremiumAccess
-                ? () => _navigate(context, AppRoutes.premiumReports)
-                : () {},
-          ),
-          const _SectionHeader(label: 'Configuración'),
-          _MoreTile(
-            icon: Icons.label_outlined,
-            label: 'Categorías',
-            subtitle: 'Organiza tus movimientos por tipo',
-            onTap: () => _navigate(context, AppRoutes.categories),
-          ),
-          _MoreTile(
-            icon: Icons.settings_outlined,
-            label: 'Ajustes',
-            subtitle: 'Moneda, idioma y preferencias',
-            onTap: () => _navigate(context, AppRoutes.settings),
-          ),
-          const _SectionHeader(label: 'Datos'),
-          _MoreTile(
-            icon: Icons.backup_rounded,
-            label: 'Datos y respaldo',
-            subtitle: 'Exportar respaldo, CSV y restaurar',
-            onTap: () => _navigate(context, AppRoutes.backup),
-          ),
-          const _SectionHeader(label: 'Ayuda'),
-          _MoreTile(
-            icon: Icons.lightbulb_outline_rounded,
-            label: '¿Cómo funciona Finaper?',
-            subtitle: 'Conoce las funcionalidades principales',
-            onTap: () => _showHowItWorks(context),
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -195,6 +214,84 @@ class _MoreTile extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _UpgradeSheet extends StatelessWidget {
+  const _UpgradeSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Icon(
+                Icons.workspace_premium_rounded,
+                color: AppTheme.primary,
+                size: 30,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Disponible en Premium',
+              style: GoogleFonts.manrope(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Desbloquea proyecciones de cierre, análisis automático y más para tener mayor control de tus finanzas.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.manrope(
+                fontSize: 13,
+                color: AppTheme.onSurfaceMuted,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(context),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: Text(
+                  'Próximamente',
+                  style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

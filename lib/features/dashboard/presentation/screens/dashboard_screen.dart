@@ -13,6 +13,7 @@ import '../../../analytics/domain/entities/month_projection_entity.dart';
 import '../../../analytics/domain/entities/monthly_comparison_entity.dart';
 import '../../../analytics/domain/entities/premium_reports_entity.dart';
 import '../../../analytics/domain/usecases/get_premium_reports.dart';
+import '../../../analytics/presentation/controllers/entitlement_controller.dart';
 import '../../../settings/di/settings_registry.dart';
 import '../../data/local/dashboard_local_datasource.dart';
 import '../../di/dashboard_registry.dart';
@@ -44,10 +45,11 @@ class DashboardScreen extends StatefulWidget {
 class DashboardScreenState extends State<DashboardScreen> {
   late final DashboardLocalDataSource _dashboardLocalDataSource;
   late final GetPremiumReports _getPremiumReports;
-  late final bool _hasPremiumAccess;
+  late final EntitlementController _entitlementController;
   late DateTime _selectedMonth;
 
   bool _isLoading = true;
+  bool _lastHadPremium = false;
   int _refreshVersion = 0;
   DashboardSummaryData? _summary;
   PremiumReportsEntity? _reports;
@@ -58,10 +60,26 @@ class DashboardScreenState extends State<DashboardScreen> {
     _dashboardLocalDataSource =
         DashboardRegistry.module.dashboardLocalDataSource;
     _getPremiumReports = AnalyticsRegistry.module.getPremiumReports;
-    _hasPremiumAccess =
-        AnalyticsRegistry.module.entitlementService.hasPremiumAccess;
+    _entitlementController = AnalyticsRegistry.module.entitlementController;
+    _lastHadPremium = _entitlementController.hasPremiumAccess;
+    _entitlementController.addListener(_onEntitlementChanged);
     _selectedMonth = _monthStart(DateTime.now());
     _loadSummary();
+  }
+
+  @override
+  void dispose() {
+    _entitlementController.removeListener(_onEntitlementChanged);
+    super.dispose();
+  }
+
+  void _onEntitlementChanged() {
+    if (!mounted) return;
+    final hasPremium = _entitlementController.hasPremiumAccess;
+    if (hasPremium != _lastHadPremium) {
+      _lastHadPremium = hasPremium;
+      refreshSummary();
+    }
   }
 
   Future<void> refreshSummary() async {
@@ -83,7 +101,7 @@ class DashboardScreenState extends State<DashboardScreen> {
       );
 
       PremiumReportsEntity? reports;
-      if (_hasPremiumAccess) {
+      if (_entitlementController.hasPremiumAccess) {
         try {
           reports = await _getPremiumReports(
             month: _selectedMonth,
@@ -180,7 +198,7 @@ class DashboardScreenState extends State<DashboardScreen> {
     DashboardCardType type,
     DashboardSummaryData summary,
   ) {
-    if (type.isPremium && !_hasPremiumAccess) {
+    if (type.isPremium && !_entitlementController.hasPremiumAccess) {
       return _LockedCard(
         type: type,
         onTap: () => _showUpgradeSheet(context),
