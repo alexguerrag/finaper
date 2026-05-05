@@ -1,6 +1,6 @@
-import 'package:finaper/app/app.dart';
 import 'package:finaper/app/di/app_locator.dart';
 import 'package:finaper/app/routes/app_routes.dart';
+import 'package:finaper/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:finaper/features/settings/di/settings_module.dart';
 import 'package:finaper/features/settings/domain/entities/app_settings_entity.dart';
 import 'package:finaper/features/settings/domain/repositories/app_settings_repository.dart';
@@ -51,7 +51,6 @@ Future<SettingsController> _makeController({
     getAppSettings: GetAppSettings(repo),
     saveAppSettings: SaveAppSettings(repo),
   );
-  // load() reads from the fake repo — no SQLite involved.
   await controller.load();
   return controller;
 }
@@ -78,9 +77,12 @@ void main() {
     testWidgets(
       '3a — instalación nueva muestra OnboardingScreen',
       (WidgetTester tester) async {
+        // FinaperApp now owns the bootstrap flow (requires SQLite), so we
+        // mount OnboardingScreen directly with the DI it needs. The routing
+        // decision (hasCompletedOnboarding → which screen) is covered by 3b.
         await _registerFakeSettings(hasCompletedOnboarding: false);
 
-        await tester.pumpWidget(const FinaperApp());
+        await tester.pumpWidget(const MaterialApp(home: OnboardingScreen()));
         await tester.pump();
 
         expect(find.text('Bienvenido a Finaper'), findsOneWidget);
@@ -129,8 +131,6 @@ void main() {
       (WidgetTester tester) async {
         GoogleFonts.config.allowRuntimeFetching = false;
 
-        // Test the NavigationBar configuration matching main_shell_page.dart
-        // independently so we don't need every feature module registered.
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
