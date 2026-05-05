@@ -104,7 +104,7 @@ class _FinaperAppState extends State<FinaperApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
       home: _buildHome(),
-      routes: AppRoutes.routes,
+      routes: AppRoutes.namedRoutes,
     );
   }
 }

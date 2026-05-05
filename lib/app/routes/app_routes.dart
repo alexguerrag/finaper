@@ -44,4 +44,21 @@ class AppRoutes {
         backup: (_) => const BackupScreen(),
         premiumReports: (_) => const PremiumReportsScreen(),
       };
+
+  /// Routes table without the root "/" entry — required when [MaterialApp.home]
+  /// is set, since Flutter forbids both simultaneously.
+  static Map<String, WidgetBuilder> get namedRoutes => {
+        shell: (_) => const MainShellPage(),
+        dashboard: (_) => const DashboardScreen(),
+        transactions: (_) => const TransactionsScreen(),
+        accountTransfer: (_) => const AccountTransferScreen(),
+        accounts: (_) => const AccountsScreen(),
+        categories: (_) => const CategoriesScreen(),
+        budgets: (_) => const BudgetsScreen(),
+        goals: (_) => const GoalsScreen(),
+        recurringTransactions: (_) => const RecurringTransactionsScreen(),
+        settings: (_) => const SettingsScreen(),
+        backup: (_) => const BackupScreen(),
+        premiumReports: (_) => const PremiumReportsScreen(),
+      };
 }
