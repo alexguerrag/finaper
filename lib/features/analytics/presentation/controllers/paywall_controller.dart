@@ -60,15 +60,17 @@ class PaywallController extends ChangeNotifier {
 
     try {
       _packages = await _getPackages();
-      // Pre-selecciona el paquete anual; si no hay, el primero disponible.
-      _selectedPackage = _packages.firstWhere(
-        (p) => p.period == PremiumPackagePeriod.annual,
-        orElse: () => _packages.first,
-      );
     } catch (_) {
       _packages = [];
-      _selectedPackage = null;
     } finally {
+      if (_packages.isEmpty) {
+        _selectedPackage = null;
+      } else {
+        _selectedPackage = _packages.firstWhere(
+          (p) => p.period == PremiumPackagePeriod.annual,
+          orElse: () => _packages.first,
+        );
+      }
       _isLoading = false;
       notifyListeners();
     }
@@ -90,7 +92,15 @@ class PaywallController extends ChangeNotifier {
     try {
       await _purchasePackage(package);
       await _entitlementController.refresh();
-      return PaywallOutcome.success;
+
+      if (_entitlementController.hasPremiumAccess) {
+        return PaywallOutcome.success;
+      }
+
+      _errorMessage =
+          'La compra fue procesada, pero aún no pudimos activar Premium. '
+          'Intenta restaurar la compra.';
+      return PaywallOutcome.error;
     } on PurchaseCancelledException {
       return PaywallOutcome.cancelled;
     } catch (e, s) {

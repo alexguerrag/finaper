@@ -74,7 +74,7 @@ class _PremiumUpgradeSheetState extends State<PremiumUpgradeSheet> {
     final ctrl = widget.paywallController;
 
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
           24,
           16,
@@ -112,9 +112,14 @@ class _PremiumUpgradeSheetState extends State<PremiumUpgradeSheet> {
                 padding: EdgeInsets.symmetric(vertical: 24),
                 child: CircularProgressIndicator(),
               )
-            else if (ctrl.packages.isEmpty)
-              _UnavailableState()
-            else ...[
+            else if (ctrl.packages.isEmpty) ...[
+              _UnavailableState(),
+              const SizedBox(height: 10),
+              _RestoreButton(
+                isPurchasing: ctrl.isPurchasing,
+                onTap: _onRestore,
+              ),
+            ] else ...[
               _PackageSelector(
                 packages: ctrl.packages,
                 selected: ctrl.selectedPackage,

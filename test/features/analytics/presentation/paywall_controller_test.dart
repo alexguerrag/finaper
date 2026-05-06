@@ -14,14 +14,20 @@ import 'package:finaper/features/analytics/presentation/controllers/paywall_cont
 import 'package:flutter_test/flutter_test.dart';
 
 // ---------------------------------------------------------------------------
-// Fakes de repositorios
+// Fakes
 // ---------------------------------------------------------------------------
 
+/// [afterRefresh] simula el estado que devuelve RevenueCat después de una
+/// compra o restore exitosos.
 class _FakeEntitlementRepository implements EntitlementRepository {
-  _FakeEntitlementRepository({EntitlementStatus status = EntitlementStatus.free})
-      : _status = status;
+  _FakeEntitlementRepository({
+    EntitlementStatus initial = EntitlementStatus.free,
+    EntitlementStatus? afterRefresh,
+  })  : _status = initial,
+        _afterRefresh = afterRefresh ?? initial;
 
   EntitlementStatus _status;
+  final EntitlementStatus _afterRefresh;
   int refreshCount = 0;
 
   @override
@@ -30,6 +36,7 @@ class _FakeEntitlementRepository implements EntitlementRepository {
   @override
   Future<EntitlementStatus> refresh() async {
     refreshCount++;
+    _status = _afterRefresh;
     return _status;
   }
 
@@ -83,7 +90,7 @@ PremiumPackage _fakePackage({
     PremiumPackage(
       id: id,
       title: period == PremiumPackagePeriod.annual ? 'Anual' : 'Mensual',
-      priceString: '\$9.99',
+      priceString: r'$9.99',
       period: period,
       rawPackage: Object(),
     );
@@ -94,9 +101,11 @@ PaywallController _makeController({
   bool cancelOnPurchase = false,
   bool restoreResult = false,
   bool throwOnRestore = false,
-  EntitlementStatus entitlementStatus = EntitlementStatus.free,
+  EntitlementStatus entitlementAfterRefresh = EntitlementStatus.free,
 }) {
-  final entitlementRepo = _FakeEntitlementRepository(status: entitlementStatus);
+  final entitlementRepo = _FakeEntitlementRepository(
+    afterRefresh: entitlementAfterRefresh,
+  );
   final entitlementCtrl = EntitlementController(
     getEntitlementStatus: GetEntitlementStatus(entitlementRepo),
     refreshEntitlement: RefreshEntitlement(entitlementRepo),
@@ -119,16 +128,17 @@ PaywallController _makeController({
   );
 }
 
-/// Construye un [PaywallController] y expone el repositorio de entitlement
-/// para poder verificar cuántas veces se llamó refresh.
 ({PaywallController ctrl, _FakeEntitlementRepository entitlementRepo})
     _makeControllerWithSpy({
   List<PremiumPackage>? packages,
   bool throwOnPurchase = false,
   bool cancelOnPurchase = false,
   bool restoreResult = false,
+  EntitlementStatus entitlementAfterRefresh = EntitlementStatus.premium,
 }) {
-  final entitlementRepo = _FakeEntitlementRepository();
+  final entitlementRepo = _FakeEntitlementRepository(
+    afterRefresh: entitlementAfterRefresh,
+  );
   final entitlementCtrl = EntitlementController(
     getEntitlementStatus: GetEntitlementStatus(entitlementRepo),
     refreshEntitlement: RefreshEntitlement(entitlementRepo),
@@ -187,14 +197,25 @@ void main() {
       expect(ctrl.selectedPackage, isNull);
     });
 
-    test('isLoading pasa de true → false tras loadPackages', () async {
+    test('loadPackages con lista vacía no lanza excepción como control de flujo',
+        () async {
+      // _getPackages() retorna [] sin throw; loadPackages() debe terminar limpio.
+      final ctrl = _makeController(packages: []);
+
+      await ctrl.loadPackages();
+
+      expect(ctrl.isLoading, isFalse);
+      expect(ctrl.errorMessage, isNull);
+    });
+
+    test('isLoading vuelve a false después de loadPackages', () async {
       final ctrl = _makeController(packages: [_fakePackage()]);
       final snapshots = <bool>[];
       ctrl.addListener(() => snapshots.add(ctrl.isLoading));
 
       await ctrl.loadPackages();
 
-      expect(snapshots, containsAllInOrder([false]));
+      expect(snapshots.last, isFalse);
       expect(ctrl.isLoading, isFalse);
     });
   });
@@ -209,6 +230,23 @@ void main() {
 
       expect(outcome, PaywallOutcome.success);
       expect(entitlementRepo.refreshCount, greaterThan(0));
+    });
+
+    test(
+        'compra exitosa pero hasPremiumAccess false retorna error con errorMessage',
+        () async {
+      // La compra se procesa pero el entitlement no queda activo (ej. delay de RC).
+      final pkg = _fakePackage();
+      final ctrl = _makeController(
+        packages: [pkg],
+        entitlementAfterRefresh: EntitlementStatus.free,
+      );
+
+      await ctrl.loadPackages();
+      final outcome = await ctrl.purchaseSelected();
+
+      expect(outcome, PaywallOutcome.error);
+      expect(ctrl.errorMessage, isNotNull);
     });
 
     test('cancelación del usuario retorna cancelled sin errorMessage', () async {
@@ -250,6 +288,20 @@ void main() {
         restoreResult: true,
       );
 
+      final outcome = await ctrl.restorePurchases();
+
+      expect(outcome, PaywallOutcome.success);
+      expect(entitlementRepo.refreshCount, greaterThan(0));
+    });
+
+    test('restore disponible aunque no haya packages cargados', () async {
+      // Simula que los offerings no cargaron pero el usuario tiene compra previa.
+      final (:ctrl, :entitlementRepo) = _makeControllerWithSpy(
+        packages: [],
+        restoreResult: true,
+      );
+
+      // No se llama loadPackages() — packages permanece vacío.
       final outcome = await ctrl.restorePurchases();
 
       expect(outcome, PaywallOutcome.success);
