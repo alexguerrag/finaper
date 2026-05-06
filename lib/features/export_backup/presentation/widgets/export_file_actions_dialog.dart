@@ -26,12 +26,14 @@ class _ExportFileActionsDialogState extends State<ExportFileActionsDialog> {
   bool _fileExists = false;
   bool _checkingExists = true;
 
-  /// Los archivos JSON de respaldo no tienen app compatible en Android,
-  /// por lo que OpenFilex mostraría el diálogo del sistema con "tipo no
-  /// admitido". Los ocultamos y dejamos Compartir como única acción.
-  bool get _isJsonBackup =>
+  /// Ni JSON ni CSV tienen app por defecto en Android: OpenFilex dispararía
+  /// el diálogo del sistema con "tipo no admitido". Ocultamos "Abrir" para
+  /// ambos formatos y dejamos Compartir como única acción.
+  bool get _shareOnly =>
       widget.file.mimeType == 'application/json' ||
-      widget.file.fileName.endsWith('.json');
+      widget.file.mimeType == 'text/csv' ||
+      widget.file.fileName.endsWith('.json') ||
+      widget.file.fileName.endsWith('.csv');
 
   @override
   void initState() {
@@ -188,7 +190,7 @@ class _ExportFileActionsDialogState extends State<ExportFileActionsDialog> {
               onPressed: () => Navigator.pop(context),
               child: const Text('Cerrar'),
             ),
-            if (!_isJsonBackup)
+            if (!_shareOnly)
               TextButton(
                 onPressed: canAct ? _handleOpenFile : null,
                 child: const Text('Abrir'),
