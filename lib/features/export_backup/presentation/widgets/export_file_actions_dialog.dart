@@ -26,6 +26,13 @@ class _ExportFileActionsDialogState extends State<ExportFileActionsDialog> {
   bool _fileExists = false;
   bool _checkingExists = true;
 
+  /// Los archivos JSON de respaldo no tienen app compatible en Android,
+  /// por lo que OpenFilex mostraría el diálogo del sistema con "tipo no
+  /// admitido". Los ocultamos y dejamos Compartir como única acción.
+  bool get _isJsonBackup =>
+      widget.file.mimeType == 'application/json' ||
+      widget.file.fileName.endsWith('.json');
+
   @override
   void initState() {
     super.initState();
@@ -33,59 +40,24 @@ class _ExportFileActionsDialogState extends State<ExportFileActionsDialog> {
   }
 
   Future<void> _checkFileExists() async {
-    setState(() {
-      _checkingExists = true;
-    });
-
+    setState(() => _checkingExists = true);
     try {
       _fileExists = await widget.controller.fileExists(widget.file);
-    } catch (e, s) {
-      debugPrint('ExportFileActionsDialog._checkFileExists error: $e');
-      debugPrintStack(stackTrace: s);
+    } catch (_) {
       _fileExists = false;
     } finally {
-      if (mounted) {
-        setState(() {
-          _checkingExists = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _handleCopyPath() async {
-    final ok = await widget.controller.copyPath(widget.file);
-
-    if (!mounted) return;
-
-    if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ruta copiada al portapapeles.'),
-        ),
-      );
-    } else {
-      final msg = widget.controller.errorMessage ??
-          'No se pudo copiar la ruta al portapapeles.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg)),
-      );
+      if (mounted) setState(() => _checkingExists = false);
     }
   }
 
   Future<void> _handleOpenFile() async {
     final ok = await widget.controller.openFile(widget.file);
-
     if (!mounted) return;
 
-    if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Abriendo ${widget.file.fileName}...'),
-        ),
-      );
-    } else {
+    if (!ok) {
       final msg = widget.controller.errorMessage ??
-          'No se pudo abrir el archivo. Verifica que exista una app compatible.';
+          'No encontramos una app compatible para abrir este archivo. '
+              'Puedes compartirlo o guardarlo en una ubicación segura.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(msg)),
       );
@@ -94,16 +66,9 @@ class _ExportFileActionsDialogState extends State<ExportFileActionsDialog> {
 
   Future<void> _handleShareFile() async {
     final ok = await widget.controller.shareFile(widget.file);
-
     if (!mounted) return;
 
-    if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Compartiendo ${widget.file.fileName}...'),
-        ),
-      );
-    } else {
+    if (!ok) {
       final msg =
           widget.controller.errorMessage ?? 'No se pudo compartir el archivo.';
       ScaffoldMessenger.of(context).showSnackBar(
@@ -120,7 +85,7 @@ class _ExportFileActionsDialogState extends State<ExportFileActionsDialog> {
         final isWorking = widget.controller.isWorking;
         final checking = _checkingExists;
         final exists = _fileExists;
-        final canOpenOrShare = !checking && exists && !isWorking;
+        final canAct = !checking && exists && !isWorking;
 
         return AlertDialog(
           backgroundColor: AppTheme.surface,
@@ -152,20 +117,9 @@ class _ExportFileActionsDialogState extends State<ExportFileActionsDialog> {
                     : (exists ? 'Disponible' : 'No encontrado'),
               ),
               const SizedBox(height: 12),
-              Text(
-                'Ruta',
-                style: GoogleFonts.manrope(
-                  fontSize: 12,
-                  color: AppTheme.onSurfaceMuted,
-                ),
-              ),
-              const SizedBox(height: 4),
-              SelectableText(
-                widget.file.filePath,
-                style: GoogleFonts.manrope(
-                  fontSize: 12,
-                  color: AppTheme.onSurface,
-                ),
+              _DialogInfoRow(
+                label: 'Ubicación',
+                value: 'Guardado de forma privada en FINAPER',
               ),
               const SizedBox(height: 16),
               Container(
@@ -178,14 +132,42 @@ class _ExportFileActionsDialogState extends State<ExportFileActionsDialog> {
                     color: Colors.white.withValues(alpha: 0.08),
                   ),
                 ),
-                child: Text(
-                  exists
-                      ? 'Puedes compartir el archivo, abrirlo directamente o copiar su ruta.'
-                      : 'El archivo no está disponible. Puedes copiar la ruta para ubicarlo o reintentar la exportación.',
-                  style: GoogleFonts.manrope(
-                    fontSize: 12,
-                    color: AppTheme.onSurfaceMuted,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      exists
+                          ? 'Listo para compartir. Usa el botón "Compartir" para enviarlo a Drive, Gmail u otra app.'
+                          : 'El archivo no está disponible. Intenta exportar de nuevo.',
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        color: AppTheme.onSurfaceMuted,
+                      ),
+                    ),
+                    if (exists) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.lock_outline_rounded,
+                            size: 12,
+                            color: AppTheme.onSurfaceMuted,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Este archivo contiene información financiera. '
+                              'Guárdalo solo en lugares seguros.',
+                              style: GoogleFonts.manrope(
+                                fontSize: 11,
+                                color: AppTheme.onSurfaceMuted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
                 ),
               ),
               if (widget.controller.errorMessage != null) ...[
@@ -203,19 +185,16 @@ class _ExportFileActionsDialogState extends State<ExportFileActionsDialog> {
           ),
           actions: [
             TextButton(
-              onPressed: isWorking ? null : _checkFileExists,
-              child: const Text('Revisar'),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cerrar'),
             ),
-            TextButton(
-              onPressed: isWorking ? null : _handleCopyPath,
-              child: const Text('Copiar ruta'),
-            ),
-            TextButton(
-              onPressed: canOpenOrShare ? _handleOpenFile : null,
-              child: const Text('Abrir'),
-            ),
+            if (!_isJsonBackup)
+              TextButton(
+                onPressed: canAct ? _handleOpenFile : null,
+                child: const Text('Abrir'),
+              ),
             FilledButton(
-              onPressed: canOpenOrShare ? _handleShareFile : null,
+              onPressed: canAct ? _handleShareFile : null,
               child: isWorking
                   ? const SizedBox(
                       width: 16,
@@ -232,10 +211,7 @@ class _ExportFileActionsDialogState extends State<ExportFileActionsDialog> {
 }
 
 class _DialogInfoRow extends StatelessWidget {
-  const _DialogInfoRow({
-    required this.label,
-    required this.value,
-  });
+  const _DialogInfoRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -246,7 +222,7 @@ class _DialogInfoRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 64,
+          width: 72,
           child: Text(
             label,
             style: GoogleFonts.manrope(
