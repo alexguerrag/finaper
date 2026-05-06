@@ -10,15 +10,22 @@ import '../../budgets/di/budgets_registry.dart';
 import '../../transactions/di/transactions_registry.dart';
 import '../data/datasources/local_entitlement_cache_datasource.dart';
 import '../data/datasources/revenuecat_entitlement_datasource.dart';
+import '../data/datasources/revenuecat_purchase_datasource.dart';
 import '../data/repositories/analytics_repository_impl.dart';
 import '../data/repositories/entitlement_repository_impl.dart';
+import '../data/repositories/purchase_repository_impl.dart';
 import '../domain/repositories/analytics_repository.dart';
 import '../domain/repositories/entitlement_repository.dart';
+import '../domain/repositories/purchase_repository.dart';
 import '../domain/usecases/clear_entitlement_cache.dart';
 import '../domain/usecases/get_entitlement_status.dart';
+import '../domain/usecases/get_packages.dart';
 import '../domain/usecases/get_premium_reports.dart';
+import '../domain/usecases/purchase_package.dart';
 import '../domain/usecases/refresh_entitlement.dart';
+import '../domain/usecases/restore_purchases.dart';
 import '../presentation/controllers/entitlement_controller.dart';
+import '../presentation/controllers/paywall_controller.dart';
 import '../presentation/controllers/premium_reports_controller.dart';
 
 class AnalyticsModule implements AppModule {
@@ -30,6 +37,12 @@ class AnalyticsModule implements AppModule {
   late final EntitlementController entitlementController;
   late final GetPremiumReports getPremiumReports;
   late final PremiumReportsController controller;
+
+  late final PurchaseRepository purchaseRepository;
+  late final GetPackages getPackages;
+  late final PurchasePackage purchasePackage;
+  late final RestorePurchases restorePurchases;
+  late final PaywallController paywallController;
 
   static bool _revenueCatConfigured = false;
 
@@ -72,6 +85,20 @@ class AnalyticsModule implements AppModule {
       getEntitlementStatus: getEntitlementStatus,
       refreshEntitlement: refreshEntitlement,
       clearEntitlementCache: clearEntitlementCache,
+    );
+
+    purchaseRepository = PurchaseRepositoryImpl(
+      const RevenueCatPurchaseDataSource(),
+    );
+    getPackages = GetPackages(purchaseRepository);
+    purchasePackage = PurchasePackage(purchaseRepository);
+    restorePurchases = RestorePurchases(purchaseRepository);
+
+    paywallController = PaywallController(
+      getPackages: getPackages,
+      purchasePackage: purchasePackage,
+      restorePurchases: restorePurchases,
+      entitlementController: entitlementController,
     );
 
     getPremiumReports = GetPremiumReports(repository);
