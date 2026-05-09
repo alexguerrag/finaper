@@ -29,10 +29,13 @@ class EntitlementRepositoryImpl implements EntitlementRepository {
   }
 
   @override
-  EntitlementStatus get cachedStatus => _cached;
+  EntitlementStatus get cachedStatus =>
+      BillingConfig.overridePremium ? EntitlementStatus.premium : _cached;
 
   @override
   Future<EntitlementStatus> refresh() async {
+    if (BillingConfig.overridePremium) return EntitlementStatus.premium;
+
     if (!_billingConfigured) {
       return _cached;
     }
