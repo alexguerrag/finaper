@@ -807,7 +807,7 @@ class _ProjectionCard extends StatelessWidget {
       return const _BadgePill(label: 'En curso', color: _colorAmber);
     }
     if (data.isSanityFailed) {
-      return const _BadgePill(label: 'En\nrevisión', color: _colorAmber);
+      return const _BadgePill(label: 'Calculando', color: _colorAmber);
     }
     return switch (data.reliability) {
       ProjectionReliability.medium => const _BadgePill(
@@ -863,7 +863,7 @@ class _NoProjectionState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final message = isSanityFailed
-        ? 'Los datos de este mes son inusuales. Volveremos a calcular cuando tengamos más movimientos.'
+        ? 'Detectamos movimientos fuera de tu comportamiento habitual. La proyección se actualizará cuando avance el mes o registres más datos.'
         : 'Aún es pronto para estimar tu cierre. Continúa registrando movimientos y pronto sabrás tu proyección.';
     final icon = isSanityFailed
         ? Icons.warning_amber_rounded
