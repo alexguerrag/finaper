@@ -170,13 +170,18 @@ class TransactionListController extends ChangeNotifier {
     _initUseCases();
     _isLoading = true;
     _notify();
-    await _fetchTransactions();
+    await Future.wait([_fetchTransactions(), _fetchAccounts()]);
   }
 
   Future<void> _fetchAccounts() async {
     try {
       final accounts = await _getAccounts(includeArchived: true);
       _accounts = accounts;
+      final selected = _selectedAccountId;
+      if (selected != null && !_accounts.any((a) => a.id == selected)) {
+        _selectedAccountId = null;
+        _invalidateCache();
+      }
       _notify();
     } catch (e, s) {
       debugPrint('TransactionListController: load accounts error: $e');
