@@ -8,6 +8,7 @@ import '../../domain/entities/cash_flow_entity.dart';
 import '../../domain/entities/ledger_entity.dart';
 import '../../domain/entities/savings_rate_entity.dart';
 import '../controllers/premium_reports_controller.dart';
+import '../helpers/savings_rate_helpers.dart';
 
 class PremiumReportsScreen extends StatefulWidget {
   const PremiumReportsScreen({super.key});
@@ -221,9 +222,10 @@ class _SavingsRateCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            isPositive
-                ? 'Ahorraste ${AppFormatters.formatCurrency(data.savedAmount)} de tus ingresos'
-                : 'Gastaste más de lo que ingresaste este mes',
+            savingsRateMessage(
+              data.rate,
+              AppFormatters.formatCurrency(data.savedAmount.abs()),
+            ),
             style: GoogleFonts.manrope(
               fontSize: 13,
               color: AppTheme.onSurfaceMuted,
@@ -723,7 +725,6 @@ class _DeltaBadge extends StatelessWidget {
     final isPositive = delta >= 0;
     final isGood = higherIsGood ? isPositive : !isPositive;
     final color = isGood ? const Color(0xFF35E879) : AppTheme.expense;
-    final sign = isPositive ? '+' : '';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -733,7 +734,7 @@ class _DeltaBadge extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Text(
-        '$sign${delta.toStringAsFixed(1)}pp vs mes anterior',
+        deltaBadgeText(delta, higherIsGood),
         style: GoogleFonts.manrope(
           fontSize: 11,
           fontWeight: FontWeight.w700,
