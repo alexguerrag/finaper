@@ -13,6 +13,7 @@ class AccountModel extends AccountEntity {
     required super.initialBalance,
     required super.isArchived,
     required super.createdAt,
+    super.allowNegativeBalance = false,
   });
 
   factory AccountModel.fromMap(Map<String, dynamic> map) {
@@ -29,6 +30,8 @@ class AccountModel extends AccountEntity {
       isArchived: (map['is_archived'] as int? ?? 0) == 1,
       createdAt: DateTime.tryParse(map['created_at']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
+      allowNegativeBalance:
+          (map['allow_negative_balance'] as int? ?? 0) == 1,
     );
   }
 
@@ -42,6 +45,7 @@ class AccountModel extends AccountEntity {
       initialBalance: entity.initialBalance,
       isArchived: entity.isArchived,
       createdAt: entity.createdAt,
+      allowNegativeBalance: entity.allowNegativeBalance,
     );
   }
 
@@ -55,6 +59,7 @@ class AccountModel extends AccountEntity {
       'initial_balance': initialBalance,
       'is_archived': isArchived ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
+      'allow_negative_balance': allowNegativeBalance ? 1 : 0,
     };
   }
 }

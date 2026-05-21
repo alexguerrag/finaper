@@ -55,11 +55,25 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   Map<String, double> _accountBalances = {};
   List<CategoryEntity> _categories = <CategoryEntity>[];
 
-  /// For expense transactions, hides accounts with zero or negative balance.
-  /// For income, all accounts are visible (any account can receive money).
   List<AccountEntity> get _visibleAccounts {
     if (_isIncome) return _accounts;
-    return _accounts.where((a) => (_accountBalances[a.id] ?? 0) > 0).toList();
+    return _accounts.where((account) {
+      // Always keep the currently selected account visible (edit-mode guard).
+      if (account.id == _selectedAccountId) return true;
+      final balance = _accountBalances[account.id] ?? 0;
+      return balance > 0 || account.allowNegativeBalance;
+    }).toList();
+  }
+
+  /// True when the selected expense account will end up with negative balance.
+  bool get _willResultInNegativeBalance {
+    if (_isIncome) return false;
+    final account = _selectedAccount();
+    if (account == null || !account.allowNegativeBalance) return false;
+    final balance = _accountBalances[account.id] ?? 0;
+    final amount =
+        ThousandsInputFormatter.parse(_amountController.text.trim()) ?? 0;
+    return balance - amount < 0;
   }
 
   String? _selectedAccountId;
@@ -77,10 +91,14 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     super.initState();
     _hydrateInitialDraft();
     _bootstrapCoreData();
+    _amountController.addListener(_onAmountChanged);
   }
+
+  void _onAmountChanged() => setState(() {});
 
   @override
   void dispose() {
+    _amountController.removeListener(_onAmountChanged);
     _descriptionController.dispose();
     _amountController.dispose();
     _noteController.dispose();
@@ -781,6 +799,29 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                                   });
                                 },
                               ),
+                              if (_willResultInNegativeBalance) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline_rounded,
+                                      size: 14,
+                                      color: AppTheme.onSurfaceMuted,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        'Esta cuenta quedará o seguirá con saldo negativo. '
+                                        'Verifica si corresponde a una línea de crédito o sobregiro.',
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 11,
+                                          color: AppTheme.onSurfaceMuted,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                               const SizedBox(height: 16),
                               Text(
                                 'Fecha',
