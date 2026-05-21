@@ -28,6 +28,7 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
   late final TextEditingController _initialBalanceController;
 
   late AccountType _selectedType;
+  late bool _allowNegativeBalance;
 
   @override
   void initState() {
@@ -40,7 +41,12 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
       text: _formatInitialBalance(initial?.initialBalance ?? 0),
     );
     _selectedType = initial?.type ?? AccountType.cash;
+    _allowNegativeBalance = initial?.allowNegativeBalance ??
+        _defaultAllowNegativeBalance(initial?.type ?? AccountType.cash);
   }
+
+  bool _defaultAllowNegativeBalance(AccountType type) =>
+      type == AccountType.creditCard;
 
   @override
   void dispose() {
@@ -107,6 +113,7 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
       initialBalance: _parseInitialBalance(),
       isArchived: initial?.isArchived ?? false,
       createdAt: initial?.createdAt ?? DateTime.now(),
+      allowNegativeBalance: _allowNegativeBalance,
     );
 
     Navigator.of(context).pop(account);
@@ -214,10 +221,36 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
                       if (value == null) return;
                       setState(() {
                         _selectedType = value;
+                        if (!widget.isEditing) {
+                          _allowNegativeBalance =
+                              _defaultAllowNegativeBalance(value);
+                        }
                       });
                     },
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      'Permitir saldo negativo por línea de crédito',
+                      style: GoogleFonts.manrope(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.onSurface,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Útil para tarjetas de crédito, líneas de crédito o cuentas bancarias con sobregiro.',
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        color: AppTheme.onSurfaceMuted,
+                      ),
+                    ),
+                    value: _allowNegativeBalance,
+                    onChanged: (value) =>
+                        setState(() => _allowNegativeBalance = value),
+                  ),
+                  const SizedBox(height: 6),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(

@@ -13,6 +13,7 @@ class AccountEntity extends Equatable {
     required this.initialBalance,
     required this.isArchived,
     required this.createdAt,
+    this.allowNegativeBalance = false,
   });
 
   final String id;
@@ -24,6 +25,10 @@ class AccountEntity extends Equatable {
   final bool isArchived;
   final DateTime createdAt;
 
+  /// Permite que la cuenta opere con saldo negativo (línea de crédito,
+  /// sobregiro o tarjeta de crédito). Por defecto false.
+  final bool allowNegativeBalance;
+
   @override
   List<Object?> get props => [
         id,
@@ -34,6 +39,7 @@ class AccountEntity extends Equatable {
         initialBalance,
         isArchived,
         createdAt,
+        allowNegativeBalance,
       ];
 
   AccountEntity copyWith({
@@ -45,6 +51,7 @@ class AccountEntity extends Equatable {
     double? initialBalance,
     bool? isArchived,
     DateTime? createdAt,
+    bool? allowNegativeBalance,
   }) {
     return AccountEntity(
       id: id ?? this.id,
@@ -55,6 +62,7 @@ class AccountEntity extends Equatable {
       initialBalance: initialBalance ?? this.initialBalance,
       isArchived: isArchived ?? this.isArchived,
       createdAt: createdAt ?? this.createdAt,
+      allowNegativeBalance: allowNegativeBalance ?? this.allowNegativeBalance,
     );
   }
 }
