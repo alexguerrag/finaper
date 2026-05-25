@@ -893,22 +893,31 @@ class _SanityWarning extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(Icons.info_outline_rounded, size: 14, color: AppTheme.onSurfaceMuted),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            'La estimación será más precisa cuando tengamos más historial de tus movimientos mensuales.',
-            style: GoogleFonts.manrope(
-              fontSize: 12,
-              color: AppTheme.onSurfaceMuted,
-              height: 1.4,
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline_rounded,
+              size: 16, color: Color(0xFF8B949E)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'La estimación será más precisa cuando tengamos más historial de tus movimientos mensuales.',
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                color: AppTheme.onSurfaceMuted,
+                height: 1.4,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

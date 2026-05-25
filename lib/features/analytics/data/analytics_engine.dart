@@ -132,8 +132,9 @@ class AnalyticsEngine {
     required List<TransactionEntity> transactions,
     required List<BudgetEntity> budgets,
     required DateTime month,
+    DateTime? today,
   }) {
-    final now = DateTime.now();
+    final now = today ?? DateTime.now();
     final isCurrentMonth =
         month.year == now.year && month.month == now.month;
     // daysElapsed >= 1 always (day starts at 1, past months use full month).
@@ -177,8 +178,11 @@ class AnalyticsEngine {
     final projectedExpense = currentExpense * factor;
     final projectedNetFlow = projectedIncome - projectedExpense;
 
-    // Sanity check: if the projected income exceeds 3× the user's historical
-    // monthly average, the extrapolation is likely unreliable.
+    // Sanity check: if the current income exceeds 3× the user's historical
+    // monthly average, flag the estimate as lower-confidence. Income is never
+    // extrapolated, so this only fires when the recorded amount itself is
+    // unusually high. Must not hide the projection — it only adds context in
+    // the UI.
     final isSanityFailed = _isSanityFailed(
       projectedIncome: projectedIncome,
       transactions: transactions,
