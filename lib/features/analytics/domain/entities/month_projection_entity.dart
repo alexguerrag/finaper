@@ -48,7 +48,8 @@ class MonthProjectionEntity {
   final bool isSanityFailed;
 
   /// Whether the UI should display projected amounts.
-  /// Hidden when there is too little data (LOW) or the sanity check fails.
-  bool get showProjectedAmounts =>
-      reliability != ProjectionReliability.low && !isSanityFailed;
+  /// Hidden only when there is too little data (day 1–9).
+  /// A failed sanity check shows the projection with a precision note instead
+  /// of hiding it.
+  bool get showProjectedAmounts => reliability != ProjectionReliability.low;
 }

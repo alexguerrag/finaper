@@ -171,11 +171,9 @@ class AnalyticsEngine {
       reliability = ProjectionReliability.high;
     }
 
-    // Income: don't extrapolate before day 10 — a single large income early
-    // in the month would otherwise produce absurd projections.
-    final projectedIncome = reliability == ProjectionReliability.low
-        ? currentIncome
-        : currentIncome * factor;
+    // Income is never extrapolated — most users receive salary once a month,
+    // so multiplying by a daily rate produces absurd projections.
+    final projectedIncome = currentIncome;
     final projectedExpense = currentExpense * factor;
     final projectedNetFlow = projectedIncome - projectedExpense;
 
