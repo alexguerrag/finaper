@@ -3,8 +3,11 @@ import 'package:finaper/features/analytics/domain/entities/month_projection_enti
 import 'package:finaper/features/transactions/domain/entities/transaction_entity.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-// April 2026 — past month so daysElapsed = totalDays (30) → reliability = high.
+// April 2026 — past month: daysElapsed = totalDays (30) → reliability = high.
 final _april = DateTime(2026, 4, 1);
+
+// May 2026 — used with injected today for deterministic current-month tests.
+final _may = DateTime(2026, 5, 1);
 
 TransactionEntity _income(double amount, DateTime date) => TransactionEntity(
       description: 'ingreso',
@@ -46,46 +49,153 @@ MonthProjectionEntity _entity({
 void main() {
   group('showProjectedAmounts — isSanityFailed ya no bloquea —', () {
     test(
-        '1. día 24 + isSanityFailed=true → showProjectedAmounts=true '
-        '(criterio 1: proyección visible)', () {
+        '1. reliability=high + isSanityFailed=true → showProjectedAmounts=true',
+        () {
       final e = _entity(
           reliability: ProjectionReliability.high, isSanityFailed: true);
       expect(e.showProjectedAmounts, isTrue);
     });
 
     test(
-        '2. día 24 + isSanityFailed=true → isSanityFailed accesible para badge y mensaje '
-        '(criterio 2 y 3)', () {
+        '2. isSanityFailed accesible en entidad (badge y mensaje dependen de él)',
+        () {
       final e = _entity(
           reliability: ProjectionReliability.high, isSanityFailed: true);
-      // El widget _badge() muestra "Calculando" cuando isSanityFailed=true.
-      // El widget _SanityWarning se muestra cuando isSanityFailed=true.
-      // Ambos dependen de esta propiedad, que debe conservarse en la entidad.
       expect(e.isSanityFailed, isTrue);
     });
 
     test(
-        '3. reliability=medium + isSanityFailed=true → showProjectedAmounts=true '
-        '(día 10–15 con sanity activo)', () {
+        '3. reliability=medium + isSanityFailed=true → showProjectedAmounts=true',
+        () {
       final e = _entity(
           reliability: ProjectionReliability.medium, isSanityFailed: true);
       expect(e.showProjectedAmounts, isTrue);
     });
 
     test(
-        '4. día 1–9 sin datos suficientes → reliability=low → showProjectedAmounts=false '
-        '(criterio 4: estado inicial preservado)', () {
+        '4. reliability=low + isSanityFailed=false → showProjectedAmounts=false',
+        () {
       final e = _entity(
           reliability: ProjectionReliability.low, isSanityFailed: false);
       expect(e.showProjectedAmounts, isFalse);
     });
 
     test(
-        '4b. día 1–9 + isSanityFailed=true → showProjectedAmounts=false '
-        '(low reliability gana sobre sanity)', () {
-      final e =
-          _entity(reliability: ProjectionReliability.low, isSanityFailed: true);
+        '4b. reliability=low + isSanityFailed=true → showProjectedAmounts=false '
+        '(low reliability gana sobre sanity)',
+        () {
+      final e = _entity(
+          reliability: ProjectionReliability.low, isSanityFailed: true);
       expect(e.showProjectedAmounts, isFalse);
+    });
+  });
+
+  group('AnalyticsEngine.buildProjection — fecha determinística vía today —',
+      () {
+    // May 2026: 31 days total.
+
+    test('1. día 24 + isSanityFailed=true → showProjectedAmounts=true', () {
+      final today = DateTime(2026, 5, 24);
+      final txs = [
+        // Historical income: 1M/mes (Feb–Apr) → avg = 1M
+        _income(1000000, DateTime(2026, 2, 15)),
+        _income(1000000, DateTime(2026, 3, 15)),
+        _income(1000000, DateTime(2026, 4, 15)),
+        // Mayo: 4M → projectedIncome = 4M > avg*3=3M → sanity falla
+        _income(4000000, DateTime(2026, 5, 10)),
+        _expense(500000, DateTime(2026, 5, 15)),
+      ];
+
+      final result = AnalyticsEngine.buildProjection(
+        transactions: txs,
+        budgets: [],
+        month: _may,
+        today: today,
+      );
+
+      expect(result.isSanityFailed, isTrue);
+      expect(result.showProjectedAmounts, isTrue);
+    });
+
+    test('2. día 24 → reliability=high', () {
+      final result = AnalyticsEngine.buildProjection(
+        transactions: [],
+        budgets: [],
+        month: _may,
+        today: DateTime(2026, 5, 24),
+      );
+
+      expect(result.reliability, ProjectionReliability.high);
+      expect(result.daysElapsed, 24);
+    });
+
+    test('3. día 24 → projectedExpense usa factor totalDays / daysElapsed', () {
+      // factor = 31/24; expense de 240000 → projected = 240000 * 31/24 = 310000
+      final txs = [_expense(240000, DateTime(2026, 5, 10))];
+
+      final result = AnalyticsEngine.buildProjection(
+        transactions: txs,
+        budgets: [],
+        month: _may,
+        today: DateTime(2026, 5, 24),
+      );
+
+      final expectedFactor = 31 / 24;
+      expect(result.projectedExpense,
+          closeTo(240000 * expectedFactor, 0.01));
+    });
+
+    test('4. día 24 → projectedIncome == currentIncome (sin extrapolación)', () {
+      final txs = [_income(800000, DateTime(2026, 5, 5))];
+
+      final result = AnalyticsEngine.buildProjection(
+        transactions: txs,
+        budgets: [],
+        month: _may,
+        today: DateTime(2026, 5, 24),
+      );
+
+      expect(result.projectedIncome, equals(result.currentIncome));
+      expect(result.projectedIncome, equals(800000));
+    });
+
+    test('5. día 8 → reliability=low y showProjectedAmounts=false', () {
+      final result = AnalyticsEngine.buildProjection(
+        transactions: [_expense(100000, DateTime(2026, 5, 5))],
+        budgets: [],
+        month: _may,
+        today: DateTime(2026, 5, 8),
+      );
+
+      expect(result.reliability, ProjectionReliability.low);
+      expect(result.showProjectedAmounts, isFalse);
+      expect(result.daysElapsed, 8);
+    });
+
+    test('6. día 12 → reliability=medium y showProjectedAmounts=true', () {
+      final result = AnalyticsEngine.buildProjection(
+        transactions: [_expense(100000, DateTime(2026, 5, 5))],
+        budgets: [],
+        month: _may,
+        today: DateTime(2026, 5, 12),
+      );
+
+      expect(result.reliability, ProjectionReliability.medium);
+      expect(result.showProjectedAmounts, isTrue);
+      expect(result.daysElapsed, 12);
+    });
+
+    test('7. día 16+ → reliability=high y showProjectedAmounts=true', () {
+      final result = AnalyticsEngine.buildProjection(
+        transactions: [_expense(100000, DateTime(2026, 5, 10))],
+        budgets: [],
+        month: _may,
+        today: DateTime(2026, 5, 16),
+      );
+
+      expect(result.reliability, ProjectionReliability.high);
+      expect(result.showProjectedAmounts, isTrue);
+      expect(result.daysElapsed, 16);
     });
   });
 
@@ -140,12 +250,9 @@ void main() {
       expect(result.isSanityFailed, isFalse);
     });
 
-    test('8. gastos sí se extrapolan por factor (projectedExpense > currentExpense cuando factor > 1)',
+    test(
+        '8. mes completo (factor=1) → projectedExpense == currentExpense',
         () {
-      // Usamos marzo 2026 con solo 15 días de gastos para ver factor > 1.
-      // Como es mes pasado, daysElapsed = 31 → factor = 1. No podemos forzar factor > 1
-      // desde el engine sin inyectar fecha. Verificamos en cambio que la fórmula
-      // para mes completo da projectedExpense == currentExpense (factor = 1).
       final txs = [
         _expense(600000, DateTime(2026, 4, 5)),
         _expense(400000, DateTime(2026, 4, 20)),
@@ -157,7 +264,7 @@ void main() {
         month: _april,
       );
 
-      // April: 30 days total, 30 elapsed → factor = 1 → projectedExpense == currentExpense
+      // April: 30 days total, 30 elapsed → factor = 1
       expect(result.projectedExpense, equals(result.currentExpense));
       expect(result.currentExpense, equals(1000000));
     });
