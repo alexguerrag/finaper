@@ -10,6 +10,11 @@ import '../domain/entities/savings_rate_entity.dart';
 class AnalyticsEngine {
   const AnalyticsEngine._();
 
+  // --- Insight relevance thresholds ---
+  static const double _minPreviousAmountForPercent = 20000;
+  static const double _minAbsoluteDeltaForInsight = 10000;
+  static const double _extremeDeltaPercent = 300;
+
   static MonthlyComparisonEntity buildComparison({
     required List<TransactionEntity> transactions,
     required DateTime month,
@@ -219,6 +224,30 @@ class AnalyticsEngine {
     );
   }
 
+  static bool _isRelevantDelta(CategoryDelta delta) {
+    final absoluteDelta = (delta.currentAmount - delta.previousAmount).abs();
+    return absoluteDelta >= _minAbsoluteDeltaForInsight;
+  }
+
+  static String _risingMessage(CategoryDelta delta) {
+    final isQualitative = delta.deltaPercent > _extremeDeltaPercent ||
+        delta.previousAmount < _minPreviousAmountForPercent;
+    if (isQualitative) {
+      return '${delta.categoryName} aumentó fuertemente frente al mismo periodo anterior. Revisa si fue un gasto puntual.';
+    }
+    return 'Tu gasto en ${delta.categoryName} subió '
+        '${delta.deltaPercent.toStringAsFixed(0)}% frente al mismo periodo del mes anterior.';
+  }
+
+  static String _fallingMessage(CategoryDelta delta) {
+    final isQualitative = delta.previousAmount < _minPreviousAmountForPercent;
+    if (isQualitative) {
+      return '${delta.categoryName} bajó frente al mismo periodo anterior.';
+    }
+    return 'Tu gasto en ${delta.categoryName} bajó '
+        '${delta.deltaPercent.abs().toStringAsFixed(0)}% frente al mismo periodo del mes anterior.';
+  }
+
   static List<AnalyticsInsightEntity> buildInsights({
     required MonthlyComparisonEntity comparison,
     required List<TransactionEntity> transactions,
@@ -228,22 +257,18 @@ class AnalyticsEngine {
 
     if (comparison.hasPreviousMonthData) {
       for (final delta in comparison.topRising) {
-        if (delta.deltaPercent > 20) {
+        if (delta.deltaPercent > 20 && _isRelevantDelta(delta)) {
           insights.add(AnalyticsInsightEntity(
-            message:
-                'Tu gasto en ${delta.categoryName} subió un '
-                '${delta.deltaPercent.toStringAsFixed(0)}% respecto al mes pasado',
+            message: _risingMessage(delta),
             severity: InsightSeverity.warning,
           ));
         }
       }
 
       for (final delta in comparison.topFalling) {
-        if (delta.deltaPercent < -20) {
+        if (delta.deltaPercent < -20 && _isRelevantDelta(delta)) {
           insights.add(AnalyticsInsightEntity(
-            message:
-                'Tu gasto en ${delta.categoryName} bajó un '
-                '${delta.deltaPercent.abs().toStringAsFixed(0)}% respecto al mes pasado',
+            message: _fallingMessage(delta),
             severity: InsightSeverity.positive,
           ));
         }
@@ -251,12 +276,14 @@ class AnalyticsEngine {
 
       if (comparison.netFlowDelta > 0) {
         insights.add(const AnalyticsInsightEntity(
-          message: 'Tu ahorro este mes mejoró respecto al mes pasado',
+          message:
+              'Tu ahorro este mes mejoró frente al mismo periodo del mes anterior.',
           severity: InsightSeverity.positive,
         ));
       } else if (comparison.netFlowDelta < 0) {
         insights.add(const AnalyticsInsightEntity(
-          message: 'Tu ahorro este mes es menor que el mes pasado',
+          message:
+              'Tu ahorro este mes es menor frente al mismo periodo del mes anterior.',
           severity: InsightSeverity.warning,
         ));
       }
@@ -266,7 +293,8 @@ class AnalyticsEngine {
             comparison.incomeDelta.abs() / comparison.previousIncome;
         if (variance > 0.30) {
           insights.add(const AnalyticsInsightEntity(
-            message: 'Tus ingresos variaron más de lo habitual este mes',
+            message:
+                'Tus ingresos variaron más de lo habitual frente al mismo periodo del mes anterior.',
             severity: InsightSeverity.warning,
           ));
         }
