@@ -780,10 +780,7 @@ class _ProjectionCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           if (!data.showProjectedAmounts)
-            _NoProjectionState(
-              isSanityFailed: data.isSanityFailed &&
-                  data.reliability != ProjectionReliability.low,
-            )
+            const _NoProjectionState()
           else ...[
             _ProjectionResultCard(data: data),
             const SizedBox(height: 12),
@@ -792,7 +789,10 @@ class _ProjectionCard extends StatelessWidget {
               const SizedBox(height: 12),
               _BudgetsAtRiskSection(budgets: data.budgetsAtRisk),
             ],
-            if (data.reliability == ProjectionReliability.medium) ...[
+            if (data.isSanityFailed) ...[
+              const SizedBox(height: 12),
+              const _SanityWarning(),
+            ] else if (data.reliability == ProjectionReliability.medium) ...[
               const SizedBox(height: 12),
               const _ProjectionFooter(),
             ],
@@ -856,19 +856,10 @@ class _BadgePill extends StatelessWidget {
 }
 
 class _NoProjectionState extends StatelessWidget {
-  const _NoProjectionState({required this.isSanityFailed});
-
-  final bool isSanityFailed;
+  const _NoProjectionState();
 
   @override
   Widget build(BuildContext context) {
-    final message = isSanityFailed
-        ? 'Detectamos movimientos fuera de tu comportamiento habitual. La proyección se actualizará cuando avance el mes o registres más datos.'
-        : 'Aún es pronto para estimar tu cierre. Continúa registrando movimientos y pronto sabrás tu proyección.';
-    final icon = isSanityFailed
-        ? Icons.warning_amber_rounded
-        : Icons.timelapse_rounded;
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -879,11 +870,11 @@ class _NoProjectionState extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: AppTheme.onSurfaceMuted),
+          Icon(Icons.timelapse_rounded, size: 18, color: AppTheme.onSurfaceMuted),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              message,
+              'Aún es pronto para estimar tu cierre. Continúa registrando movimientos y pronto sabrás tu proyección.',
               style: GoogleFonts.manrope(
                 fontSize: 13,
                 color: AppTheme.onSurfaceMuted,
@@ -893,6 +884,31 @@ class _NoProjectionState extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SanityWarning extends StatelessWidget {
+  const _SanityWarning();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.info_outline_rounded, size: 14, color: AppTheme.onSurfaceMuted),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            'La estimación será más precisa cuando tengamos más historial de tus movimientos mensuales.',
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              color: AppTheme.onSurfaceMuted,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
