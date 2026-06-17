@@ -3,7 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../analytics/di/analytics_registry.dart';
 import '../../../analytics/presentation/controllers/entitlement_controller.dart';
+import '../../../analytics/presentation/widgets/premium_upgrade_sheet.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({
@@ -18,11 +20,14 @@ class MoreScreen extends StatelessWidget {
   void _showUpgradeSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: AppTheme.surfaceElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => const _UpgradeSheet(),
+      builder: (_) => PremiumUpgradeSheet(
+        paywallController: AnalyticsRegistry.module.paywallController,
+      ),
     );
   }
 
@@ -214,84 +219,6 @@ class _MoreTile extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _UpgradeSheet extends StatelessWidget {
-  const _UpgradeSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: const Icon(
-                Icons.workspace_premium_rounded,
-                color: AppTheme.primary,
-                size: 30,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Disponible en Premium',
-              style: GoogleFonts.manrope(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Desbloquea proyecciones de cierre, análisis automático y más para tener mayor control de tus finanzas.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.manrope(
-                fontSize: 13,
-                color: AppTheme.onSurfaceMuted,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => Navigator.pop(context),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: Text(
-                  'Próximamente',
-                  style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );
